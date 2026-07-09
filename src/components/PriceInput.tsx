@@ -13,8 +13,8 @@ interface PriceInputProps {
   label: string;
   nettoName: string;
   steuersatzName: string;
-  defaultNetto?: number;
-  defaultSteuersatzId?: string;
+  defaultNetto?: number | null;
+  defaultSteuersatzId?: string | null;
   steuersaetze: SteuersatzOption[];
   required?: boolean;
 }
