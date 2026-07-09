@@ -91,7 +91,7 @@ Voraussetzung: **Node.js 20+** (inkl. npm). Auf einem frischen Mac z.B. per
 installieren, falls noch nicht vorhanden.
 
 ```bash
-npm install
+npm install --legacy-peer-deps
 cp .env.example .env   # DATABASE_URL z.B. auf "file:./data/nuola.db" anpassen
 npx prisma db push
 npx prisma db seed
@@ -111,7 +111,7 @@ mehrere Einheiten/Mietparteien, ein Allgemeinstrom-Zwischenzähler mit Subtrakti
 Monate simulierte Verbrauchshistorie, ein Rechnungsentwurf):
 
 ```bash
-npm install
+npm install --legacy-peer-deps
 cp .env.example .env   # DATABASE_URL z.B. auf "file:./data/nuola.db" anpassen; SESSION_SECRET setzen
 npx prisma db push
 npm run db:demo-seed

@@ -5,7 +5,10 @@ WORKDIR /app
 
 FROM base AS deps
 COPY package.json package-lock.json* ./
-RUN npm install
+# --legacy-peer-deps: einige Pakete (z.B. recharts 2.x) listen React 19 noch
+# nicht in ihren peerDependencies, obwohl es faktisch kompatibel ist - ohne
+# dieses Flag bricht npm mit ERESOLVE ab statt nur zu warnen.
+RUN npm install --legacy-peer-deps
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
