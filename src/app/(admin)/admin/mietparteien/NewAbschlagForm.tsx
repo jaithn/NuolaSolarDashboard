@@ -1,0 +1,48 @@
+"use client";
+
+import { useActionState } from "react";
+import { PriceInput, type SteuersatzOption } from "@/components/PriceInput";
+import { createAbschlagAction, type AbschlagFormState } from "./actions";
+
+const initialState: AbschlagFormState = {};
+
+export function NewAbschlagForm({
+  mietparteiId,
+  steuersaetze,
+}: {
+  mietparteiId: string;
+  steuersaetze: SteuersatzOption[];
+}) {
+  const [state, formAction, pending] = useActionState(createAbschlagAction, initialState);
+
+  return (
+    <form action={formAction}>
+      {state.error && <div className="form-error">{state.error}</div>}
+      <input type="hidden" name="mietparteiId" value={mietparteiId} />
+
+      <PriceInput
+        label="Monatlicher Abschlag"
+        nettoName="nettoBetrag"
+        steuersatzName="steuersatzId"
+        defaultNetto={0}
+        steuersaetze={steuersaetze}
+        required
+      />
+
+      <div className="form-grid">
+        <div className="field">
+          <label htmlFor="gueltigAb">Gültig ab</label>
+          <input id="gueltigAb" name="gueltigAb" type="date" required />
+        </div>
+        <div className="field">
+          <label htmlFor="gueltigBis">Gültig bis (optional)</label>
+          <input id="gueltigBis" name="gueltigBis" type="date" />
+        </div>
+      </div>
+
+      <button className="btn" type="submit" disabled={pending} style={{ maxWidth: "16rem" }}>
+        {pending ? "Wird gespeichert…" : "Abschlag anlegen"}
+      </button>
+    </form>
+  );
+}

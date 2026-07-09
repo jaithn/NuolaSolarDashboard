@@ -1,0 +1,47 @@
+"use client";
+
+import { useActionState } from "react";
+import { updateFirmenStammdatenAction, type SettingsFormState } from "./actions";
+
+const initialState: SettingsFormState = {};
+
+export function FirmenStammdatenForm(props: {
+  name: string;
+  anschrift: string;
+  steuernummer: string | null;
+  ustIdNr: string | null;
+  bankverbindung: string | null;
+}) {
+  const [state, formAction, pending] = useActionState(updateFirmenStammdatenAction, initialState);
+
+  return (
+    <form action={formAction}>
+      {state.error && <div className="form-error">{state.error}</div>}
+      <div className="form-grid">
+        <div className="field">
+          <label htmlFor="name">Name</label>
+          <input id="name" name="name" type="text" required defaultValue={props.name} />
+        </div>
+        <div className="field">
+          <label htmlFor="anschrift">Anschrift</label>
+          <input id="anschrift" name="anschrift" type="text" required defaultValue={props.anschrift} />
+        </div>
+        <div className="field">
+          <label htmlFor="steuernummer">Steuernummer</label>
+          <input id="steuernummer" name="steuernummer" type="text" defaultValue={props.steuernummer ?? ""} />
+        </div>
+        <div className="field">
+          <label htmlFor="ustIdNr">USt-IdNr.</label>
+          <input id="ustIdNr" name="ustIdNr" type="text" defaultValue={props.ustIdNr ?? ""} />
+        </div>
+        <div className="field">
+          <label htmlFor="bankverbindung">Bankverbindung</label>
+          <input id="bankverbindung" name="bankverbindung" type="text" defaultValue={props.bankverbindung ?? ""} />
+        </div>
+      </div>
+      <button className="btn" type="submit" disabled={pending} style={{ maxWidth: "16rem" }}>
+        {pending ? "Wird gespeichert…" : "Speichern"}
+      </button>
+    </form>
+  );
+}

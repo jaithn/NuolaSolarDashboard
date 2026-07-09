@@ -1,0 +1,14 @@
+node_modules/
+.next/
+dist/
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+public/uploads/*
+!public/uploads/.gitkeep
+.env
+*.log
+coverage/
+.claude/
+.fuse_hidden*

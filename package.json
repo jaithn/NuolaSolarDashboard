@@ -1,0 +1,56 @@
+{
+  "name": "nuola-mieter-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "scripts": {
+    "postinstall": "prisma generate",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "worker": "tsx watch src/worker/index.ts",
+    "worker:start": "tsx src/worker/index.ts",
+    "lint": "eslint .",
+    "pretest": "DATABASE_URL=file:./data/test.db npx prisma db push --skip-generate",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:demo-seed": "tsx prisma/demo-seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.5.0",
+    "@react-pdf/renderer": "^4.1.6",
+    "bcryptjs": "^2.4.3",
+    "date-fns": "^3.6.0",
+    "iron-session": "^8.0.4",
+    "next": "^15.2.0",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.16",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "recharts": "^2.15.0",
+    "server-only": "^0.0.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.17.9",
+    "@types/node-cron": "^3.0.11",
+    "@types/nodemailer": "^6.4.17",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "@typescript-eslint/eslint-plugin": "^8.18.1",
+    "@typescript-eslint/parser": "^8.18.1",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^15.2.0",
+    "prisma": "^6.5.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

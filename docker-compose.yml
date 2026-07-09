@@ -1,0 +1,27 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - sqlite-data:/app/data
+      - uploads:/app/public/uploads
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - sqlite-data:/app/data
+
+volumes:
+  sqlite-data:
+  uploads:

@@ -1,0 +1,324 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // SQLite fuer den aktuellen Massstab (2 Objekte, ~12 Geraete). Bei Bedarf auf
+  // "postgresql" wechseln - das Schema verwendet bewusst keine SQLite-spezifischen
+  // Typen, damit der Wechsel moeglichst reibungslos verlaeuft.
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Stammdaten: Objekte, Einheiten, Geraete
+// ---------------------------------------------------------------------------
+
+model Objekt {
+  id        String   @id @default(cuid())
+  name      String
+  adresse   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  einheiten     Einheit[]
+  shellyGeraete ShellyGeraet[]
+}
+
+model Einheit {
+  id        String   @id @default(cuid())
+  objektId  String
+  bezeichnung String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  objekt            Objekt             @relation(fields: [objektId], references: [id], onDelete: Cascade)
+  geraetZuordnungen GeraetZuordnung[]
+  mietparteien      Mietpartei[]
+
+  @@index([objektId])
+}
+
+// Physisches Shelly-Geraet. Traegt bewusst KEINE Einheiten-Zuordnung mehr
+// direkt (siehe GeraetZuordnung) - ein Geraet kann so mehreren Einheiten
+// zugeordnet sein (z.B. ein Allgemeinstrom-Zwischenzaehler, der von mehreren
+// Mietparteien-Verbraeuchen abgezogen werden muss), und eine Einheit kann
+// umgekehrt mehrere Geraete haben.
+model ShellyGeraet {
+  id            String    @id @default(cuid())
+  objektId      String
+  deviceId      String
+  serverHost    String
+  bezeichnung   String
+  aktiv         Boolean   @default(true)
+  deaktiviertAb DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  objekt      Objekt            @relation(fields: [objektId], references: [id], onDelete: Cascade)
+  messwerte   Messwert[]
+  zuordnungen GeraetZuordnung[]
+
+  @@index([objektId])
+  @@unique([deviceId, serverHost])
+}
+
+enum ZuordnungModus {
+  ADDIEREN
+  SUBTRAHIEREN
+}
+
+// Verknuepft ein Geraet mit einer Einheit und legt fest, WIE dessen Messwerte
+// (alle Phasen summiert) in die Verbrauchsberechnung der Einheit eingehen:
+// ADDIEREN (Normalfall) oder SUBTRAHIEREN (z.B. ein
+// Allgemeinstrom-Zwischenzaehler, der im Stromkreis eines Mieters haengt -
+// dessen Verbrauch wird vom Verbrauch der Einheit abgezogen, damit der
+// Mieter nur die Differenz bezahlt). Ein Geraet kann mehreren Einheiten
+// zugeordnet sein (z.B. derselbe Allgemeinstrom-Zaehler bei mehreren
+// Mietparteien), eine Einheit kann umgekehrt mehrere Geraete haben.
+model GeraetZuordnung {
+  id             String         @id @default(cuid())
+  einheitId      String
+  shellyGeraetId String
+  modus          ZuordnungModus @default(ADDIEREN)
+  createdAt      DateTime       @default(now())
+
+  einheit      Einheit      @relation(fields: [einheitId], references: [id], onDelete: Cascade)
+  shellyGeraet ShellyGeraet @relation(fields: [shellyGeraetId], references: [id], onDelete: Cascade)
+
+  @@unique([einheitId, shellyGeraetId])
+  @@index([einheitId])
+  @@index([shellyGeraetId])
+}
+
+// Rohdaten aus dem Shelly-Polling: kumulativer Energiezaehler je Geraet/Phase
+// und Zeitpunkt. Verbrauch wird stets als Differenz zweier Zaehlerstaende
+// berechnet (siehe src/lib/billing/consumption.ts).
+model Messwert {
+  id         String   @id @default(cuid())
+  geraetId   String
+  phase      String
+  timestamp  DateTime
+  energyWh   Float
+  createdAt  DateTime @default(now())
+
+  geraet ShellyGeraet @relation(fields: [geraetId], references: [id], onDelete: Cascade)
+
+  @@unique([geraetId, phase, timestamp])
+  @@index([geraetId, phase, timestamp])
+}
+
+// ---------------------------------------------------------------------------
+// Steuersaetze (zeitlich gueltig, nie ueberschrieben)
+// ---------------------------------------------------------------------------
+
+model Steuersatz {
+  id           String    @id @default(cuid())
+  bezeichnung  String
+  prozentsatz  Float
+  gueltigAb    DateTime
+  gueltigBis   DateTime?
+  createdAt    DateTime  @default(now())
+
+  mietparteienArbeitspreis Mietpartei[] @relation("ArbeitspreisSteuersatz")
+  mietparteienGrundpreis   Mietpartei[] @relation("GrundpreisSteuersatz")
+  abschlaege               Abschlag[]
+  rechnungspositionen      Rechnungsposition[]
+
+  @@index([gueltigAb])
+}
+
+// ---------------------------------------------------------------------------
+// Mietparteien (ein Datensatz je Mietverhaeltnis - Historie ueber mehrere
+// Zeilen pro Einheit bei Mieterwechsel)
+// ---------------------------------------------------------------------------
+
+enum MietverhaeltnisStatus {
+  AKTIV
+  INAKTIV
+}
+
+model Mietpartei {
+  id            String                @id @default(cuid())
+  einheitId     String
+  name          String
+  email         String
+  telefon       String?
+  anschrift     String?
+  einzugsdatum  DateTime
+  auszugsdatum  DateTime?
+  status        MietverhaeltnisStatus @default(AKTIV)
+
+  arbeitspreisNetto        Float
+  arbeitspreisSteuersatzId String
+  grundpreisNetto          Float?
+  grundpreisSteuersatzId   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  einheit             Einheit     @relation(fields: [einheitId], references: [id], onDelete: Cascade)
+  arbeitspreisSteuersatz Steuersatz @relation("ArbeitspreisSteuersatz", fields: [arbeitspreisSteuersatzId], references: [id])
+  grundpreisSteuersatz   Steuersatz? @relation("GrundpreisSteuersatz", fields: [grundpreisSteuersatzId], references: [id])
+
+  abschlaege Abschlag[]
+  rechnungen Rechnung[]
+  // 1:1 - Nutzer.mietparteiId ist @unique, daher hier Einzelobjekt statt Array.
+  nutzer     Nutzer?
+
+  @@index([einheitId])
+}
+
+// Monatlicher Abschlag mit Gueltigkeitszeitraum (Historie, da sich der
+// Abschlag im Zeitverlauf aendern kann).
+model Abschlag {
+  id               String    @id @default(cuid())
+  mietparteiId     String
+  nettoBetrag      Float
+  steuersatzId     String
+  gueltigAb        DateTime
+  gueltigBis       DateTime?
+  createdAt        DateTime  @default(now())
+
+  mietpartei Mietpartei @relation(fields: [mietparteiId], references: [id], onDelete: Cascade)
+  steuersatz Steuersatz @relation(fields: [steuersatzId], references: [id])
+
+  @@index([mietparteiId, gueltigAb])
+}
+
+// ---------------------------------------------------------------------------
+// Auth
+// ---------------------------------------------------------------------------
+
+enum Rolle {
+  ADMIN
+  MIETER
+}
+
+model Nutzer {
+  id                 String    @id @default(cuid())
+  username            String    @unique
+  passwordHash        String
+  role                Rolle
+  mustChangePassword  Boolean   @default(true)
+  mietparteiId        String?   @unique
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  mietpartei          Mietpartei? @relation(fields: [mietparteiId], references: [id], onDelete: Cascade)
+  passwordResetTokens PasswordResetToken[]
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  nutzerId  String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  nutzer Nutzer @relation(fields: [nutzerId], references: [id], onDelete: Cascade)
+
+  @@index([nutzerId])
+}
+
+// ---------------------------------------------------------------------------
+// Rechnungen
+// ---------------------------------------------------------------------------
+
+enum RechnungTyp {
+  JAHRESABRECHNUNG
+  SCHLUSSRECHNUNG
+}
+
+enum RechnungStatus {
+  ENTWURF
+  FREIGEGEBEN
+  VERSENDET
+  STORNIERT
+}
+
+// Atomarer Zaehler fuer fortlaufende, lueckenlose Rechnungsnummern je Jahr.
+// Vergabe ausschliesslich ueber eine einzelne atomare UPDATE-Anweisung
+// innerhalb einer Transaktion (siehe src/lib/billing/invoiceNumber.ts).
+model RechnungsnummernZaehler {
+  jahr         Int   @id
+  letzteNummer Int   @default(0)
+}
+
+model Rechnung {
+  id                    String         @id @default(cuid())
+  mietparteiId          String
+  typ                   RechnungTyp
+  rechnungsnummer       String         @unique
+  zeitraumVon           DateTime
+  zeitraumBis           DateTime
+  status                RechnungStatus @default(ENTWURF)
+  ausstellungsdatum     DateTime
+  pdfPfad               String?
+
+  // Anfangs-/Endzaehlerstand: aggregiert ueber alle der Einheit zugeordneten
+  // Geraete (ADDIEREN/SUBTRAHIEREN, siehe zaehlerstaendeFuerEinheit) - Pflicht-
+  // angabe It. Vertrag, Endstand - Anfangsstand entspricht gesamtVerbrauchKwh
+  // (Ausnahme: Zaehler-Reset/Geraetetausch waehrend des Zeitraums).
+  anfangszaehlerstandKwh Float
+  endzaehlerstandKwh     Float
+  gesamtVerbrauchKwh    Float
+  arbeitspreisNetto     Float
+  // Monatliche Grundgebuehr (Netto) laut Mietvertrag zum Ausstellungszeitpunkt -
+  // unabhaengig vom taggenau anteilig berechneten Gesamtbetrag der Grundpreis-
+  // Rechnungsposition, dient als eigener Pflichtausweis "monatliche Grundgebühr".
+  grundgebuehrMonatlichNetto Float?
+  summeAbschlaegeBrutto Float
+  verbrauchskostenBrutto Float
+  // Verrechnung: positiv = Nachzahlung des Mieters, negativ = Guthaben/Erstattung
+  verrechnungBetrag     Float
+
+  erstelltAm    DateTime  @default(now())
+  freigegebenAm DateTime?
+  versendetAm   DateTime?
+
+  mietpartei   Mietpartei @relation(fields: [mietparteiId], references: [id], onDelete: Restrict)
+  positionen   Rechnungsposition[]
+
+  @@index([mietparteiId])
+}
+
+model Rechnungsposition {
+  id            String   @id @default(cuid())
+  rechnungId    String
+  bezeichnung   String
+  nettoBetrag   Float
+  steuersatzId  String
+  steuerBetrag  Float
+  bruttoBetrag  Float
+  sortierung    Int      @default(0)
+
+  rechnung   Rechnung   @relation(fields: [rechnungId], references: [id], onDelete: Cascade)
+  steuersatz Steuersatz @relation(fields: [steuersatzId], references: [id])
+
+  @@index([rechnungId])
+}
+
+// ---------------------------------------------------------------------------
+// Firmenstammdaten & Design (jeweils Singleton, id fest "singleton")
+// ---------------------------------------------------------------------------
+
+model FirmenStammdaten {
+  id             String   @id @default("singleton")
+  name           String
+  anschrift      String
+  steuernummer   String?
+  ustIdNr        String?
+  bankverbindung String?
+  updatedAt      DateTime @updatedAt
+}
+
+model RechnungsDesignvorlage {
+  id              String   @id @default("singleton")
+  logoPfad        String?
+  primaerfarbe    String   @default("#0f766e")
+  sekundaerfarbe  String   @default("#0f172a")
+  fusszeileText   String?
+  updatedAt       DateTime @updatedAt
+}
