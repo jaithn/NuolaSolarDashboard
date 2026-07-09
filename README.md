@@ -86,7 +86,8 @@ docker compose exec web npx prisma db push --accept-data-loss
 
 ## Entwicklung ohne Docker
 
-Voraussetzung: **Node.js 20+** (inkl. npm). Auf einem frischen Mac z.B. per
+Voraussetzung: **Node.js 22+** (inkl. npm) - die Docker-Images nutzen Node 24, lokal
+reicht jede unterstützte LTS-Version ab 22. Auf einem frischen Mac z.B. per
 [nodejs.org-Installer](https://nodejs.org/) oder über Homebrew (`brew install node`)
 installieren, falls noch nicht vorhanden.
 
