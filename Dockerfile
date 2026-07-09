@@ -8,7 +8,11 @@ COPY package.json package-lock.json* ./
 # --legacy-peer-deps: einige Pakete (z.B. recharts 2.x) listen React 19 noch
 # nicht in ihren peerDependencies, obwohl es faktisch kompatibel ist - ohne
 # dieses Flag bricht npm mit ERESOLVE ab statt nur zu warnen.
-RUN npm install --legacy-peer-deps
+# --ignore-scripts: das "postinstall"-Skript (prisma generate) braucht
+# prisma/schema.prisma, das in diesem Stage noch nicht kopiert ist - die
+# Builder-Stage unten ruft "prisma generate" nach dem vollstaendigen
+# "COPY . ." ohnehin explizit auf.
+RUN npm install --legacy-peer-deps --ignore-scripts
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules

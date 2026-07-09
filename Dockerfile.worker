@@ -4,7 +4,9 @@ RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm install --legacy-peer-deps
+# --ignore-scripts: siehe Kommentar in Dockerfile - "prisma generate" laeuft
+# erst nach "COPY . .", wenn prisma/schema.prisma tatsaechlich vorhanden ist.
+RUN npm install --legacy-peer-deps --ignore-scripts
 COPY . .
 RUN npx prisma generate
 
