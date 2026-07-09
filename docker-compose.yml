@@ -1,5 +1,5 @@
 services:
-  web:
+  app:
     build:
       context: .
       dockerfile: Dockerfile
@@ -11,16 +11,6 @@ services:
     volumes:
       - sqlite-data:/app/data
       - uploads:/app/public/uploads
-
-  worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
-    restart: unless-stopped
-    env_file:
-      - .env
-    volumes:
-      - sqlite-data:/app/data
 
 volumes:
   sqlite-data:

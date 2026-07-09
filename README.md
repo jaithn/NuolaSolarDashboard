@@ -7,33 +7,33 @@ MwSt.-Ausweisung, Abschlagsverrechnung und Schlussrechnung bei Auszug) als PDF.
 
 ## Architektur (Kurzüberblick)
 
-- **`web`** – Next.js Full-Stack-App (Admin-Bereich, Mieter-Dashboard, Rechnungserstellung).
-- **`worker`** – eigenständiger Prozess, pollt periodisch die Shelly Cloud API und schreibt
-  Zeitreihen-Messwerte in die Datenbank.
+- **Ein Image, ein Container (`app`)**: Next.js Full-Stack-App (Admin-Bereich,
+  Mieter-Dashboard, Rechnungserstellung) und der Shelly-Polling-Worker laufen als zwei
+  Prozesse gemeinsam in diesem einen Container (siehe `docker-entrypoint.sh`). Stirbt
+  einer der beiden Prozesse, beendet sich der Container komplett, damit `restart:
+  unless-stopped` beide gemeinsam neu startet.
 - **SQLite** – dateibasierte DB in einem Docker-Volume, Zugriff über Prisma ORM (bei
   Bedarf später auf PostgreSQL wechselbar, da das Schema keine SQLite-Spezifika nutzt).
-- Kein eigener Reverse-Proxy: ein bereits vorhandener externer nginx spricht `web` auf
+- Kein eigener Reverse-Proxy: ein bereits vorhandener externer nginx spricht `app` auf
   Port 3000 an.
 
 Details zu Architektur, Datenmodell und Annahmen: siehe `.claude` Plan-Historie bzw. die
 Kommentare in `prisma/schema.prisma`.
 
-## Fertige Images aus der GitHub Container Registry
+## Fertiges Image aus der GitHub Container Registry
 
-Bei jedem Push nach `main` baut `.github/workflows/docker-publish.yml` beide Images und
-veröffentlicht sie automatisch unter:
+Bei jedem Push nach `main` baut `.github/workflows/docker-publish.yml` das Image und
+veröffentlicht es automatisch unter:
 
-- `ghcr.io/jaithn/nuola-mieter-dashboard-web:latest`
-- `ghcr.io/jaithn/nuola-mieter-dashboard-worker:latest`
+- `ghcr.io/jaithn/nuola-mieter-dashboard:latest`
 
 Damit der Workflow Pakete veröffentlichen darf, muss im Repo unter **Settings → Actions →
 General → Workflow permissions** die Option **"Read and write permissions"** aktiviert sein
 (sonst schlägt der Push zur Registry mit 403 fehl).
 
-Um die fertigen Images statt eines lokalen Builds zu nutzen, in `docker-compose.yml` die
-`build:`-Blöcke durch `image: ghcr.io/jaithn/nuola-mieter-dashboard-web:latest` bzw.
-`...-worker:latest` ersetzen (ggf. vorher `docker login ghcr.io`, falls das Repo/die
-Packages privat sind).
+Um das fertige Image statt eines lokalen Builds zu nutzen, in `docker-compose.yml` den
+`build:`-Block durch `image: ghcr.io/jaithn/nuola-mieter-dashboard:latest` ersetzen (ggf.
+vorher `docker login ghcr.io`, falls das Repo/die Packages privat sind).
 
 ## Setup
 
@@ -50,12 +50,12 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-Beim ersten Start legt der `web`-Container automatisch das Datenbankschema an
+Beim ersten Start legt der `app`-Container automatisch das Datenbankschema an
 (`prisma db push`, siehe `docker-entrypoint.sh`). Danach einmalig den initialen
 Admin-Zugang samt Einmal-Passwort erzeugen:
 
 ```bash
-docker compose exec web npx prisma db seed
+docker compose exec app npx prisma db seed
 ```
 
 Die Ausgabe enthält Benutzername (`admin`) und ein zufälliges Einmal-Passwort — bitte
@@ -70,7 +70,7 @@ automatisch übernommen. Würde eine Änderung Daten löschen, bricht der Start 
 dann bewusst und manuell bestätigen:
 
 ```bash
-docker compose exec web npx prisma db push --accept-data-loss
+docker compose exec app npx prisma db push --accept-data-loss
 ```
 
 ## Environment-Variablen
