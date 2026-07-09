@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getIronSession } from "iron-session";
-import { sessionOptions, type SessionData } from "@/lib/auth/session";
+import { getSessionOptions, type SessionData } from "@/lib/auth/session";
 
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
-  const session = await getIronSession<SessionData>(request, response, sessionOptions);
+  const session = await getIronSession<SessionData>(request, response, getSessionOptions());
 
   const { pathname } = request.nextUrl;
   const isAuthed = Boolean(session.userId);
