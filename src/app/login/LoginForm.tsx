@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { loginAction, type LoginState } from "./actions";
 
 const initialState: LoginState = {};
@@ -22,9 +23,9 @@ export function LoginForm() {
       <button className="btn" type="submit" disabled={pending}>
         {pending ? "Anmelden…" : "Anmelden"}
       </button>
-      <a className="muted-link" href="/reset-password/request">
+      <Link className="muted-link" href="/reset-password/request">
         Passwort vergessen?
-      </a>
+      </Link>
     </form>
   );
 }

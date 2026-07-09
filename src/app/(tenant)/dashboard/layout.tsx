@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/getSession";
 import { prisma } from "@/lib/db";
@@ -34,8 +35,8 @@ export default async function TenantLayout({ children }: { children: React.React
       <header className="app-header">
         <strong>Nuola Mieter-Dashboard</strong>
         <nav>
-          <a href="/dashboard">Verbrauch</a>
-          <a href="/dashboard/rechnungen">Abrechnungen</a>
+          <Link href="/dashboard">Verbrauch</Link>
+          <Link href="/dashboard/rechnungen">Abrechnungen</Link>
           <form action={logoutAction}>
             <button className="logout-btn" type="submit">
               Abmelden

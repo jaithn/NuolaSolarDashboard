@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { EditObjektForm } from "./EditObjektForm";
@@ -50,7 +51,7 @@ export default async function ObjektDetailPage({
             {objekt.einheiten.map((e) => (
               <tr key={e.id}>
                 <td>
-                  <a href={`/admin/einheiten/${e.id}`}>{e.bezeichnung}</a>
+                  <Link href={`/admin/einheiten/${e.id}`}>{e.bezeichnung}</Link>
                 </td>
                 <td>{e._count.mietparteien}</td>
                 <td>{e._count.geraetZuordnungen}</td>

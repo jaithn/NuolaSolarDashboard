@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { GeraetForm } from "../GeraetForm";
@@ -39,7 +40,7 @@ export default async function GeraetDetailPage({ params }: { params: Promise<{ i
               <tr key={z.id}>
                 <td>{z.einheit.objekt.name}</td>
                 <td>
-                  <a href={`/admin/einheiten/${z.einheit.id}`}>{z.einheit.bezeichnung}</a>
+                  <Link href={`/admin/einheiten/${z.einheit.id}`}>{z.einheit.bezeichnung}</Link>
                 </td>
                 <td>{z.modus === "SUBTRAHIEREN" ? "Subtrahieren (Allgemeinstrom)" : "Addieren"}</td>
               </tr>

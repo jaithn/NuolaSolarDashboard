@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { GeraetForm } from "./GeraetForm";
 import { deleteGeraetAction } from "./actions";
@@ -42,7 +43,7 @@ export default async function GeraetePage({
             {geraete.map((g) => (
               <tr key={g.id}>
                 <td>
-                  <a href={`/admin/geraete/${g.id}`}>{g.bezeichnung}</a>
+                  <Link href={`/admin/geraete/${g.id}`}>{g.bezeichnung}</Link>
                 </td>
                 <td>{g.objekt.name}</td>
                 <td>{g.deviceId}</td>

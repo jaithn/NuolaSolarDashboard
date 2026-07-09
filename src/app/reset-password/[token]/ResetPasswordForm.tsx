@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { resetPasswordAction, type ResetPasswordState } from "./actions";
 
 const initialState: ResetPasswordState = {};
@@ -11,7 +12,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
   if (state.success) {
     return (
       <div className="form-notice">
-        Ihr Passwort wurde geändert. Sie können sich jetzt <a href="/login">anmelden</a>.
+        Ihr Passwort wurde geändert. Sie können sich jetzt <Link href="/login">anmelden</Link>.
       </div>
     );
   }

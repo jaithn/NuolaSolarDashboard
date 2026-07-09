@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { requestPasswordResetAction, type RequestResetState } from "./actions";
 
 const initialState: RequestResetState = {};
@@ -26,9 +27,9 @@ export function RequestResetForm() {
       <button className="btn" type="submit" disabled={pending}>
         {pending ? "Wird gesendet…" : "Link zum Zurücksetzen senden"}
       </button>
-      <a className="muted-link" href="/login">
+      <Link className="muted-link" href="/login">
         Zurück zum Login
-      </a>
+      </Link>
     </form>
   );
 }

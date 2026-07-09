@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { NewZuordnungForm } from "./NewZuordnungForm";
@@ -30,7 +31,7 @@ export default async function EinheitDetailPage({ params }: { params: Promise<{ 
       <div className="section">
         <h2>Geräte-Zuordnungen</h2>
         <p>
-          Ein Gerät kann mehreren Einheiten zugeordnet sein. Mit "Subtrahieren" lässt sich z.B. ein
+          Ein Gerät kann mehreren Einheiten zugeordnet sein. Mit &quot;Subtrahieren&quot; lässt sich z.B. ein
           Allgemeinstrom-Zwischenzähler abbilden, der im Stromkreis dieser Einheit hängt - der Mieter
           zahlt dann nur die Differenz aus seinem Zähler abzüglich des Allgemeinstrom-Zählers.
         </p>
@@ -46,7 +47,7 @@ export default async function EinheitDetailPage({ params }: { params: Promise<{ 
             {einheit.geraetZuordnungen.map((z) => (
               <tr key={z.id}>
                 <td>
-                  <a href={`/admin/geraete/${z.shellyGeraet.id}`}>{z.shellyGeraet.bezeichnung}</a>
+                  <Link href={`/admin/geraete/${z.shellyGeraet.id}`}>{z.shellyGeraet.bezeichnung}</Link>
                 </td>
                 <td>{z.modus === "SUBTRAHIEREN" ? "Subtrahieren (Allgemeinstrom)" : "Addieren"}</td>
                 <td>
@@ -91,7 +92,7 @@ export default async function EinheitDetailPage({ params }: { params: Promise<{ 
             {einheit.mietparteien.map((m) => (
               <tr key={m.id}>
                 <td>
-                  <a href={`/admin/mietparteien/${m.id}`}>{m.name}</a>
+                  <Link href={`/admin/mietparteien/${m.id}`}>{m.name}</Link>
                 </td>
                 <td>{m.einzugsdatum.toLocaleDateString("de-DE")}</td>
                 <td>{m.auszugsdatum ? m.auszugsdatum.toLocaleDateString("de-DE") : "–"}</td>

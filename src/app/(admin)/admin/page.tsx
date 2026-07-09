@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { verbrauchKwhFuerEinheit } from "@/lib/billing/consumption";
 import { startOfMonth, endOfMonth } from "date-fns";
@@ -68,7 +69,7 @@ export default async function AdminHomePage({
             {geraeteMitStatus.map((g) => (
               <tr key={g.id}>
                 <td>
-                  <a href={`/admin/geraete/${g.id}`}>{g.bezeichnung}</a>
+                  <Link href={`/admin/geraete/${g.id}`}>{g.bezeichnung}</Link>
                 </td>
                 <td>{g.objekt.name}</td>
                 <td>

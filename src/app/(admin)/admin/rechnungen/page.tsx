@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { NewRechnungForm } from "./NewRechnungForm";
 
@@ -42,7 +43,7 @@ export default async function RechnungenPage() {
             {rechnungen.map((r) => (
               <tr key={r.id}>
                 <td>
-                  <a href={`/admin/rechnungen/${r.id}`}>{r.rechnungsnummer}</a>
+                  <Link href={`/admin/rechnungen/${r.id}`}>{r.rechnungsnummer}</Link>
                 </td>
                 <td>{r.mietpartei.name}</td>
                 <td>

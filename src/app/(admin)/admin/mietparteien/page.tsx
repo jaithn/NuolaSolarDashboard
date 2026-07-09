@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { MietparteiForm } from "./MietparteiForm";
 import { isMietparteiEffectivelyAktiv } from "@/lib/mietpartei";
@@ -35,7 +36,7 @@ export default async function MietparteienPage() {
               return (
                 <tr key={m.id}>
                   <td>
-                    <a href={`/admin/mietparteien/${m.id}`}>{m.name}</a>
+                    <Link href={`/admin/mietparteien/${m.id}`}>{m.name}</Link>
                   </td>
                   <td>
                     {m.einheit.objekt.name} – {m.einheit.bezeichnung}

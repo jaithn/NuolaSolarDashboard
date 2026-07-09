@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { NewObjektForm } from "./NewObjektForm";
 import { deleteObjektAction } from "./actions";
@@ -33,7 +34,7 @@ export default async function ObjektePage({
             {objekte.map((o) => (
               <tr key={o.id}>
                 <td>
-                  <a href={`/admin/objekte/${o.id}`}>{o.name}</a>
+                  <Link href={`/admin/objekte/${o.id}`}>{o.name}</Link>
                 </td>
                 <td>{o.adresse}</td>
                 <td>{o._count.einheiten}</td>
