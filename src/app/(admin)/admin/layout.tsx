@@ -12,7 +12,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="app-shell">
       <header className="app-header">
-        <strong>Nuola Admin</strong>
+        <strong className="brand">
+          Nuola <span className="brand-accent">Admin</span>
+        </strong>
         <nav>
           <Link href="/admin">Übersicht</Link>
           <Link href="/admin/objekte">Objekte</Link>

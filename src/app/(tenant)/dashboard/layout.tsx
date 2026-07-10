@@ -33,7 +33,9 @@ export default async function TenantLayout({ children }: { children: React.React
   return (
     <div className="app-shell">
       <header className="app-header">
-        <strong>Nuola Energy Dashboard</strong>
+        <strong className="brand">
+          Nuola <span className="brand-accent">Energy Dashboard</span>
+        </strong>
         <nav>
           <Link href="/dashboard">Verbrauch</Link>
           <Link href="/dashboard/rechnungen">Abrechnungen</Link>

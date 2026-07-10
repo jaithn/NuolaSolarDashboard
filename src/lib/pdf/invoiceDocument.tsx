@@ -42,7 +42,7 @@ export interface InvoiceDocumentData {
 }
 
 const styles = StyleSheet.create({
-  page: { padding: 40, fontSize: 10, fontFamily: "Helvetica", color: "#0f172a" },
+  page: { padding: 40, fontSize: 10, fontFamily: "Helvetica", color: "#1c1c21" },
   headerRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 24 },
   firma: { fontSize: 9, color: "#475569" },
   logo: { width: 120, height: "auto" },

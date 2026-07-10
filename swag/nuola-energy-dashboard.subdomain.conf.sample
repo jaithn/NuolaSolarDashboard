@@ -1,0 +1,44 @@
+# SWAG (LinuxServer.io) Reverse-Proxy-Vorlage fuer das Nuola Energy Dashboard
+# ---------------------------------------------------------------------------
+# Vorteil gegenueber der eigenstaendigen nginx-Vorlage: die Domain steht hier
+# GAR NICHT drin. "server_name nuola.*;" matcht die Subdomain, die du in der
+# SWAG-Container-Umgebung (URL / SUBDOMAINS) konfiguriert hast; TLS-Zertifikat
+# und Proxy-Header kommen aus SWAGs zentralen Includes.
+#
+# Installation:
+#   1. Diese Datei nach /config/nginx/proxy-confs/ kopieren und die Endung
+#      ".sample" entfernen  ->  nuola-energy-dashboard.subdomain.conf
+#   2. Den App-Container und SWAG in dasselbe Docker-Netzwerk haengen; der
+#      Container muss "nuola-energy-dashboard" heissen (siehe upstream_app),
+#      sonst hier den Namen anpassen.
+#   3. In der SWAG-Umgebung die Subdomain "nuola" (bzw. deinen Wunschnamen)
+#      zu SUBDOMAINS hinzufuegen, damit ein Zertifikat ausgestellt wird.
+#   4. SWAG-Container neu starten:  docker restart swag
+#
+# Wichtig: In der .env des Dashboards muss APP_BASE_URL auf genau diese
+# oeffentliche Adresse zeigen (z.B. https://nuola.deine-domain.de), damit der
+# Host-Check der App den ueber SWAG durchgereichten Host akzeptiert.
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+
+    # "nuola" ist die Subdomain - bei Bedarf anpassen. Das ".*" matcht deine
+    # in SWAG konfigurierte Domain, ohne sie hier eintragen zu muessen.
+    server_name nuola.*;
+
+    include /config/nginx/ssl.conf;
+
+    # Logo-Uploads (App-Limit 2 MB); etwas Puffer.
+    client_max_body_size 5m;
+
+    location / {
+        include /config/nginx/proxy.conf;      # Host, X-Forwarded-For/-Proto, X-Real-IP ...
+        include /config/nginx/resolver.conf;    # Docker-DNS fuer variable proxy_pass
+
+        set $upstream_app nuola-energy-dashboard; # Container-Name des Dashboards
+        set $upstream_port 3000;
+        set $upstream_proto http;
+        proxy_pass $upstream_proto://$upstream_app:$upstream_port;
+    }
+}

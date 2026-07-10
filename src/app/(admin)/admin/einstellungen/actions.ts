@@ -77,8 +77,8 @@ export async function updateDesignvorlageAction(
 ): Promise<SettingsFormState> {
   await requireAdmin();
 
-  const primaerfarbe = String(formData.get("primaerfarbe") ?? "#0f766e");
-  const sekundaerfarbe = String(formData.get("sekundaerfarbe") ?? "#0f172a");
+  const primaerfarbe = String(formData.get("primaerfarbe") ?? "#d9a441");
+  const sekundaerfarbe = String(formData.get("sekundaerfarbe") ?? "#1c1c21");
   const fusszeileText = String(formData.get("fusszeileText") ?? "").trim();
   const logo = formData.get("logo");
 

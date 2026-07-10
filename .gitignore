@@ -12,3 +12,5 @@ public/uploads/*
 coverage/
 .claude/
 .fuse_hidden*
+# Brand-Referenz (lokal), gehoert nicht ins Repo
+*Style Guide*.html

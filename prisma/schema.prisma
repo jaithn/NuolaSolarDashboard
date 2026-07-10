@@ -321,8 +321,8 @@ model FirmenStammdaten {
 model RechnungsDesignvorlage {
   id              String   @id @default("singleton")
   logoPfad        String?
-  primaerfarbe    String   @default("#0f766e")
-  sekundaerfarbe  String   @default("#0f172a")
+  primaerfarbe    String   @default("#d9a441")
+  sekundaerfarbe  String   @default("#1c1c21")
   fusszeileText   String?
   updatedAt       DateTime @updatedAt
 }

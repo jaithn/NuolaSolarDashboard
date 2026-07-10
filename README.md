@@ -22,18 +22,32 @@ Kommentare in `prisma/schema.prisma`.
 
 ## Fertiges Image aus der GitHub Container Registry
 
-Bei jedem Push nach `main` baut `.github/workflows/docker-publish.yml` das Image und
-veröffentlicht es automatisch unter:
+Bei jedem Push baut `.github/workflows/docker-publish.yml` das Image und veröffentlicht es
+unter `ghcr.io/jaithn/nuola-energy-dashboard`. **Tag-Strategie:**
 
-- `ghcr.io/jaithn/nuola-energy-dashboard:latest`
+| Auslöser | Erzeugte Image-Tags | Verwendung |
+|---|---|---|
+| Push nach `main` | `latest`, `main`, `sha-<commit>` | Rollendes Dev-/Test-Image |
+| Git-Tag `vX.Y.Z` | `X.Y.Z`, `X.Y`, `X` | Gepinnte, stabile Releases |
+
+Ein **versioniertes Release** erstellst du per Git-Tag:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+Danach existiert z.B. `ghcr.io/jaithn/nuola-energy-dashboard:1.0.0` (sowie `:1.0` und `:1`).
+Im Produktivbetrieb solltest du eine **feste Version** statt `:latest` pinnen, damit ein
+Redeploy nicht ungewollt eine neue Version zieht.
 
 Damit der Workflow Pakete veröffentlichen darf, muss im Repo unter **Settings → Actions →
 General → Workflow permissions** die Option **"Read and write permissions"** aktiviert sein
 (sonst schlägt der Push zur Registry mit 403 fehl).
 
 Um das fertige Image statt eines lokalen Builds zu nutzen, in `docker-compose.yml` den
-`build:`-Block durch `image: ghcr.io/jaithn/nuola-energy-dashboard:latest` ersetzen (ggf.
-vorher `docker login ghcr.io`, falls das Repo/die Packages privat sind).
+`build:`-Block durch `image: ghcr.io/jaithn/nuola-energy-dashboard:1.0.0` (oder `:latest`)
+ersetzen (ggf. vorher `docker login ghcr.io`, falls das Repo/die Packages privat sind).
 
 ## Setup
 
@@ -73,12 +87,23 @@ dann bewusst und manuell bestätigen:
 docker compose exec nuola-energy-dashboard npx prisma db push --accept-data-loss
 ```
 
-## Reverse-Proxy (nginx)
+## Reverse-Proxy (nginx / SWAG)
 
 Der Container lauscht nur auf `127.0.0.1:3000`; nach außen (TLS, Domain) geht es über einen
-vorgelagerten nginx. Eine fertige, kommentierte Vorlage liegt unter
-[`nginx.example.conf`](nginx.example.conf) — Domain und Zertifikatspfade anpassen, dann nach
-`/etc/nginx/sites-available/` kopieren und aktivieren.
+vorgelagerten Reverse-Proxy. Zwei Vorlagen liegen bei:
+
+- **Eigenständiges nginx:** [`nginx.example.conf`](nginx.example.conf) — die Domain steht
+  nur als **ein** Platzhalter `SERVER_DOMAIN` drin (einmal global ersetzen, per Editor oder
+  dem dokumentierten `sed`-Befehl), dann nach `/etc/nginx/sites-available/` kopieren.
+- **SWAG (LinuxServer.io, verbreitet auf Unraid):**
+  [`swag/nuola-energy-dashboard.subdomain.conf.sample`](swag/nuola-energy-dashboard.subdomain.conf.sample)
+  — hier steht die Domain **gar nicht** drin (`server_name nuola.*;` matcht die in SWAG
+  konfigurierte Subdomain; Zertifikat und Proxy-Header kommen aus SWAGs zentralen Includes).
+  Nach `/config/nginx/proxy-confs/` kopieren, `.sample` entfernen, App-Container und SWAG ins
+  gleiche Docker-Netz. Dann reicht ein `docker restart swag`.
+
+In beiden Fällen muss `APP_BASE_URL` in der `.env` auf die öffentliche Adresse zeigen, über
+die der Proxy die App erreichbar macht (der Host-Check der App gleicht dagegen ab).
 
 Wichtig für den Brute-Force-Schutz: nginx **muss** `X-Forwarded-For`/`X-Real-IP` korrekt
 setzen (in der Vorlage enthalten), da der App-seitige Rate-Limiter die Client-IP daraus

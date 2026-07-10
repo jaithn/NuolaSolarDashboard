@@ -1,7 +1,7 @@
 function layout(title: string, bodyHtml: string): string {
   return `
-    <div style="font-family: system-ui, sans-serif; max-width: 32rem; margin: 0 auto; color: #0f172a;">
-      <h2 style="color: #0f766e;">${title}</h2>
+    <div style="font-family: 'IBM Plex Sans', system-ui, sans-serif; max-width: 32rem; margin: 0 auto; color: #1c1c21;">
+      <h2 style="color: #a2762b;">${title}</h2>
       ${bodyHtml}
       <p style="color: #64748b; font-size: 0.8rem; margin-top: 2rem;">Nuola Solar GbR</p>
     </div>

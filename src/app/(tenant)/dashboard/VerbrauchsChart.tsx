@@ -10,7 +10,8 @@ export function VerbrauchsChart({ daten }: { daten: { label: string; verbrauchKw
         <XAxis dataKey="label" fontSize={12} />
         <YAxis fontSize={12} unit=" kWh" />
         <Tooltip formatter={(value: number) => [`${value.toFixed(2)} kWh`, "Verbrauch"]} />
-        <Bar dataKey="verbrauchKwh" fill="#0f766e" radius={[4, 4, 0, 0]} />
+        {/* Solar Gold laut Nuola Style Guide */}
+        <Bar dataKey="verbrauchKwh" fill="#d9a441" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

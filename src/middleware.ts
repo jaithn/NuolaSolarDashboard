@@ -16,8 +16,8 @@ function wrongHostResponse(appBaseUrl: string, expectedHost: string, actualHost:
   const html = `<!doctype html>
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Falsche Adresse</title></head>
-<body style="font-family: system-ui, sans-serif; max-width: 36rem; margin: 3rem auto; padding: 0 1rem; color: #0f172a;">
-  <h1 style="color:#0f766e;">Falsche Adresse</h1>
+<body style="font-family: 'IBM Plex Sans', system-ui, sans-serif; max-width: 36rem; margin: 3rem auto; padding: 0 1rem; color: #1c1c21;">
+  <h1 style="color:#a2762b;">Falsche Adresse</h1>
   <p>Dieses Portal ist für die Adresse <strong>${escapeHtml(expectedHost)}</strong> konfiguriert,
   wurde aber über <strong>${escapeHtml(actualHost)}</strong> aufgerufen.</p>
   <p>Bitte rufen Sie das Portal über die konfigurierte Adresse auf:
