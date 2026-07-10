@@ -12,7 +12,7 @@ function requireEnv(name: string): string {
 
 /**
  * Freigabe-Workflow: generiert (falls noch nicht geschehen) das PDF, macht
- * die Rechnung im Mieter-Dashboard sichtbar und verschickt sie per E-Mail -
+ * die Rechnung im Mieterbereich sichtbar und verschickt sie per E-Mail -
  * beides in einem Schritt, wie im Auftrag als gemeinsamer Freigabe-Vorgang
  * beschrieben. Einmal versendete Rechnungen sind unveraenderlich (siehe
  * Auftrag: Korrekturen nur ueber Stornorechnung + neue Rechnung).

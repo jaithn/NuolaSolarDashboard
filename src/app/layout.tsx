@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Nuola Mieter-Dashboard",
+  title: "Nuola Energy Dashboard",
   description: "Stromverbrauchs- und Abrechnungsportal der Nuola Solar GbR",
 };
 

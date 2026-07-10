@@ -1,9 +1,9 @@
 services:
-  nuola-mieter-dashboard:
+  nuola-energy-dashboard:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: nuola-mieter-dashboard
+    container_name: nuola-energy-dashboard
     restart: unless-stopped
     ports:
       # Nur auf localhost binden: die App ist ausschliesslich ueber den
@@ -14,9 +14,9 @@ services:
     env_file:
       - .env
     volumes:
-      - nuola-mieter-dashboard-data:/app/data
-      - nuola-mieter-dashboard-uploads:/app/public/uploads
+      - nuola-energy-dashboard-data:/app/data
+      - nuola-energy-dashboard-uploads:/app/public/uploads
 
 volumes:
-  nuola-mieter-dashboard-data:
-  nuola-mieter-dashboard-uploads:
+  nuola-energy-dashboard-data:
+  nuola-energy-dashboard-uploads:

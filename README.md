@@ -1,4 +1,4 @@
-# Nuola Mieter-Dashboard
+# Nuola Energy Dashboard
 
 Webanwendung für die Nuola Solar GbR: erfasst den Stromverbrauch mehrerer Shelly Pro 3EM
 Messgeräte über die **Shelly Cloud API**, zeigt Mietparteien ihren Verbrauch in einem
@@ -7,8 +7,8 @@ MwSt.-Ausweisung, Abschlagsverrechnung und Schlussrechnung bei Auszug) als PDF.
 
 ## Architektur (Kurzüberblick)
 
-- **Ein Image, ein Container (Service `nuola-mieter-dashboard`)**: Next.js Full-Stack-App
-  (Admin-Bereich, Mieter-Dashboard, Rechnungserstellung) und der Shelly-Polling-Worker
+- **Ein Image, ein Container (Service `nuola-energy-dashboard`)**: Next.js Full-Stack-App
+  (Admin-Bereich, Mieterbereich, Rechnungserstellung) und der Shelly-Polling-Worker
   laufen als zwei Prozesse gemeinsam in diesem einen Container (siehe
   `docker-entrypoint.sh`). Stirbt einer der beiden Prozesse, beendet sich der Container
   komplett, damit `restart: unless-stopped` beide gemeinsam neu startet.
@@ -25,14 +25,14 @@ Kommentare in `prisma/schema.prisma`.
 Bei jedem Push nach `main` baut `.github/workflows/docker-publish.yml` das Image und
 veröffentlicht es automatisch unter:
 
-- `ghcr.io/jaithn/nuola-mieter-dashboard:latest`
+- `ghcr.io/jaithn/nuola-energy-dashboard:latest`
 
 Damit der Workflow Pakete veröffentlichen darf, muss im Repo unter **Settings → Actions →
 General → Workflow permissions** die Option **"Read and write permissions"** aktiviert sein
 (sonst schlägt der Push zur Registry mit 403 fehl).
 
 Um das fertige Image statt eines lokalen Builds zu nutzen, in `docker-compose.yml` den
-`build:`-Block durch `image: ghcr.io/jaithn/nuola-mieter-dashboard:latest` ersetzen (ggf.
+`build:`-Block durch `image: ghcr.io/jaithn/nuola-energy-dashboard:latest` ersetzen (ggf.
 vorher `docker login ghcr.io`, falls das Repo/die Packages privat sind).
 
 ## Setup
@@ -50,12 +50,12 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-Beim ersten Start legt der `nuola-mieter-dashboard`-Container automatisch das Datenbankschema
+Beim ersten Start legt der `nuola-energy-dashboard`-Container automatisch das Datenbankschema
 an (`prisma db push`, siehe `docker-entrypoint.sh`). Danach einmalig den initialen
 Admin-Zugang samt Einmal-Passwort erzeugen:
 
 ```bash
-docker compose exec nuola-mieter-dashboard npx prisma db seed
+docker compose exec nuola-energy-dashboard npx prisma db seed
 ```
 
 Die Ausgabe enthält Benutzername (`admin`) und ein zufälliges Einmal-Passwort — bitte
@@ -70,8 +70,23 @@ automatisch übernommen. Würde eine Änderung Daten löschen, bricht der Start 
 dann bewusst und manuell bestätigen:
 
 ```bash
-docker compose exec nuola-mieter-dashboard npx prisma db push --accept-data-loss
+docker compose exec nuola-energy-dashboard npx prisma db push --accept-data-loss
 ```
+
+## Reverse-Proxy (nginx)
+
+Der Container lauscht nur auf `127.0.0.1:3000`; nach außen (TLS, Domain) geht es über einen
+vorgelagerten nginx. Eine fertige, kommentierte Vorlage liegt unter
+[`nginx.example.conf`](nginx.example.conf) — Domain und Zertifikatspfade anpassen, dann nach
+`/etc/nginx/sites-available/` kopieren und aktivieren.
+
+Wichtig für den Brute-Force-Schutz: nginx **muss** `X-Forwarded-For`/`X-Real-IP` korrekt
+setzen (in der Vorlage enthalten), da der App-seitige Rate-Limiter die Client-IP daraus
+ableitet. Der App-Code vertraut bewusst nur dem von nginx gesetzten `X-Real-IP` bzw. dem
+äußersten `X-Forwarded-For`-Eintrag, sodass ein vom Client mitgeschickter Wert ihn nicht
+austricksen kann — Voraussetzung ist, dass der App-Port nicht direkt aus dem Netz erreichbar
+ist (siehe `127.0.0.1`-Bind in `docker-compose.yml`). HSTS gehört ebenfalls in den nginx
+(nicht in die App), da dort TLS terminiert.
 
 ## Environment-Variablen
 
@@ -184,6 +199,6 @@ Shelly-Cloud-Antworten und den Passwort-Reset-Flow.
   zugeordnet werden, falls er mehrere Mieterkreise gemeinsam betrifft.
 - **Rechnungen**: Entwurf erstellen (Verbrauch, Steuersplitting, Abschlagsverrechnung,
   PDF werden automatisch berechnet/generiert) → prüfen → "Freigeben & versenden" (macht
-  die Rechnung im Mieter-Dashboard sichtbar und verschickt sie per E-Mail mit PDF-Anhang).
+  die Rechnung im Mieterbereich sichtbar und verschickt sie per E-Mail mit PDF-Anhang).
 - **Einstellungen**: Firmenstammdaten (Anschrift, Steuernummer/USt-IdNr., Bankverbindung)
   und Rechnungs-Designvorlage (Logo-Upload, Farben, Fußzeile).

@@ -10,7 +10,7 @@ env:
   # Feste, kleingeschriebene Image-Namen (Docker/OCI erlaubt keine Grossbuch-
   # staben) statt sich auf ${{ github.repository }} zu verlassen.
   IMAGE_OWNER: jaithn
-  IMAGE_NAME: nuola-mieter-dashboard
+  IMAGE_NAME: nuola-energy-dashboard
 
 jobs:
   build:

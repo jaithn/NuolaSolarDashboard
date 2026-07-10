@@ -100,7 +100,7 @@ export default async function RechnungDetailPage({
           <>
             <p>
               Die Rechnung ist noch ein Entwurf und für den Mieter nicht sichtbar. Nach der Freigabe wird
-              sie im Mieter-Dashboard sichtbar und automatisch per E-Mail als PDF versendet.
+              sie im Mieterbereich sichtbar und automatisch per E-Mail als PDF versendet.
             </p>
             <form action={freigebenAction}>
               <input type="hidden" name="id" value={rechnung.id} />

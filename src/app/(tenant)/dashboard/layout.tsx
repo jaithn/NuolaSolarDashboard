@@ -33,7 +33,7 @@ export default async function TenantLayout({ children }: { children: React.React
   return (
     <div className="app-shell">
       <header className="app-header">
-        <strong>Nuola Mieter-Dashboard</strong>
+        <strong>Nuola Energy Dashboard</strong>
         <nav>
           <Link href="/dashboard">Verbrauch</Link>
           <Link href="/dashboard/rechnungen">Abrechnungen</Link>

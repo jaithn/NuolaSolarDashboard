@@ -66,7 +66,7 @@ export async function createZugangForMietpartei(mietparteiId: string): Promise<{
   const loginUrl = `${requireEnv("APP_BASE_URL")}/login`;
   await sendMail({
     to: mietpartei.email,
-    subject: "Ihr Zugang zum Nuola Mieter-Dashboard",
+    subject: "Ihr Zugang zum Nuola Energy Dashboard",
     html: onboardingEmailHtml({ username, password: oneTimePassword, loginUrl }),
   });
 

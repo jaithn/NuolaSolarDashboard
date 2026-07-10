@@ -42,7 +42,7 @@ export async function requestPasswordResetAction(
         const resetUrl = `${requireEnv("APP_BASE_URL")}/reset-password/${token}`;
         await sendMail({
           to: email,
-          subject: "Passwort zurücksetzen – Nuola Mieter-Dashboard",
+          subject: "Passwort zurücksetzen – Nuola Energy Dashboard",
           html: passwordResetEmailHtml({ resetUrl }),
         });
       }
