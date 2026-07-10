@@ -10,18 +10,20 @@ export interface Monatsverbrauch {
 /** Verbrauch der letzten `anzahlMonate` Kalendermonate (inkl. aktuellem Monat), aeltester zuerst. */
 export async function getMonatsverbraeuche(einheitId: string, anzahlMonate = 12): Promise<Monatsverbrauch[]> {
   const now = new Date();
-  const monate: Monatsverbrauch[] = [];
 
-  for (let i = anzahlMonate - 1; i >= 0; i--) {
-    const monatsStart = startOfMonth(subMonths(now, i));
-    const monatsEnde = endOfMonth(monatsStart);
-    const verbrauchKwh = await verbrauchKwhFuerEinheit(einheitId, { von: monatsStart, bis: monatsEnde });
-    monate.push({
-      monat: format(monatsStart, "yyyy-MM"),
-      label: format(monatsStart, "MMM yyyy"),
-      verbrauchKwh: Math.round(verbrauchKwh * 100) / 100,
-    });
-  }
-
-  return monate;
+  // Die Monate sind unabhaengig voneinander - parallel statt sequenziell
+  // berechnen (SQLite bedient parallele Lesezugriffe problemlos). Reduziert
+  // die Dashboard-Ladezeit von 13 sequenziellen Runden auf eine.
+  return Promise.all(
+    Array.from({ length: anzahlMonate }, (_, idx) => {
+      const i = anzahlMonate - 1 - idx;
+      const monatsStart = startOfMonth(subMonths(now, i));
+      const monatsEnde = endOfMonth(monatsStart);
+      return verbrauchKwhFuerEinheit(einheitId, { von: monatsStart, bis: monatsEnde }).then((verbrauchKwh) => ({
+        monat: format(monatsStart, "yyyy-MM"),
+        label: format(monatsStart, "MMM yyyy"),
+        verbrauchKwh: Math.round(verbrauchKwh * 100) / 100,
+      }));
+    }),
+  );
 }

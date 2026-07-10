@@ -29,13 +29,20 @@ export default async function AdminHomePage({
     }),
   ]);
 
-  const geraeteMitStatus = await Promise.all(
-    geraete.map(async (g) => {
-      const letzter = await prisma.messwert.findFirst({ where: { geraetId: g.id }, orderBy: { timestamp: "desc" } });
-      const online = Boolean(letzter && now.getTime() - letzter.timestamp.getTime() < onlineSchwelleMs);
-      return { ...g, letzterMesswert: letzter, online };
-    }),
-  );
+  // Letzten Messwert-Zeitstempel je Geraet in EINER Query ermitteln (statt
+  // einer Query pro Geraet).
+  const letzteMesswerte = await prisma.messwert.groupBy({
+    by: ["geraetId"],
+    where: { geraetId: { in: geraete.map((g) => g.id) } },
+    _max: { timestamp: true },
+  });
+  const letzterTimestampProGeraet = new Map(letzteMesswerte.map((m) => [m.geraetId, m._max.timestamp]));
+
+  const geraeteMitStatus = geraete.map((g) => {
+    const letzterTimestamp = letzterTimestampProGeraet.get(g.id) ?? null;
+    const online = Boolean(letzterTimestamp && now.getTime() - letzterTimestamp.getTime() < onlineSchwelleMs);
+    return { ...g, letzterTimestamp, online };
+  });
 
   const einheiten = await prisma.einheit.findMany({
     where: sp.objektId ? { objektId: sp.objektId } : undefined,
@@ -77,7 +84,7 @@ export default async function AdminHomePage({
                     ? g.zuordnungen.map((z) => z.einheit.bezeichnung).join(", ")
                     : "–"}
                 </td>
-                <td>{g.letzterMesswert ? g.letzterMesswert.timestamp.toLocaleString("de-DE") : "–"}</td>
+                <td>{g.letzterTimestamp ? g.letzterTimestamp.toLocaleString("de-DE") : "–"}</td>
                 <td>
                   {!g.aktiv ? (
                     <span className="status-badge inaktiv">deaktiviert</span>

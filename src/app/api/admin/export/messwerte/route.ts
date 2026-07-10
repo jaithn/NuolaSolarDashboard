@@ -44,7 +44,22 @@ export async function GET(req: NextRequest) {
       timestamp: { gte: von, lte: bis },
       geraet: objektId ? { objektId } : undefined,
     },
-    include: { geraet: { include: { objekt: true, zuordnungen: { include: { einheit: true } } } } },
+    // Nur die tatsaechlich exportierten Felder selektieren - die Tabelle
+    // waechst unbegrenzt, volle Relations-Objekte je Zeile waeren unnoetig
+    // speicherintensiv.
+    select: {
+      phase: true,
+      timestamp: true,
+      energyWh: true,
+      geraet: {
+        select: {
+          bezeichnung: true,
+          deviceId: true,
+          objekt: { select: { name: true } },
+          zuordnungen: { select: { einheit: { select: { bezeichnung: true } } } },
+        },
+      },
+    },
     orderBy: { timestamp: "asc" },
   });
 

@@ -105,7 +105,11 @@ model Messwert {
   geraet ShellyGeraet @relation(fields: [geraetId], references: [id], onDelete: Cascade)
 
   @@unique([geraetId, phase, timestamp])
-  @@index([geraetId, phase, timestamp])
+  // Der Unique-Constraint oben dient zugleich als Index fuer Abfragen nach
+  // (geraetId, phase, timestamp) - ein zusaetzlicher identischer Index wuerde
+  // nur jeden Insert des Workers verteuern. Der folgende Index deckt
+  // "letzter Messwert je Geraet (ueber alle Phasen)" ab (Admin-Uebersicht).
+  @@index([geraetId, timestamp])
 }
 
 // ---------------------------------------------------------------------------
