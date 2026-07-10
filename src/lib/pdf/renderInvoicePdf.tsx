@@ -11,6 +11,13 @@ import { InvoiceDocument } from "./invoiceDocument";
 const PDF_STORAGE_DIR = path.join(process.cwd(), "data", "rechnungen");
 
 export function resolvePdfFilePath(filename: string): string {
+  // Defense in Depth: pdfPfad stammt zwar ausschliesslich aus serverseitig
+  // erzeugten Rechnungsnummern, trotzdem strikt auf einen einfachen
+  // PDF-Dateinamen ohne Pfadbestandteile beschraenken (kein Path Traversal,
+  // selbst wenn der DB-Wert manipuliert wuerde).
+  if (filename !== path.basename(filename) || !/^[A-Za-z0-9._-]+\.pdf$/.test(filename)) {
+    throw new Error(`Unzulässiger PDF-Dateiname: ${filename}`);
+  }
   return path.join(PDF_STORAGE_DIR, filename);
 }
 

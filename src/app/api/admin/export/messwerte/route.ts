@@ -3,10 +3,23 @@ import { getSession } from "@/lib/auth/getSession";
 import { prisma } from "@/lib/db";
 
 function csvEscape(value: string): string {
-  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
-    return `"${value.replace(/"/g, '""')}"`;
+  // Schutz vor CSV-/Formel-Injection: Zellen, die mit =, +, -, @ oder
+  // Steuerzeichen beginnen, wuerden von Excel/LibreOffice als Formel
+  // interpretiert - einfaches Anfuehrungszeichen voranstellen.
+  let v = value;
+  if (/^[=+\-@\t\r]/.test(v)) {
+    v = `'${v}`;
   }
-  return value;
+  if (v.includes(",") || v.includes('"') || v.includes("\n")) {
+    return `"${v.replace(/"/g, '""')}"`;
+  }
+  return v;
+}
+
+function parseDateParam(raw: string | null, fallback: Date): Date | null {
+  if (!raw) return fallback;
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 export async function GET(req: NextRequest) {
@@ -20,8 +33,11 @@ export async function GET(req: NextRequest) {
   const bisRaw = searchParams.get("bis");
   const objektId = searchParams.get("objektId") ?? undefined;
 
-  const von = vonRaw ? new Date(vonRaw) : new Date(0);
-  const bis = bisRaw ? new Date(bisRaw) : new Date();
+  const von = parseDateParam(vonRaw, new Date(0));
+  const bis = parseDateParam(bisRaw, new Date());
+  if (!von || !bis) {
+    return NextResponse.json({ error: "Ungültiger Datumsparameter." }, { status: 400 });
+  }
 
   const messwerte = await prisma.messwert.findMany({
     where: {
