@@ -22,7 +22,11 @@ RUN npm run build
 
 FROM base AS runner
 ENV NODE_ENV=production
-COPY --from=deps /app/node_modules ./node_modules
+# WICHTIG: node_modules aus der BUILDER-Stage (nicht deps): nur dort ist der
+# Prisma-Client generiert (deps installiert mit --ignore-scripts). Mit den
+# deps-node_modules wuerde der Worker beim Start mit "@prisma/client did not
+# initialize yet" abstuerzen.
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
