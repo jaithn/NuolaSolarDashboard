@@ -1,25 +1,37 @@
 #!/bin/sh
 set -e
 
-# Wendet das aktuelle Prisma-Schema auf die SQLite-Datenbank an. Da es sich um
-# eine dateibasierte SQLite-DB in einem einzelnen Compose-Volume handelt,
-# genuegt "db push" statt eines separaten Migrationsverzeichnisses - das
-# Schema in prisma/schema.prisma ist die alleinige Quelle der Wahrheit.
-#
-# Bewusst OHNE --accept-data-loss: bei rein additiven Schemaaenderungen (neue
-# Tabellen/Spalten) laeuft das automatisch durch. Wuerde eine Aenderung Daten
-# loeschen (z.B. Spalte entfernt/Typ geaendert), bricht der Container-Start
-# hier ab statt still Daten zu verlieren - dann manuell pruefen und per
-# `docker compose exec app npx prisma db push --accept-data-loss` bestaetigen.
-npx prisma db push --skip-generate
+# Ziel-User/-Gruppe fuer den unprivilegierten App-Betrieb. Default 1000:1000;
+# auf Unraid, wo der Appdata-Ordner meist "nobody:users" gehoert, kann man im
+# Container-Template PUID=99 und PGID=100 setzen.
+PUID="${PUID:-1000}"
+PGID="${PGID:-1000}"
+
+# Erster Durchlauf als root: die (bei Bind-Mounts oft fremd-owned) Volume-
+# Ordner dem Ziel-User uebereignen, damit SQLite und Logo-Uploads schreibbar
+# sind, dann per gosu unprivilegiert dasselbe Skript erneut ausfuehren.
+if [ "$(id -u)" = "0" ]; then
+  chown -R "$PUID:$PGID" /app/data /app/public/uploads 2>/dev/null || \
+    echo "[entrypoint] WARN: konnte /app/data bzw. /app/public/uploads nicht chownen"
+  exec gosu "$PUID:$PGID" "$0" "$@"
+fi
+
+# --- ab hier unprivilegiert (PUID:PGID) --------------------------------------
+
+# HOME auf ein sicher beschreibbares Verzeichnis setzen: bei frei gewaehltem
+# PUID existiert evtl. kein Home-Verzeichnis, sonst wuerden prisma/tsx beim
+# Cache-Schreiben scheitern. Direkte Binary-Aufrufe statt "npx" vermeiden
+# zusaetzlich jeglichen npm-Cache-Zugriff.
+export HOME=/tmp
+
+# Schema auf die SQLite-DB anwenden (siehe README: bewusst ohne
+# --accept-data-loss; bricht bei potenziell destruktiven Aenderungen ab).
+./node_modules/.bin/prisma db push --skip-generate
 
 # Ein Image, ein Container: Web-Server und Shelly-Polling-Worker laufen
-# gemeinsam in diesem Container statt in getrennten Services. Beide werden im
-# Hintergrund gestartet; stirbt einer der beiden Prozesse, beendet sich der
-# gesamte Container (statt einen Ausfall unbemerkt weiterlaufen zu lassen) -
-# "restart: unless-stopped" in Docker Compose startet dann beide gemeinsam
-# neu. POSIX-sh-kompatibel (kein bash-spezifisches "wait -n" noetig).
-npx tsx src/worker/index.ts &
+# gemeinsam. Stirbt einer der beiden Prozesse, beendet sich der Container
+# (restart: unless-stopped startet dann beide neu). POSIX-sh-kompatibel.
+./node_modules/.bin/tsx src/worker/index.ts &
 WORKER_PID=$!
 
 node server.js &

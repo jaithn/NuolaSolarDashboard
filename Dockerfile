@@ -22,6 +22,9 @@ RUN npm run build
 
 FROM base AS runner
 ENV NODE_ENV=production
+# gosu: erlaubt dem als root gestarteten Entrypoint, nach dem Anpassen der
+# Volume-Rechte auf einen unprivilegierten User herunterzuschalten.
+RUN apt-get update -y && apt-get install -y gosu && rm -rf /var/lib/apt/lists/*
 # WICHTIG: node_modules aus der BUILDER-Stage (nicht deps): nur dort ist der
 # Prisma-Client generiert (deps installiert mit --ignore-scripts). Mit den
 # deps-node_modules wuerde der Worker beim Start mit "@prisma/client did not
@@ -41,12 +44,13 @@ COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 
-# Non-Root: Web-Server und Worker brauchen keine Root-Rechte. Die beiden
-# Volume-Verzeichnisse werden hier mit passendem Eigentuemer angelegt, damit
-# frisch initialisierte Named Volumes die Ownership uebernehmen.
-RUN mkdir -p /app/data /app/public/uploads \
-  && chown -R node:node /app/data /app/public/uploads /app/.next
-USER node
+# Volume-Verzeichnisse anlegen. Der Container startet als root, damit der
+# Entrypoint die (bei Bind-Mounts oft fremd-owned) Volume-Ordner dem Ziel-User
+# uebereignen kann - danach wird per gosu auf PUID:PGID (Default 1000:1000,
+# auf Unraid z.B. 99:100) heruntergeschaltet, sodass die App unprivilegiert
+# laeuft. Ohne diese Laufzeit-Anpassung scheitert SQLite auf Unraid mit
+# "attempt to write a readonly database".
+RUN mkdir -p /app/data /app/public/uploads
 
 EXPOSE 3000
 ENTRYPOINT ["./docker-entrypoint.sh"]

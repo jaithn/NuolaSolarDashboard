@@ -97,6 +97,7 @@ ist (siehe `127.0.0.1`-Bind in `docker-compose.yml`). HSTS gehört ebenfalls in 
 | `APP_BASE_URL` | Basis-URL für Links in E-Mails (Passwort-Reset etc.) |
 | `SHELLY_CLOUD_AUTH_KEY` | Shelly Cloud Auth-Key (account-weit). Der Cloud-Server ist je Gerät im Admin-Bereich hinterlegt, nicht global. |
 | `POLL_INTERVAL_MINUTES` | Abfrageintervall des Worker-Service |
+| `PUID` / `PGID` | User-/Gruppen-ID, unter der die App läuft (Default 1000/1000). Bei Bind-Mounts auf **Unraid** auf `99`/`100` setzen, damit der Container in den Appdata-Ordner schreiben darf. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | SMTP-Zugangsdaten für Onboarding-, Reset- und Rechnungs-E-Mails |
 
 ## Entwicklung ohne Docker
