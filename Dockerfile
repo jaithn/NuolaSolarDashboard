@@ -37,5 +37,12 @@ COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 
+# Non-Root: Web-Server und Worker brauchen keine Root-Rechte. Die beiden
+# Volume-Verzeichnisse werden hier mit passendem Eigentuemer angelegt, damit
+# frisch initialisierte Named Volumes die Ownership uebernehmen.
+RUN mkdir -p /app/data /app/public/uploads \
+  && chown -R node:node /app/data /app/public/uploads /app/.next
+USER node
+
 EXPOSE 3000
 ENTRYPOINT ["./docker-entrypoint.sh"]

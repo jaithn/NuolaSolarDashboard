@@ -1,0 +1,20 @@
+# Build-Kontext klein halten und sicherstellen, dass niemals Secrets oder
+# lokale Daten in Image-Layern landen (COPY . . in der Builder-Stage).
+node_modules
+.next
+.git
+.github
+.claude
+data
+public/uploads/*
+!public/uploads/.gitkeep
+.env
+.env.*
+*.log
+coverage
+tests
+README.md
+claude-code-prompt-shelly-dashboard.md
+docker-compose.yml
+Dockerfile
+.dockerignore

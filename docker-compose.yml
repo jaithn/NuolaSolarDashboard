@@ -6,7 +6,11 @@ services:
     container_name: nuola-mieter-dashboard
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      # Nur auf localhost binden: die App ist ausschliesslich ueber den
+      # vorgelagerten nginx erreichbar, nicht direkt aus dem Internet/LAN.
+      # (Falls nginx auf einem ANDEREN Host laeuft: auf die interne IP
+      # des nginx-Hosts einschraenken statt 127.0.0.1.)
+      - "127.0.0.1:3000:3000"
     env_file:
       - .env
     volumes:
