@@ -31,7 +31,12 @@ export function getSessionOptions(): SessionOptions {
     ttl: 60 * 60 * 24 * 7,
     cookieOptions: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      // Standard: im Produktivbetrieb "Secure" (Cookie nur ueber HTTPS). Hinter
+      // dem vorgelagerten nginx mit HTTPS ist das korrekt und soll so bleiben.
+      // COOKIE_INSECURE=true schaltet es NUR fuer internes Testen ueber http://
+      // (z.B. direkter LAN-IP-Zugriff ohne TLS) ab - Browser speichern ein
+      // "Secure"-Cookie sonst nicht, wodurch der Login sofort verloren geht.
+      secure: process.env.COOKIE_INSECURE === "true" ? false : process.env.NODE_ENV === "production",
       sameSite: "lax",
     },
   };
