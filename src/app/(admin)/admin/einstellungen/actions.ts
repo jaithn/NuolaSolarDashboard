@@ -48,7 +48,28 @@ export async function updateFirmenStammdatenAction(
 }
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
-const ALLOWED_LOGO_TYPES = new Set(["image/png", "image/jpeg", "image/svg+xml"]);
+
+// Bewusst KEIN SVG: SVG-Dateien koennen eingebettetes JavaScript enthalten und
+// wuerden unter /uploads same-origin ausgeliefert (Stored XSS). Zudem kann
+// @react-pdf/renderer SVG-Dateien in <Image> ohnehin nicht rendern.
+const ALLOWED_LOGO_TYPES: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+};
+const MAX_LOGO_BYTES = 2 * 1024 * 1024; // 2 MB
+
+const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+
+/** Prueft die Magic Bytes, damit der (client-kontrollierte) MIME-Typ nicht allein entscheidet. */
+function hasValidImageMagicBytes(buffer: Buffer, mimeType: string): boolean {
+  if (mimeType === "image/png") {
+    return buffer.length > 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  }
+  if (mimeType === "image/jpeg") {
+    return buffer.length > 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+  }
+  return false;
+}
 
 export async function updateDesignvorlageAction(
   _prevState: SettingsFormState,
@@ -61,15 +82,25 @@ export async function updateDesignvorlageAction(
   const fusszeileText = String(formData.get("fusszeileText") ?? "").trim();
   const logo = formData.get("logo");
 
+  if (!HEX_COLOR.test(primaerfarbe) || !HEX_COLOR.test(sekundaerfarbe)) {
+    return { error: "Farben müssen im Format #rrggbb angegeben werden." };
+  }
+
   let logoPfad: string | undefined;
   if (logo instanceof File && logo.size > 0) {
-    if (!ALLOWED_LOGO_TYPES.has(logo.type)) {
-      return { error: "Logo muss PNG, JPEG oder SVG sein." };
+    const ext = ALLOWED_LOGO_TYPES[logo.type];
+    if (!ext) {
+      return { error: "Logo muss PNG oder JPEG sein." };
+    }
+    if (logo.size > MAX_LOGO_BYTES) {
+      return { error: "Logo darf höchstens 2 MB groß sein." };
+    }
+    const buffer = Buffer.from(await logo.arrayBuffer());
+    if (!hasValidImageMagicBytes(buffer, logo.type)) {
+      return { error: "Die Datei ist keine gültige PNG-/JPEG-Bilddatei." };
     }
     await mkdir(UPLOAD_DIR, { recursive: true });
-    const ext = logo.type === "image/svg+xml" ? "svg" : logo.type === "image/png" ? "png" : "jpg";
     const filename = `logo-${Date.now()}.${ext}`;
-    const buffer = Buffer.from(await logo.arrayBuffer());
     await writeFile(path.join(UPLOAD_DIR, filename), buffer);
     logoPfad = `/uploads/${filename}`;
   }

@@ -26,7 +26,7 @@ export function DesignvorlageForm(props: {
       <div className="form-grid">
         <div className="field">
           <label htmlFor="logo">Logo hochladen (PNG/JPEG/SVG)</label>
-          <input id="logo" name="logo" type="file" accept="image/png,image/jpeg,image/svg+xml" />
+          <input id="logo" name="logo" type="file" accept="image/png,image/jpeg" />
         </div>
         <div className="field">
           <label htmlFor="primaerfarbe">Primärfarbe</label>
