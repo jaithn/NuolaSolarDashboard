@@ -3,6 +3,7 @@
 import { requireAdmin } from "@/lib/auth/guards";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { createZugangForMietpartei } from "@/lib/auth/onboarding";
 
@@ -27,6 +28,12 @@ function parseMietparteiInput(formData: FormData) {
 
   if (!einheitId || !name || !email || !einzugsdatumRaw || !arbeitspreisSteuersatzId) {
     return { error: "Bitte alle Pflichtfelder ausfüllen." } as const;
+  }
+  // Strikte E-Mail-Validierung: verhindert u.a. Zeilenumbrueche/Sonderzeichen
+  // in der Empfaengeradresse (SMTP-Header-Injection) bei Onboarding- und
+  // Rechnungsmails.
+  if (!z.string().email().max(254).safeParse(email).success) {
+    return { error: "Die E-Mail-Adresse ist ungültig." } as const;
   }
   if (!Number.isFinite(arbeitspreisNetto) || arbeitspreisNetto < 0) {
     return { error: "Der Arbeitspreis ist ungültig." } as const;

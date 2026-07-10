@@ -110,7 +110,9 @@ export async function fetchDeviceStatus(
 
   let res: Response;
   try {
-    res = await fetch(url, { method: "GET" });
+    // Timeout, damit ein haengender Cloud-Request nicht den gesamten
+    // Poll-Zyklus des Workers blockiert.
+    res = await fetch(url, { method: "GET", signal: AbortSignal.timeout(15_000) });
   } catch (err) {
     throw new ShellyApiError(`Netzwerkfehler beim Abruf von Gerät ${device.deviceId}`, device.deviceId, err);
   }
