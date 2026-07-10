@@ -1,5 +1,6 @@
 "use server";
 
+import { requireAdmin } from "@/lib/auth/guards";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
@@ -12,6 +13,8 @@ export async function createObjektAction(
   _prevState: ObjektFormState,
   formData: FormData,
 ): Promise<ObjektFormState> {
+  await requireAdmin();
+
   const name = String(formData.get("name") ?? "").trim();
   const adresse = String(formData.get("adresse") ?? "").trim();
   if (!name || !adresse) return { error: "Bitte Name und Adresse angeben." };
@@ -25,6 +28,8 @@ export async function updateObjektAction(
   _prevState: ObjektFormState,
   formData: FormData,
 ): Promise<ObjektFormState> {
+  await requireAdmin();
+
   const id = String(formData.get("id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   const adresse = String(formData.get("adresse") ?? "").trim();
@@ -37,6 +42,8 @@ export async function updateObjektAction(
 }
 
 export async function deleteObjektAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+
   const id = String(formData.get("id") ?? "");
   const [einheitenCount, geraeteCount] = await Promise.all([
     prisma.einheit.count({ where: { objektId: id } }),
@@ -56,6 +63,8 @@ export async function createEinheitAction(
   _prevState: ObjektFormState,
   formData: FormData,
 ): Promise<ObjektFormState> {
+  await requireAdmin();
+
   const objektId = String(formData.get("objektId") ?? "");
   const bezeichnung = String(formData.get("bezeichnung") ?? "").trim();
   if (!bezeichnung) return { error: "Bitte eine Bezeichnung angeben." };
@@ -66,6 +75,8 @@ export async function createEinheitAction(
 }
 
 export async function deleteEinheitAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+
   const id = String(formData.get("id") ?? "");
   const objektId = String(formData.get("objektId") ?? "");
 

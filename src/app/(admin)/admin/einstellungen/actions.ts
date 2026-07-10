@@ -1,5 +1,6 @@
 "use server";
 
+import { requireAdmin } from "@/lib/auth/guards";
 import { revalidatePath } from "next/cache";
 import { writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
@@ -13,6 +14,8 @@ export async function updateFirmenStammdatenAction(
   _prevState: SettingsFormState,
   formData: FormData,
 ): Promise<SettingsFormState> {
+  await requireAdmin();
+
   const name = String(formData.get("name") ?? "").trim();
   const anschrift = String(formData.get("anschrift") ?? "").trim();
   const steuernummer = String(formData.get("steuernummer") ?? "").trim();
@@ -51,6 +54,8 @@ export async function updateDesignvorlageAction(
   _prevState: SettingsFormState,
   formData: FormData,
 ): Promise<SettingsFormState> {
+  await requireAdmin();
+
   const primaerfarbe = String(formData.get("primaerfarbe") ?? "#0f766e");
   const sekundaerfarbe = String(formData.get("sekundaerfarbe") ?? "#0f172a");
   const fusszeileText = String(formData.get("fusszeileText") ?? "").trim();

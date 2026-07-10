@@ -1,5 +1,6 @@
 "use server";
 
+import { requireAdmin } from "@/lib/auth/guards";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { erstelleRechnungsentwurf } from "@/lib/billing/generateInvoice";
@@ -14,6 +15,8 @@ export async function createRechnungsentwurfAction(
   _prevState: RechnungFormState,
   formData: FormData,
 ): Promise<RechnungFormState> {
+  await requireAdmin();
+
   const mietparteiId = String(formData.get("mietparteiId") ?? "");
   const typ = String(formData.get("typ") ?? "JAHRESABRECHNUNG") as "JAHRESABRECHNUNG" | "SCHLUSSRECHNUNG";
   const vonRaw = String(formData.get("von") ?? "");
@@ -42,6 +45,8 @@ export async function createRechnungsentwurfAction(
 }
 
 export async function freigebenAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+
   const id = String(formData.get("id") ?? "");
 
   let errorMessage: string | null = null;

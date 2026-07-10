@@ -1,5 +1,6 @@
 "use server";
 
+import { requireAdmin } from "@/lib/auth/guards";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 
@@ -11,6 +12,8 @@ export async function createSteuersatzAction(
   _prevState: SteuersatzFormState,
   formData: FormData,
 ): Promise<SteuersatzFormState> {
+  await requireAdmin();
+
   const bezeichnung = String(formData.get("bezeichnung") ?? "").trim();
   const prozentsatz = Number(formData.get("prozentsatz"));
   const gueltigAbRaw = String(formData.get("gueltigAb") ?? "");

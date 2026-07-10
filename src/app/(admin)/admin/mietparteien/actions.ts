@@ -1,5 +1,6 @@
 "use server";
 
+import { requireAdmin } from "@/lib/auth/guards";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
@@ -53,6 +54,8 @@ export async function createMietparteiAction(
   _prevState: MietparteiFormState,
   formData: FormData,
 ): Promise<MietparteiFormState> {
+  await requireAdmin();
+
   const parsed = parseMietparteiInput(formData);
   if ("error" in parsed) return parsed;
 
@@ -65,6 +68,8 @@ export async function updateMietparteiAction(
   _prevState: MietparteiFormState,
   formData: FormData,
 ): Promise<MietparteiFormState> {
+  await requireAdmin();
+
   const id = String(formData.get("id") ?? "");
   const parsed = parseMietparteiInput(formData);
   if ("error" in parsed) return parsed;
@@ -83,6 +88,8 @@ export async function createAbschlagAction(
   _prevState: AbschlagFormState,
   formData: FormData,
 ): Promise<AbschlagFormState> {
+  await requireAdmin();
+
   const mietparteiId = String(formData.get("mietparteiId") ?? "");
   const nettoBetrag = Number(formData.get("nettoBetrag"));
   const steuersatzId = String(formData.get("steuersatzId") ?? "");
@@ -108,6 +115,8 @@ export async function createAbschlagAction(
 }
 
 export async function createZugangAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+
   const mietparteiId = String(formData.get("mietparteiId") ?? "");
 
   // WICHTIG: redirect() wirft intern einen speziellen NEXT_REDIRECT-Fehler,

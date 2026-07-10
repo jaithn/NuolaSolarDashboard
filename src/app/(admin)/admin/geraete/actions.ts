@@ -1,5 +1,6 @@
 "use server";
 
+import { requireAdmin } from "@/lib/auth/guards";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
@@ -12,6 +13,8 @@ export async function createGeraetAction(
   _prevState: GeraetFormState,
   formData: FormData,
 ): Promise<GeraetFormState> {
+  await requireAdmin();
+
   const objektId = String(formData.get("objektId") ?? "");
   const deviceId = String(formData.get("deviceId") ?? "").trim();
   const serverHost = String(formData.get("serverHost") ?? "").trim();
@@ -37,6 +40,8 @@ export async function updateGeraetAction(
   _prevState: GeraetFormState,
   formData: FormData,
 ): Promise<GeraetFormState> {
+  await requireAdmin();
+
   const id = String(formData.get("id") ?? "");
   const objektId = String(formData.get("objektId") ?? "");
   const deviceId = String(formData.get("deviceId") ?? "").trim();
@@ -62,6 +67,8 @@ export async function updateGeraetAction(
 }
 
 export async function toggleGeraetAktivAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+
   const id = String(formData.get("id") ?? "");
   const geraet = await prisma.shellyGeraet.findUniqueOrThrow({ where: { id } });
 
@@ -79,6 +86,8 @@ export async function toggleGeraetAktivAction(formData: FormData): Promise<void>
 }
 
 export async function deleteGeraetAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+
   const id = String(formData.get("id") ?? "");
   const messwerteCount = await prisma.messwert.count({ where: { geraetId: id } });
 

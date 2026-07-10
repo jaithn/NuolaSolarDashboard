@@ -1,5 +1,6 @@
 "use server";
 
+import { requireAdmin } from "@/lib/auth/guards";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 
@@ -11,6 +12,8 @@ export async function createZuordnungAction(
   _prevState: ZuordnungFormState,
   formData: FormData,
 ): Promise<ZuordnungFormState> {
+  await requireAdmin();
+
   const einheitId = String(formData.get("einheitId") ?? "");
   const shellyGeraetId = String(formData.get("shellyGeraetId") ?? "");
   const modus = String(formData.get("modus") ?? "ADDIEREN") as "ADDIEREN" | "SUBTRAHIEREN";
@@ -32,6 +35,8 @@ export async function createZuordnungAction(
 }
 
 export async function deleteZuordnungAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+
   const id = String(formData.get("id") ?? "");
   const einheitId = String(formData.get("einheitId") ?? "");
 
