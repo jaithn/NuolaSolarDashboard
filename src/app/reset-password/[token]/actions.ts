@@ -3,6 +3,8 @@
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/auth/password";
 import { findValidPasswordResetToken, markPasswordResetTokenUsed } from "@/lib/auth/resetToken";
+import { consumeRateLimit } from "@/lib/rateLimit";
+import { getClientIp } from "@/lib/clientIp";
 
 export interface ResetPasswordState {
   error?: string;
@@ -18,6 +20,12 @@ export async function resetPasswordAction(
   const token = String(formData.get("token") ?? "");
   const newPassword = String(formData.get("newPassword") ?? "");
   const newPasswordRepeat = String(formData.get("newPasswordRepeat") ?? "");
+
+  // Erschwert das Durchprobieren von Tokens (zusaetzlich zu 256 Bit Entropie).
+  const ip = await getClientIp();
+  if (!consumeRateLimit(`reset-submit:${ip}`, 10, 60 * 60 * 1000)) {
+    return { error: "Zu viele Versuche. Bitte versuchen Sie es später erneut." };
+  }
 
   const record = await findValidPasswordResetToken(token);
   if (!record) {
