@@ -1,17 +1,18 @@
 services:
-  app:
+  nuola-mieter-dashboard:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: nuola-mieter-dashboard
     restart: unless-stopped
     ports:
       - "3000:3000"
     env_file:
       - .env
     volumes:
-      - sqlite-data:/app/data
-      - uploads:/app/public/uploads
+      - nuola-mieter-dashboard-data:/app/data
+      - nuola-mieter-dashboard-uploads:/app/public/uploads
 
 volumes:
-  sqlite-data:
-  uploads:
+  nuola-mieter-dashboard-data:
+  nuola-mieter-dashboard-uploads:

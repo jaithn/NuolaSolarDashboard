@@ -7,15 +7,15 @@ MwSt.-Ausweisung, Abschlagsverrechnung und Schlussrechnung bei Auszug) als PDF.
 
 ## Architektur (Kurzüberblick)
 
-- **Ein Image, ein Container (`app`)**: Next.js Full-Stack-App (Admin-Bereich,
-  Mieter-Dashboard, Rechnungserstellung) und der Shelly-Polling-Worker laufen als zwei
-  Prozesse gemeinsam in diesem einen Container (siehe `docker-entrypoint.sh`). Stirbt
-  einer der beiden Prozesse, beendet sich der Container komplett, damit `restart:
-  unless-stopped` beide gemeinsam neu startet.
+- **Ein Image, ein Container (Service `nuola-mieter-dashboard`)**: Next.js Full-Stack-App
+  (Admin-Bereich, Mieter-Dashboard, Rechnungserstellung) und der Shelly-Polling-Worker
+  laufen als zwei Prozesse gemeinsam in diesem einen Container (siehe
+  `docker-entrypoint.sh`). Stirbt einer der beiden Prozesse, beendet sich der Container
+  komplett, damit `restart: unless-stopped` beide gemeinsam neu startet.
 - **SQLite** – dateibasierte DB in einem Docker-Volume, Zugriff über Prisma ORM (bei
   Bedarf später auf PostgreSQL wechselbar, da das Schema keine SQLite-Spezifika nutzt).
-- Kein eigener Reverse-Proxy: ein bereits vorhandener externer nginx spricht `app` auf
-  Port 3000 an.
+- Kein eigener Reverse-Proxy: ein bereits vorhandener externer nginx spricht den Container
+  auf Port 3000 an.
 
 Details zu Architektur, Datenmodell und Annahmen: siehe `.claude` Plan-Historie bzw. die
 Kommentare in `prisma/schema.prisma`.
@@ -50,12 +50,12 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-Beim ersten Start legt der `app`-Container automatisch das Datenbankschema an
-(`prisma db push`, siehe `docker-entrypoint.sh`). Danach einmalig den initialen
+Beim ersten Start legt der `nuola-mieter-dashboard`-Container automatisch das Datenbankschema
+an (`prisma db push`, siehe `docker-entrypoint.sh`). Danach einmalig den initialen
 Admin-Zugang samt Einmal-Passwort erzeugen:
 
 ```bash
-docker compose exec app npx prisma db seed
+docker compose exec nuola-mieter-dashboard npx prisma db seed
 ```
 
 Die Ausgabe enthält Benutzername (`admin`) und ein zufälliges Einmal-Passwort — bitte
@@ -70,7 +70,7 @@ automatisch übernommen. Würde eine Änderung Daten löschen, bricht der Start 
 dann bewusst und manuell bestätigen:
 
 ```bash
-docker compose exec app npx prisma db push --accept-data-loss
+docker compose exec nuola-mieter-dashboard npx prisma db push --accept-data-loss
 ```
 
 ## Environment-Variablen
