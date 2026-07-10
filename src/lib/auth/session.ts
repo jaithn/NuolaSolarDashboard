@@ -26,7 +26,11 @@ export function getSessionOptions(): SessionOptions {
   return {
     password: requireEnv("SESSION_SECRET"),
     cookieName: "nuola_session",
+    // Explizite Session-Lebensdauer (7 Tage) statt iron-session-Default (14):
+    // begrenzt das Zeitfenster, in dem ein entwendetes Cookie nutzbar ist.
+    ttl: 60 * 60 * 24 * 7,
     cookieOptions: {
+      httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
     },
