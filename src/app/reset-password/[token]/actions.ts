@@ -2,7 +2,11 @@
 
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/auth/password";
-import { findValidPasswordResetToken, markPasswordResetTokenUsed } from "@/lib/auth/resetToken";
+import {
+  findValidPasswordResetToken,
+  invalidateAllPasswordResetTokens,
+  markPasswordResetTokenUsed,
+} from "@/lib/auth/resetToken";
 import { consumeRateLimit } from "@/lib/rateLimit";
 import { getClientIp } from "@/lib/clientIp";
 
@@ -45,6 +49,7 @@ export async function resetPasswordAction(
     data: { passwordHash, mustChangePassword: false },
   });
   await markPasswordResetTokenUsed(record.id);
+  await invalidateAllPasswordResetTokens(record.nutzerId);
 
   return { success: true };
 }
