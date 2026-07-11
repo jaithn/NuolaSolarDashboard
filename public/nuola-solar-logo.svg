@@ -1,6 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="620" height="156" viewBox="0 0 620 156">
-  <rect width="620" height="156" fill="white"/>
-  <circle cx="78.0" cy="78.0" r="48.6" fill="#F4A623"/><g transform="translate(26.159999999999997,26.159999999999997) scale(1.62)"><circle cx="32" cy="32" r="9" fill="white"/><line x1="45.00" y1="32.00" x2="54.00" y2="32.00" stroke="white" stroke-width="5.5" stroke-linecap="round"/><line x1="41.19" y1="41.19" x2="47.56" y2="47.56" stroke="white" stroke-width="5.5" stroke-linecap="round"/><line x1="32.00" y1="45.00" x2="32.00" y2="54.00" stroke="white" stroke-width="5.5" stroke-linecap="round"/><line x1="22.81" y1="41.19" x2="16.44" y2="47.56" stroke="white" stroke-width="5.5" stroke-linecap="round"/><line x1="19.00" y1="32.00" x2="10.00" y2="32.00" stroke="white" stroke-width="5.5" stroke-linecap="round"/><line x1="22.81" y1="22.81" x2="16.44" y2="16.44" stroke="white" stroke-width="5.5" stroke-linecap="round"/><line x1="32.00" y1="19.00" x2="32.00" y2="10.00" stroke="white" stroke-width="5.5" stroke-linecap="round"/><line x1="41.19" y1="22.81" x2="47.56" y2="16.44" stroke="white" stroke-width="5.5" stroke-linecap="round"/></g>
-  <text x="160.0" y="103.0" font-family="Poppins" font-weight="700" font-size="72" fill="#1C2B3A">Nuola</text>
-  <text x="399.0" y="103.0" font-family="Poppins" font-weight="500" font-size="72" fill="#F4A623">Solar</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 485.1875 160" width="485.1875" height="160">
+  <g transform="translate(0, 32)">
+    <svg width="96" height="96" viewBox="0 0 64 64">
+      <rect x="8" y="8" width="48" height="48" rx="12" fill="none" stroke="#1C1C21" stroke-width="3"></rect>
+      
+    <line x1="18.5" y1="40" x2="45.5" y2="40" stroke="#D9A441" stroke-width="3" stroke-linecap="round"></line>
+    <path d="M23 40 A9 9 0 0 1 41 40" stroke="#D9A441" stroke-width="3" fill="none"></path>
+    <line x1="21.6" y1="32" x2="17.1" y2="29.4" stroke="#D9A441" stroke-width="2.6" stroke-linecap="round"></line>
+    <line x1="26" y1="27.6" x2="23.4" y2="23.1" stroke="#D9A441" stroke-width="2.6" stroke-linecap="round"></line>
+    <line x1="32" y1="26" x2="32" y2="20.8" stroke="#D9A441" stroke-width="2.6" stroke-linecap="round"></line>
+    <line x1="38" y1="27.6" x2="40.6" y2="23.1" stroke="#D9A441" stroke-width="2.6" stroke-linecap="round"></line>
+    <line x1="42.4" y1="32" x2="46.9" y2="29.4" stroke="#D9A441" stroke-width="2.6" stroke-linecap="round"></line>
+    </svg>
+  </g>
+  <text x="122" y="100.48" font-family="&#39;IBM Plex Sans&#39;, Arial, sans-serif" font-weight="700" font-size="64" letter-spacing="-1" fill="#1C1C21">Nuola</text>
+  <text x="311.78125" y="100.48" font-family="&#39;IBM Plex Sans&#39;, Arial, sans-serif" font-weight="500" font-size="64" fill="#D9A441">Solar</text>
 </svg>

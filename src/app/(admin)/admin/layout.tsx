@@ -12,8 +12,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="app-shell">
       <header className="app-header">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="brand-logo" src="/nuola-solar-logo.png" alt="Nuola Solar" />
+        <Link href="/admin" aria-label="Zur Übersicht">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="brand-logo" src="/nuola-solar-logo.png" alt="Nuola Solar" />
+        </Link>
         <nav>
           <Link href="/admin">Übersicht</Link>
           <Link href="/admin/objekte">Objekte</Link>

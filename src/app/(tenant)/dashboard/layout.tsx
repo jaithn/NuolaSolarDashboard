@@ -33,8 +33,10 @@ export default async function TenantLayout({ children }: { children: React.React
   return (
     <div className="app-shell">
       <header className="app-header">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="brand-logo" src="/nuola-solar-logo.png" alt="Nuola Solar" />
+        <Link href="/dashboard" aria-label="Zur Übersicht">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="brand-logo" src="/nuola-solar-logo.png" alt="Nuola Solar" />
+        </Link>
         <nav>
           <Link href="/dashboard">Verbrauch</Link>
           <Link href="/dashboard/rechnungen">Abrechnungen</Link>
