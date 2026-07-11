@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/auth/guards";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { createZugangForMietpartei } from "@/lib/auth/onboarding";
+import { erstelleOderResetZugang } from "@/lib/auth/onboarding";
 
 export interface MietparteiFormState {
   error?: string;
@@ -201,19 +201,33 @@ export interface ZugangState {
   error?: string;
   username?: string;
   password?: string;
+  emailFehler?: string;
+  wurdeZurueckgesetzt?: boolean;
+}
+
+async function zugangAktion(mietparteiId: string, modus: "erstellen" | "zuruecksetzen"): Promise<ZugangState> {
+  try {
+    const { username, password, emailOk, emailFehler } = await erstelleOderResetZugang(mietparteiId, modus);
+    revalidatePath(`/admin/mietparteien/${mietparteiId}`);
+    // Zugangsdaten werden einmalig an die Seite zurueckgegeben (Anzeige +
+    // Willkommensbrief). Das Passwort wird nicht gespeichert.
+    return {
+      username,
+      password,
+      wurdeZurueckgesetzt: modus === "zuruecksetzen",
+      emailFehler: emailOk ? undefined : emailFehler,
+    };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Aktion konnte nicht ausgeführt werden." };
+  }
 }
 
 export async function createZugangAction(_prevState: ZugangState, formData: FormData): Promise<ZugangState> {
   await requireAdmin();
+  return zugangAktion(String(formData.get("mietparteiId") ?? ""), "erstellen");
+}
 
-  const mietparteiId = String(formData.get("mietparteiId") ?? "");
-  try {
-    const { username, password } = await createZugangForMietpartei(mietparteiId);
-    revalidatePath(`/admin/mietparteien/${mietparteiId}`);
-    // Zugangsdaten werden einmalig an die Seite zurueckgegeben (Anzeige +
-    // Willkommensbrief). Das Passwort wird nicht gespeichert.
-    return { username, password };
-  } catch (err) {
-    return { error: err instanceof Error ? err.message : "Zugang konnte nicht angelegt werden." };
-  }
+export async function resetZugangAction(_prevState: ZugangState, formData: FormData): Promise<ZugangState> {
+  await requireAdmin();
+  return zugangAktion(String(formData.get("mietparteiId") ?? ""), "zuruecksetzen");
 }
