@@ -17,8 +17,16 @@ export function NewObjektForm() {
           <input id="name" name="name" type="text" required placeholder="Köln-Buchforst" />
         </div>
         <div className="field">
-          <label htmlFor="adresse">Adresse</label>
-          <input id="adresse" name="adresse" type="text" required />
+          <label htmlFor="adresse">Straße &amp; Hausnummer</label>
+          <input id="adresse" name="adresse" type="text" required placeholder="Buchforstweg 5" />
+        </div>
+        <div className="field">
+          <label htmlFor="plz">PLZ</label>
+          <input id="plz" name="plz" type="text" required placeholder="51065" inputMode="numeric" />
+        </div>
+        <div className="field">
+          <label htmlFor="ort">Ort</label>
+          <input id="ort" name="ort" type="text" required placeholder="Köln" />
         </div>
       </div>
       <button className="btn" type="submit" disabled={pending} style={{ maxWidth: "16rem" }}>

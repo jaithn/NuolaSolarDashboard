@@ -18,6 +18,8 @@ model Objekt {
   id        String   @id @default(cuid())
   name      String
   adresse   String
+  plz       String   @default("")
+  ort       String   @default("")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

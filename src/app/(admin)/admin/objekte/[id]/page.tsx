@@ -33,7 +33,13 @@ export default async function ObjektDetailPage({
 
       <div className="section">
         <h2>Stammdaten</h2>
-        <EditObjektForm id={objekt.id} name={objekt.name} adresse={objekt.adresse} />
+        <EditObjektForm
+          id={objekt.id}
+          name={objekt.name}
+          adresse={objekt.adresse}
+          plz={objekt.plz}
+          ort={objekt.ort}
+        />
       </div>
 
       <div className="section">

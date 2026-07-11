@@ -26,7 +26,6 @@ interface MietparteiFormProps {
     name: string;
     email: string;
     telefon: string | null;
-    anschrift: string | null;
     einzugsdatum: Date;
     auszugsdatum: Date | null;
     status: "AKTIV" | "INAKTIV";
@@ -40,7 +39,24 @@ interface MietparteiFormProps {
 export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: MietparteiFormProps) {
   const action = mode === "create" ? createMietparteiAction : updateMietparteiAction;
   const [state, formAction, pending] = useActionState(action, initialState);
-  const [hatGrundpreis, setHatGrundpreis] = useState(Boolean(mietpartei?.grundpreisNetto));
+
+  // Fallback-Kette fuer unkontrollierte Felder: nach einem Validierungsfehler
+  // die zuletzt eingegebenen Werte (state.values), sonst der bestehende
+  // Datensatz (edit), sonst leer. So bleiben Eingaben bei ungueltiger E-Mail
+  // erhalten (React 19 wuerde das Formular sonst zuruecksetzen).
+  const val = (key: string, fallback = ""): string => state.values?.[key] ?? fallback;
+
+  // Grundpreis standardmaessig aktiviert (neue Mietparteien haben i.d.R. einen).
+  const grundpreisInitial =
+    state.values?.hatGrundpreis !== undefined
+      ? state.values.hatGrundpreis === "on"
+      : mode === "create" || Boolean(mietpartei?.grundpreisNetto);
+  const [hatGrundpreis, setHatGrundpreis] = useState(grundpreisInitial);
+
+  const [einzugsdatum, setEinzugsdatum] = useState(val("einzugsdatum", toDateInputValue(mietpartei?.einzugsdatum)));
+  // Abschlag gilt standardmaessig ab dem Einzugsdatum und folgt diesem, solange
+  // nicht manuell abweichend gesetzt.
+  const [abschlagGueltigAb, setAbschlagGueltigAb] = useState(val("abschlagGueltigAb") || einzugsdatum);
 
   return (
     <form action={formAction}>
@@ -54,7 +70,7 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
             id="einheitId"
             name="einheitId"
             className="select-inline"
-            defaultValue={mietpartei?.einheitId ?? einheiten[0]?.id}
+            defaultValue={val("einheitId", mietpartei?.einheitId ?? einheiten[0]?.id ?? "")}
             required
           >
             {einheiten.map((e) => (
@@ -66,19 +82,15 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
         </div>
         <div className="field">
           <label htmlFor="name">Name</label>
-          <input id="name" name="name" type="text" required defaultValue={mietpartei?.name} />
+          <input id="name" name="name" type="text" required defaultValue={val("name", mietpartei?.name ?? "")} />
         </div>
         <div className="field">
           <label htmlFor="email">E-Mail</label>
-          <input id="email" name="email" type="email" required defaultValue={mietpartei?.email} />
+          <input id="email" name="email" type="email" required defaultValue={val("email", mietpartei?.email ?? "")} />
         </div>
         <div className="field">
           <label htmlFor="telefon">Telefon</label>
-          <input id="telefon" name="telefon" type="text" defaultValue={mietpartei?.telefon ?? ""} />
-        </div>
-        <div className="field">
-          <label htmlFor="anschrift">Anschrift</label>
-          <input id="anschrift" name="anschrift" type="text" defaultValue={mietpartei?.anschrift ?? ""} />
+          <input id="telefon" name="telefon" type="text" defaultValue={val("telefon", mietpartei?.telefon ?? "")} />
         </div>
         <div className="field">
           <label htmlFor="einzugsdatum">Einzugsdatum</label>
@@ -87,7 +99,13 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
             name="einzugsdatum"
             type="date"
             required
-            defaultValue={toDateInputValue(mietpartei?.einzugsdatum)}
+            value={einzugsdatum}
+            onChange={(e) => {
+              // Abschlag-Startdatum folgt dem Einzugsdatum, solange es damit
+              // uebereinstimmte (noch nicht manuell abweichend gesetzt).
+              if (abschlagGueltigAb === einzugsdatum) setAbschlagGueltigAb(e.target.value);
+              setEinzugsdatum(e.target.value);
+            }}
           />
         </div>
         <div className="field">
@@ -96,17 +114,26 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
             id="auszugsdatum"
             name="auszugsdatum"
             type="date"
-            defaultValue={toDateInputValue(mietpartei?.auszugsdatum)}
+            defaultValue={val("auszugsdatum", toDateInputValue(mietpartei?.auszugsdatum))}
           />
         </div>
         <div className="field">
           <label htmlFor="status">Status</label>
-          <select id="status" name="status" className="select-inline" defaultValue={mietpartei?.status ?? "AKTIV"}>
+          <select
+            id="status"
+            name="status"
+            className="select-inline"
+            defaultValue={val("status", mietpartei?.status ?? "AKTIV")}
+          >
             <option value="AKTIV">Aktiv</option>
             <option value="INAKTIV">Inaktiv</option>
           </select>
         </div>
       </div>
+
+      <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", marginTop: 0 }}>
+        Die Anschrift entspricht der Adresse des Objekts und muss nicht separat erfasst werden.
+      </p>
 
       <PriceInput
         label="Arbeitspreis (€/kWh)"
@@ -126,7 +153,7 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
             checked={hatGrundpreis}
             onChange={(e) => setHatGrundpreis(e.target.checked)}
           />{" "}
-          Grundpreis vereinbaren
+          Monatlicher Grundpreis
         </label>
       </div>
 
@@ -141,7 +168,33 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
         />
       )}
 
-      <button className="btn" type="submit" disabled={pending} style={{ maxWidth: "16rem" }}>
+      {mode === "create" && (
+        <div className="section" style={{ marginTop: "1rem", background: "var(--color-primary-tint)" }}>
+          <h3 style={{ marginTop: 0 }}>Monatlicher Abschlag</h3>
+          <PriceInput
+            label="Abschlag (€/Monat)"
+            nettoName="abschlagNetto"
+            steuersatzName="abschlagSteuersatzId"
+            defaultNetto={0}
+            steuersaetze={steuersaetze}
+          />
+          <div className="field">
+            <label htmlFor="abschlagGueltigAb">Abschlag gültig ab</label>
+            <input
+              id="abschlagGueltigAb"
+              name="abschlagGueltigAb"
+              type="date"
+              value={abschlagGueltigAb}
+              onChange={(e) => setAbschlagGueltigAb(e.target.value)}
+            />
+          </div>
+          <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", margin: 0 }}>
+            Wird bei Betrag 0 nicht angelegt. Standard-Beginn ist das Einzugsdatum.
+          </p>
+        </div>
+      )}
+
+      <button className="btn" type="submit" disabled={pending} style={{ maxWidth: "16rem", marginTop: "1rem" }}>
         {pending ? "Wird gespeichert…" : mode === "create" ? "Mietpartei anlegen" : "Speichern"}
       </button>
     </form>

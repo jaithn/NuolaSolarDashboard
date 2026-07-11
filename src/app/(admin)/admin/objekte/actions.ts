@@ -17,9 +17,11 @@ export async function createObjektAction(
 
   const name = String(formData.get("name") ?? "").trim();
   const adresse = String(formData.get("adresse") ?? "").trim();
-  if (!name || !adresse) return { error: "Bitte Name und Adresse angeben." };
+  const plz = String(formData.get("plz") ?? "").trim();
+  const ort = String(formData.get("ort") ?? "").trim();
+  if (!name || !adresse || !plz || !ort) return { error: "Bitte Name, Adresse, PLZ und Ort angeben." };
 
-  await prisma.objekt.create({ data: { name, adresse } });
+  await prisma.objekt.create({ data: { name, adresse, plz, ort } });
   revalidatePath("/admin/objekte");
   return {};
 }
@@ -33,9 +35,11 @@ export async function updateObjektAction(
   const id = String(formData.get("id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   const adresse = String(formData.get("adresse") ?? "").trim();
-  if (!name || !adresse) return { error: "Bitte Name und Adresse angeben." };
+  const plz = String(formData.get("plz") ?? "").trim();
+  const ort = String(formData.get("ort") ?? "").trim();
+  if (!name || !adresse || !plz || !ort) return { error: "Bitte Name, Adresse, PLZ und Ort angeben." };
 
-  await prisma.objekt.update({ where: { id }, data: { name, adresse } });
+  await prisma.objekt.update({ where: { id }, data: { name, adresse, plz, ort } });
   revalidatePath("/admin/objekte");
   revalidatePath(`/admin/objekte/${id}`);
   return {};

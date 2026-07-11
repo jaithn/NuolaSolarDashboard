@@ -36,7 +36,10 @@ export default async function ObjektePage({
                 <td>
                   <Link href={`/admin/objekte/${o.id}`}>{o.name}</Link>
                 </td>
-                <td>{o.adresse}</td>
+                <td>
+                  {o.adresse}
+                  {o.plz || o.ort ? `, ${o.plz} ${o.ort}`.trimEnd() : ""}
+                </td>
                 <td>{o._count.einheiten}</td>
                 <td>{o._count.shellyGeraete}</td>
                 <td>

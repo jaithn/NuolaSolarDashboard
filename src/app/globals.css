@@ -41,15 +41,15 @@ a {
   color: var(--color-primary-dark);
 }
 
-/* Wortmarke: "Nuola" schwarz, Zusatz in Solar Gold (analog Logo). */
-.brand {
-  font-weight: 700;
-  color: var(--color-ink);
-  letter-spacing: -0.01em;
-  font-size: 1.05rem;
+/* Offizielles Nuola Solar Logo (keine eigene Textwortmarke). */
+.brand-logo {
+  display: block;
+  height: 34px;
+  width: auto;
 }
-.brand .brand-accent {
-  color: var(--color-primary-dark);
+.brand-logo--login {
+  height: 52px;
+  margin: 0 auto 1.5rem;
 }
 
 .auth-shell {
@@ -282,6 +282,17 @@ table.data-table th {
 .status-badge.inaktiv {
   background: #f1f5f9;
   color: #475569;
+}
+
+table.data-table th.group-row {
+  text-align: left;
+  background: var(--color-primary-tint);
+  color: var(--color-ink);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.9rem;
+  padding-top: 0.7rem;
+  padding-bottom: 0.4rem;
 }
 
 .select-inline,

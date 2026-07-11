@@ -5,8 +5,9 @@ import { berechneBrutto } from "@/lib/steuer";
 import { vergibNaechsteRechnungsnummer } from "./invoiceNumber";
 
 // Durchschnittliche Kalendertage pro Monat - Grundlage fuer die taggenaue
-// anteilige Umrechnung von "pro Monat" vereinbarten Beträgen (Grundpreis,
-// Abschlag) auf einen konkreten, ggf. unterjährigen Abrechnungszeitraum.
+// anteilige Umrechnung der geleisteten Abschlaege auf ihren Ueberschneidungs-
+// zeitraum mit der Abrechnung. (Die Grundgebuehr wird dagegen nach ganzen
+// Monaten berechnet, siehe anzahlMonate.)
 const TAGE_PRO_MONAT = 365.25 / 12;
 
 export interface GenerateInvoiceParams {
@@ -21,6 +22,15 @@ function maxDate(a: Date, b: Date): Date {
 }
 function minDate(a: Date, b: Date): Date {
   return a < b ? a : b;
+}
+
+// Anzahl der (Kalender-)Monate, die ein Zeitraum beruehrt - inklusive Start-
+// und Endmonat. 1.1.-31.12. ergibt 12, nicht 11,99. Grundlage fuer die
+// Grundgebuehr, die pro Monat vereinbart ist und nicht taggenau, sondern nach
+// tatsaechlichen Monaten berechnet werden soll.
+function anzahlMonate(von: Date, bis: Date): number {
+  const monate = (bis.getUTCFullYear() - von.getUTCFullYear()) * 12 + (bis.getUTCMonth() - von.getUTCMonth()) + 1;
+  return Math.max(1, monate);
 }
 
 export async function erstelleRechnungsentwurf(params: GenerateInvoiceParams): Promise<{ rechnungId: string }> {
@@ -42,12 +52,11 @@ export async function erstelleRechnungsentwurf(params: GenerateInvoiceParams): P
   ];
 
   if (mietpartei.grundpreisNetto) {
-    const gesamtTage = tageZwischen(zeitraum.von, zeitraum.bis);
-    const monateAnteil = gesamtTage / TAGE_PRO_MONAT;
-    const grundpreisGesamtNetto = Math.round(mietpartei.grundpreisNetto * monateAnteil * 100) / 100;
+    const monate = anzahlMonate(zeitraum.von, zeitraum.bis);
+    const grundpreisGesamtNetto = Math.round(mietpartei.grundpreisNetto * monate * 100) / 100;
     positionenEntwurf.push(
       ...splitteNachSteuersatz(
-        `Grundgebühr (${mietpartei.grundpreisNetto.toFixed(2)} €/Monat × ${monateAnteil.toFixed(2)} Monate)`,
+        `Grundgebühr (${mietpartei.grundpreisNetto.toFixed(2)} €/Monat × ${monate} Monate)`,
         grundpreisGesamtNetto,
         zeitraum,
         steuersaetze,

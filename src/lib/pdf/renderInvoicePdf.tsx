@@ -27,7 +27,7 @@ export async function generateAndStoreInvoicePdf(rechnungId: string): Promise<st
     where: { id: rechnungId },
     include: {
       positionen: { include: { steuersatz: true }, orderBy: { sortierung: "asc" } },
-      mietpartei: true,
+      mietpartei: { include: { einheit: { include: { objekt: true } } } },
     },
   });
 
@@ -44,15 +44,27 @@ export async function generateAndStoreInvoicePdf(rechnungId: string): Promise<st
     }),
   ]);
 
+  // Logo: entweder das im Admin hochgeladene, sonst das mitgelieferte offizielle
+  // Nuola Solar Logo (public/nuola-solar-logo.png, im Docker-Image enthalten).
   const logoAbsolutePath = designvorlage.logoPfad
     ? path.join(process.cwd(), "public", designvorlage.logoPfad)
-    : null;
+    : path.join(process.cwd(), "public", "nuola-solar-logo.png");
+
+  // Alte Default-Farben (Teal/„Grün“) auf die Nuola-Solar-Style-Guide-Farben
+  // umsetzen, ohne bewusst gesetzte Admin-Farben zu ueberschreiben.
+  const primaerfarbe = designvorlage.primaerfarbe === "#0f766e" ? "#d9a441" : designvorlage.primaerfarbe;
+  const sekundaerfarbe = designvorlage.sekundaerfarbe === "#0f172a" ? "#1c1c21" : designvorlage.sekundaerfarbe;
+
+  // Empfaengeranschrift = Objektadresse (die Mietpartei wohnt im Objekt).
+  const objekt = rechnung.mietpartei.einheit.objekt;
+  const empfaengerAnschrift =
+    [objekt.adresse, `${objekt.plz} ${objekt.ort}`.trim()].filter((s) => s && s.length > 0).join(", ") || null;
 
   const buffer = await renderToBuffer(
     <InvoiceDocument
       firma={firma}
-      designvorlage={{ ...designvorlage, logoPfad: logoAbsolutePath }}
-      mietpartei={{ name: rechnung.mietpartei.name, anschrift: rechnung.mietpartei.anschrift }}
+      designvorlage={{ ...designvorlage, logoPfad: logoAbsolutePath, primaerfarbe, sekundaerfarbe }}
+      mietpartei={{ name: rechnung.mietpartei.name, anschrift: empfaengerAnschrift }}
       rechnung={rechnung}
       positionen={rechnung.positionen.map((p) => ({
         bezeichnung: p.bezeichnung,

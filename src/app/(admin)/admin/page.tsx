@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { verbrauchKwhFuerEinheit } from "@/lib/billing/consumption";
@@ -44,6 +45,18 @@ export default async function AdminHomePage({
     return { ...g, letzterTimestamp, online };
   });
 
+  // Nach Objekt gruppieren (geraeteMitStatus ist bereits nach Objektname
+  // sortiert, die Map-Reihenfolge bleibt dadurch erhalten).
+  const geraeteNachObjekt = new Map<string, { objektName: string; geraete: typeof geraeteMitStatus }>();
+  for (const g of geraeteMitStatus) {
+    const gruppe = geraeteNachObjekt.get(g.objektId);
+    if (gruppe) {
+      gruppe.geraete.push(g);
+    } else {
+      geraeteNachObjekt.set(g.objektId, { objektName: g.objekt.name, geraete: [g] });
+    }
+  }
+
   const einheiten = await prisma.einheit.findMany({
     where: sp.objektId ? { objektId: sp.objektId } : undefined,
     include: { objekt: true },
@@ -66,39 +79,46 @@ export default async function AdminHomePage({
           <thead>
             <tr>
               <th>Gerät</th>
-              <th>Objekt</th>
               <th>Einheit</th>
               <th>Letzter Messwert</th>
               <th>Status</th>
             </tr>
           </thead>
           <tbody>
-            {geraeteMitStatus.map((g) => (
-              <tr key={g.id}>
-                <td>
-                  <Link href={`/admin/geraete/${g.id}`}>{g.bezeichnung}</Link>
-                </td>
-                <td>{g.objekt.name}</td>
-                <td>
-                  {g.zuordnungen.length > 0
-                    ? g.zuordnungen.map((z) => z.einheit.bezeichnung).join(", ")
-                    : "–"}
-                </td>
-                <td>{g.letzterTimestamp ? g.letzterTimestamp.toLocaleString("de-DE") : "–"}</td>
-                <td>
-                  {!g.aktiv ? (
-                    <span className="status-badge inaktiv">deaktiviert</span>
-                  ) : (
-                    <span className={`status-badge ${g.online ? "aktiv" : "inaktiv"}`}>
-                      {g.online ? "online" : "offline"}
-                    </span>
-                  )}
-                </td>
-              </tr>
+            {[...geraeteNachObjekt.values()].map((gruppe) => (
+              <Fragment key={gruppe.objektName}>
+                <tr>
+                  <th colSpan={4} className="group-row">
+                    {gruppe.objektName}
+                  </th>
+                </tr>
+                {gruppe.geraete.map((g) => (
+                  <tr key={g.id}>
+                    <td>
+                      <Link href={`/admin/geraete/${g.id}`}>{g.bezeichnung}</Link>
+                    </td>
+                    <td>
+                      {g.zuordnungen.length > 0
+                        ? g.zuordnungen.map((z) => z.einheit.bezeichnung).join(", ")
+                        : "–"}
+                    </td>
+                    <td>{g.letzterTimestamp ? g.letzterTimestamp.toLocaleString("de-DE") : "–"}</td>
+                    <td>
+                      {!g.aktiv ? (
+                        <span className="status-badge inaktiv">deaktiviert</span>
+                      ) : (
+                        <span className={`status-badge ${g.online ? "aktiv" : "inaktiv"}`}>
+                          {g.online ? "online" : "offline"}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </Fragment>
             ))}
             {geraeteMitStatus.length === 0 && (
               <tr>
-                <td colSpan={5}>Keine Geräte gefunden.</td>
+                <td colSpan={4}>Keine Geräte gefunden.</td>
               </tr>
             )}
           </tbody>
