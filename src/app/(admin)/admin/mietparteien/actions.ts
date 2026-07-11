@@ -1,7 +1,6 @@
 "use server";
 
 import { requireAdmin } from "@/lib/auth/guards";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
@@ -198,24 +197,23 @@ export async function createAbschlagAction(
   return {};
 }
 
-export async function createZugangAction(formData: FormData): Promise<void> {
+export interface ZugangState {
+  error?: string;
+  username?: string;
+  password?: string;
+}
+
+export async function createZugangAction(_prevState: ZugangState, formData: FormData): Promise<ZugangState> {
   await requireAdmin();
 
   const mietparteiId = String(formData.get("mietparteiId") ?? "");
-
-  // WICHTIG: redirect() wirft intern einen speziellen NEXT_REDIRECT-Fehler,
-  // der die Next.js-Navigation ausloest - darf daher NICHT innerhalb des
-  // try/catch aufgerufen werden, sonst wuerde er faelschlich als Fehler
-  // dieser Aktion abgefangen.
-  let errorMessage: string | null = null;
   try {
-    await createZugangForMietpartei(mietparteiId);
+    const { username, password } = await createZugangForMietpartei(mietparteiId);
+    revalidatePath(`/admin/mietparteien/${mietparteiId}`);
+    // Zugangsdaten werden einmalig an die Seite zurueckgegeben (Anzeige +
+    // Willkommensbrief). Das Passwort wird nicht gespeichert.
+    return { username, password };
   } catch (err) {
-    errorMessage = err instanceof Error ? err.message : "Zugang konnte nicht angelegt werden.";
+    return { error: err instanceof Error ? err.message : "Zugang konnte nicht angelegt werden." };
   }
-
-  if (errorMessage) {
-    redirect(`/admin/mietparteien/${mietparteiId}?fehler=${encodeURIComponent(errorMessage)}`);
-  }
-  redirect(`/admin/mietparteien/${mietparteiId}?zugang=ok`);
 }

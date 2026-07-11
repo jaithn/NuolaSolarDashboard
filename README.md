@@ -113,6 +113,24 @@ austricksen kann — Voraussetzung ist, dass der App-Port nicht direkt aus dem N
 ist (siehe `127.0.0.1`-Bind in `docker-compose.yml`). HSTS gehört ebenfalls in den nginx
 (nicht in die App), da dort TLS terminiert.
 
+## E-Mail-Zustellbarkeit (Anti-Spam)
+
+Die App verschickt Onboarding-, Passwort-Reset- und Rechnungs-E-Mails. Damit diese nicht im
+Spam landen, tut die App, was auf Anwendungsebene möglich ist: Sie sendet **Multipart-Mails
+mit echter Text-Alternative** (nicht nur HTML), setzt einen sauberen `From` und optional
+`Reply-To`. Der Rest liegt an der **DNS-/Mailserver-Konfiguration eurer Absenderdomain** —
+das sind die wirksamsten Hebel:
+
+- **SPF**: TXT-Record, der euren SMTP-Server als berechtigten Absender der Domain listet.
+- **DKIM**: Signierung ausgehender Mails durch den Mailserver + passender DNS-Schlüssel.
+- **DMARC**: TXT-Record, der SPF/DKIM-Prüfung und Policy festlegt.
+- Die Domain in `SMTP_FROM` **muss** zu diesen Records passen (keine fremde Domain fälschen).
+- Reverse-DNS (PTR) des sendenden Servers sollte gesetzt sein.
+
+Am einfachsten ist ein etablierter Transaktions-Mailanbieter (z.B. der eigene Provider mit
+korrekt eingerichteter Domain), der DKIM/SPF bereitstellt. Über **Admin → Einstellungen →
+SMTP-Test** lässt sich der Versand jederzeit an eine Testadresse prüfen.
+
 ## Environment-Variablen
 
 | Variable | Zweck |
@@ -125,6 +143,7 @@ ist (siehe `127.0.0.1`-Bind in `docker-compose.yml`). HSTS gehört ebenfalls in 
 | `POLL_INTERVAL_MINUTES` | Abfrageintervall des Worker-Service |
 | `PUID` / `PGID` | User-/Gruppen-ID, unter der die App läuft (Default 1000/1000). Bei Bind-Mounts auf **Unraid** auf `99`/`100` setzen, damit der Container in den Appdata-Ordner schreiben darf. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | SMTP-Zugangsdaten für Onboarding-, Reset- und Rechnungs-E-Mails |
+| `SMTP_REPLY_TO` | Optionale Antwortadresse (falls `SMTP_FROM` eine noreply-Adresse ist) |
 
 ## Entwicklung ohne Docker
 

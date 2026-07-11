@@ -41,7 +41,9 @@ async function ensureUniqueUsername(base: string): Promise<string> {
  * Benutzername + Einmal-Passwort, speichert den Nutzer und verschickt die
  * Zugangsdaten per E-Mail. Wird ausschließlich vom Admin-Bereich ausgelöst.
  */
-export async function createZugangForMietpartei(mietparteiId: string): Promise<{ username: string }> {
+export async function createZugangForMietpartei(
+  mietparteiId: string,
+): Promise<{ username: string; password: string }> {
   const mietpartei = await prisma.mietpartei.findUniqueOrThrow({ where: { id: mietparteiId } });
 
   const existing = await prisma.nutzer.findUnique({ where: { mietparteiId } });
@@ -70,5 +72,7 @@ export async function createZugangForMietpartei(mietparteiId: string): Promise<{
     html: onboardingEmailHtml({ username, password: oneTimePassword, loginUrl }),
   });
 
-  return { username };
+  // Klartext-Passwort wird zurueckgegeben, damit der Admin es einmalig anzeigen
+  // und in den Willkommensbrief uebernehmen kann. Es wird nirgends gespeichert.
+  return { username, password: oneTimePassword };
 }

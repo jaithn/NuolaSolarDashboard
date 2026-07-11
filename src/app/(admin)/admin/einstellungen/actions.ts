@@ -4,10 +4,35 @@ import { requireAdmin } from "@/lib/auth/guards";
 import { revalidatePath } from "next/cache";
 import { writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
+import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { sendTestMail } from "@/lib/mail/mailer";
 
 export interface SettingsFormState {
   error?: string;
+}
+
+export interface TestMailState {
+  error?: string;
+  success?: string;
+}
+
+export async function sendTestMailAction(
+  _prevState: TestMailState,
+  formData: FormData,
+): Promise<TestMailState> {
+  await requireAdmin();
+
+  const to = String(formData.get("to") ?? "").trim();
+  if (!z.string().email().max(254).safeParse(to).success) {
+    return { error: "Bitte eine gültige E-Mail-Adresse angeben." };
+  }
+
+  const result = await sendTestMail(to);
+  if (!result.ok) {
+    return { error: `SMTP-Fehler: ${result.error}` };
+  }
+  return { success: `Test-E-Mail wurde an ${to} verschickt. Bitte auch den Spam-Ordner prüfen.` };
 }
 
 export async function updateFirmenStammdatenAction(

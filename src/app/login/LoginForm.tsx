@@ -13,7 +13,7 @@ export function LoginForm() {
     <form action={formAction}>
       {state.error && <div className="form-error">{state.error}</div>}
       <div className="field">
-        <label htmlFor="username">Benutzername</label>
+        <label htmlFor="username">Benutzername oder E-Mail</label>
         <input id="username" name="username" type="text" autoComplete="username" required />
       </div>
       <div className="field">

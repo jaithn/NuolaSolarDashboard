@@ -2,17 +2,10 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { MietparteiForm } from "../MietparteiForm";
 import { NewAbschlagForm } from "../NewAbschlagForm";
-import { createZugangAction } from "../actions";
+import { ZugangPanel } from "./ZugangPanel";
 
-export default async function MietparteiDetailPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ fehler?: string; zugang?: string }>;
-}) {
+export default async function MietparteiDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { fehler, zugang } = await searchParams;
 
   const [mietpartei, einheiten, steuersaetze, nutzer] = await Promise.all([
     prisma.mietpartei.findUnique({ where: { id }, include: { einheit: { include: { objekt: true } } } }),
@@ -36,9 +29,6 @@ export default async function MietparteiDetailPage({
       <p>
         {mietpartei.einheit.objekt.name} – {mietpartei.einheit.bezeichnung}
       </p>
-
-      {fehler && <div className="form-error">{fehler}</div>}
-      {zugang === "ok" && <div className="form-notice">Zugang wurde angelegt und die Zugangsdaten per E-Mail versendet.</div>}
 
       <div className="section">
         <h2>Stammdaten</h2>
@@ -79,22 +69,12 @@ export default async function MietparteiDetailPage({
 
       <div className="section">
         <h2>Dashboard-Zugang</h2>
-        {nutzer ? (
-          <p>
-            Zugang vorhanden (Benutzername: <strong>{nutzer.username}</strong>
-            {nutzer.mustChangePassword ? ", Passwortänderung beim nächsten Login noch ausstehend" : ""}).
-          </p>
-        ) : (
-          <>
-            <p>Für diese Mietpartei existiert noch kein Dashboard-Zugang.</p>
-            <form action={createZugangAction}>
-              <input type="hidden" name="mietparteiId" value={mietpartei.id} />
-              <button className="btn-small" type="submit">
-                Zugang anlegen &amp; per E-Mail versenden
-              </button>
-            </form>
-          </>
-        )}
+        <ZugangPanel
+          mietparteiId={mietpartei.id}
+          hasZugang={Boolean(nutzer)}
+          username={nutzer?.username}
+          mustChangePassword={nutzer?.mustChangePassword}
+        />
       </div>
     </div>
   );

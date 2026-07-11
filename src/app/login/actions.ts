@@ -23,15 +23,15 @@ export interface LoginState {
 }
 
 export async function loginAction(_prevState: LoginState, formData: FormData): Promise<LoginState> {
-  const username = String(formData.get("username") ?? "").trim();
+  const identifier = String(formData.get("username") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
-  if (!username || !password) {
-    return { error: "Bitte Benutzername und Passwort eingeben." };
+  if (!identifier || !password) {
+    return { error: "Bitte Benutzername/E-Mail und Passwort eingeben." };
   }
 
   const ip = await getClientIp();
-  const userIpKey = `login:${ip}:${username.toLowerCase()}`;
+  const userIpKey = `login:${ip}:${identifier.toLowerCase()}`;
   if (
     !consumeRateLimit(`login:${ip}`, MAX_ATTEMPTS_PER_IP, LOGIN_WINDOW_MS) ||
     !consumeRateLimit(userIpKey, MAX_ATTEMPTS_PER_USER_IP, LOGIN_WINDOW_MS)
@@ -39,19 +39,31 @@ export async function loginAction(_prevState: LoginState, formData: FormData): P
     return { error: "Zu viele Anmeldeversuche. Bitte warten Sie 15 Minuten und versuchen Sie es erneut." };
   }
 
-  const nutzer = await prisma.nutzer.findUnique({
-    where: { username },
+  // Login per Benutzername ODER (bei Mietern) per E-Mail-Adresse. Zuerst der
+  // eindeutige Benutzername; sonst - wenn eine E-Mail eingegeben wurde - die
+  // Mietpartei-E-Mail (case-insensitiv). Nutzerzahl ist klein, daher genuegt
+  // ein JS-Vergleich (SQLite unterstuetzt kein case-insensitives Prisma-mode).
+  let nutzer = await prisma.nutzer.findUnique({
+    where: { username: identifier },
     include: { mietpartei: true },
   });
+  if (!nutzer && identifier.includes("@")) {
+    const kandidaten = await prisma.nutzer.findMany({
+      where: { mietparteiId: { not: null } },
+      include: { mietpartei: true },
+    });
+    const gesucht = identifier.toLowerCase();
+    nutzer = kandidaten.find((n) => n.mietpartei?.email.toLowerCase() === gesucht) ?? null;
+  }
 
   if (!nutzer) {
     await verifyPassword(password, DUMMY_HASH);
-    return { error: "Benutzername oder Passwort ist falsch." };
+    return { error: "Anmeldedaten sind falsch." };
   }
 
   const passwordOk = await verifyPassword(password, nutzer.passwordHash);
   if (!passwordOk) {
-    return { error: "Benutzername oder Passwort ist falsch." };
+    return { error: "Anmeldedaten sind falsch." };
   }
 
   resetRateLimit(userIpKey);
