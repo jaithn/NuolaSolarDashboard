@@ -2,13 +2,8 @@ import path from "node:path";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { prisma } from "@/lib/db";
 import { berechneBrutto } from "@/lib/steuer";
+import { getAppBaseUrl } from "@/lib/appBaseUrl";
 import { WelcomeLetterDocument } from "./welcomeLetterDocument";
-
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`Umgebungsvariable ${name} ist nicht gesetzt.`);
-  return value;
-}
 
 /**
  * Rendert den Willkommensbrief (PDF) fuer eine Mietpartei mit den frisch
@@ -68,6 +63,8 @@ export async function renderWelcomeLetterPdf(params: {
   const anschrift =
     [objekt.adresse, `${objekt.plz} ${objekt.ort}`.trim()].filter((s) => s && s.length > 0).join(", ") || null;
 
+  const loginUrl = `${await getAppBaseUrl()}/login`;
+
   return renderToBuffer(
     <WelcomeLetterDocument
       firma={{ name: firma.name, anschrift: firma.anschrift, bankverbindung: firma.bankverbindung }}
@@ -75,7 +72,7 @@ export async function renderWelcomeLetterPdf(params: {
       mietpartei={{ name: mietpartei.name, anschrift, einzugsdatum: mietpartei.einzugsdatum }}
       konditionen={{ arbeitspreisBrutto, grundpreisBrutto, abschlagBrutto }}
       zugang={{
-        loginUrl: `${requireEnv("APP_BASE_URL")}/login`,
+        loginUrl,
         benutzername: params.benutzername,
         passwort: params.passwort,
       }}

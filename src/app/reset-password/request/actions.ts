@@ -6,15 +6,10 @@ import { sendMail } from "@/lib/mail/mailer";
 import { passwordResetEmailHtml } from "@/lib/mail/templates";
 import { consumeRateLimit } from "@/lib/rateLimit";
 import { getClientIp } from "@/lib/clientIp";
+import { getAppBaseUrl } from "@/lib/appBaseUrl";
 
 export interface RequestResetState {
   submitted?: boolean;
-}
-
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`Umgebungsvariable ${name} ist nicht gesetzt.`);
-  return value;
 }
 
 export async function requestPasswordResetAction(
@@ -39,7 +34,7 @@ export async function requestPasswordResetAction(
       const email = nutzer.mietpartei?.email;
       if (email) {
         const token = await createPasswordResetToken(nutzer.id);
-        const resetUrl = `${requireEnv("APP_BASE_URL")}/reset-password/${token}`;
+        const resetUrl = `${await getAppBaseUrl()}/reset-password/${token}`;
         await sendMail({
           to: email,
           subject: "Passwort zurücksetzen – Nuola Energy Dashboard",

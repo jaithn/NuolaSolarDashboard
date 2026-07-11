@@ -2,14 +2,7 @@ import { prisma } from "@/lib/db";
 import { hashPassword, generateOneTimePassword } from "./password";
 import { sendMail } from "@/lib/mail/mailer";
 import { onboardingEmailHtml } from "@/lib/mail/templates";
-
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Umgebungsvariable ${name} ist nicht gesetzt.`);
-  }
-  return value;
-}
+import { getAppBaseUrl } from "@/lib/appBaseUrl";
 
 const COMBINING_DIACRITICS = /[̀-ͯ]/g;
 
@@ -65,7 +58,7 @@ export async function createZugangForMietpartei(
     },
   });
 
-  const loginUrl = `${requireEnv("APP_BASE_URL")}/login`;
+  const loginUrl = `${await getAppBaseUrl()}/login`;
   await sendMail({
     to: mietpartei.email,
     subject: "Ihr Zugang zum Nuola Energy Dashboard",

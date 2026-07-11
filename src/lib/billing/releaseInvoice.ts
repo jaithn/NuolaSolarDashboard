@@ -3,12 +3,7 @@ import { prisma } from "@/lib/db";
 import { generateAndStoreInvoicePdf, resolvePdfFilePath } from "@/lib/pdf/renderInvoicePdf";
 import { sendMail } from "@/lib/mail/mailer";
 import { invoiceSentEmailHtml } from "@/lib/mail/templates";
-
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`Umgebungsvariable ${name} ist nicht gesetzt.`);
-  return value;
-}
+import { getAppBaseUrl } from "@/lib/appBaseUrl";
 
 /**
  * Freigabe-Workflow: generiert (falls noch nicht geschehen) das PDF, macht
@@ -35,7 +30,7 @@ export async function freigebenUndVersenden(rechnungId: string): Promise<void> {
     data: { status: "VERSENDET", freigegebenAm: now, versendetAm: now, pdfPfad: filename },
   });
 
-  const loginUrl = `${requireEnv("APP_BASE_URL")}/login`;
+  const loginUrl = `${await getAppBaseUrl()}/login`;
   await sendMail({
     to: rechnung.mietpartei.email,
     subject: `Ihre ${rechnung.typ === "SCHLUSSRECHNUNG" ? "Schlussrechnung" : "Jahresabrechnung"} ${rechnung.rechnungsnummer}`,
