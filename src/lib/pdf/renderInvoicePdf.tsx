@@ -56,15 +56,16 @@ export async function generateAndStoreInvoicePdf(rechnungId: string): Promise<st
   const sekundaerfarbe = designvorlage.sekundaerfarbe === "#0f172a" ? "#1c1c21" : designvorlage.sekundaerfarbe;
 
   // Empfaengeranschrift = Objektadresse (die Mietpartei wohnt im Objekt).
+  // Strasse und PLZ/Ort getrennt, damit sie auf zwei Zeilen dargestellt werden.
   const objekt = rechnung.mietpartei.einheit.objekt;
-  const empfaengerAnschrift =
-    [objekt.adresse, `${objekt.plz} ${objekt.ort}`.trim()].filter((s) => s && s.length > 0).join(", ") || null;
+  const empfaengerStrasse = objekt.adresse || null;
+  const empfaengerPlzOrt = `${objekt.plz} ${objekt.ort}`.trim() || null;
 
   const buffer = await renderToBuffer(
     <InvoiceDocument
       firma={firma}
       designvorlage={{ ...designvorlage, logoPfad: logoAbsolutePath, primaerfarbe, sekundaerfarbe }}
-      mietpartei={{ name: rechnung.mietpartei.name, anschrift: empfaengerAnschrift }}
+      mietpartei={{ name: rechnung.mietpartei.name, anschrift: empfaengerStrasse, plzOrt: empfaengerPlzOrt }}
       rechnung={rechnung}
       positionen={rechnung.positionen.map((p) => ({
         bezeichnung: p.bezeichnung,

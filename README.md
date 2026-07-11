@@ -27,10 +27,13 @@ unter `ghcr.io/jaithn/nuola-energy-dashboard`. **Tag-Strategie:**
 
 | Auslöser | Erzeugte Image-Tags | Verwendung |
 |---|---|---|
-| Push nach `main` | `latest`, `main`, `sha-<commit>` | Rollendes Dev-/Test-Image |
-| Git-Tag `vX.Y.Z` | `X.Y.Z`, `X.Y`, `X` | Gepinnte, stabile Releases |
+| Push nach `main` | `latest`, **`1.0.<lauf-nr>`** (automatische Version), `main`, `sha-<commit>` | Rollendes Image mit aufsteigender Versionsnummer |
+| Git-Tag `vX.Y.Z` | `X.Y.Z`, `X.Y`, `X` | Manuell gepinnte, stabile Releases |
 
-Ein **versioniertes Release** erstellst du per Git-Tag:
+Jeder Push nach `main` erzeugt also **automatisch** eine echte, aufsteigende Versionsnummer
+`1.0.<Actions-Lauf-Nummer>` (z.B. `1.0.42`) – ganz ohne manuelles Git-Tag. Die Major-/Minor-
+Version steht als `VERSION_MAJOR_MINOR` im Workflow. Ein manuell **versioniertes Release**
+geht zusätzlich per Git-Tag:
 
 ```bash
 git tag v1.0.0

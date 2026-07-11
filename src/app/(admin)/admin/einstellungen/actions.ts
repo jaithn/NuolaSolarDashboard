@@ -43,29 +43,29 @@ export async function updateFirmenStammdatenAction(
 
   const name = String(formData.get("name") ?? "").trim();
   const anschrift = String(formData.get("anschrift") ?? "").trim();
+  const plz = String(formData.get("plz") ?? "").trim();
+  const ort = String(formData.get("ort") ?? "").trim();
   const steuernummer = String(formData.get("steuernummer") ?? "").trim();
   const ustIdNr = String(formData.get("ustIdNr") ?? "").trim();
+  const bankname = String(formData.get("bankname") ?? "").trim();
   const bankverbindung = String(formData.get("bankverbindung") ?? "").trim();
 
   if (!name || !anschrift) return { error: "Bitte Name und Anschrift angeben." };
 
+  const data = {
+    name,
+    anschrift,
+    plz,
+    ort,
+    steuernummer: steuernummer || null,
+    ustIdNr: ustIdNr || null,
+    bankname: bankname || null,
+    bankverbindung: bankverbindung || null,
+  };
   await prisma.firmenStammdaten.upsert({
     where: { id: "singleton" },
-    update: {
-      name,
-      anschrift,
-      steuernummer: steuernummer || null,
-      ustIdNr: ustIdNr || null,
-      bankverbindung: bankverbindung || null,
-    },
-    create: {
-      id: "singleton",
-      name,
-      anschrift,
-      steuernummer: steuernummer || null,
-      ustIdNr: ustIdNr || null,
-      bankverbindung: bankverbindung || null,
-    },
+    update: data,
+    create: { id: "singleton", ...data },
   });
 
   revalidatePath("/admin/einstellungen");

@@ -314,8 +314,11 @@ model FirmenStammdaten {
   id             String   @id @default("singleton")
   name           String
   anschrift      String
+  plz            String   @default("")
+  ort            String   @default("")
   steuernummer   String?
   ustIdNr        String?
+  bankname       String?
   bankverbindung String?
   updatedAt      DateTime @updatedAt
 }

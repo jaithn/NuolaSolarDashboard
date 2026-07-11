@@ -12,8 +12,11 @@ export interface InvoiceDocumentData {
   firma: {
     name: string;
     anschrift: string;
+    plz: string;
+    ort: string;
     steuernummer: string | null;
     ustIdNr: string | null;
+    bankname: string | null;
     bankverbindung: string | null;
   };
   designvorlage: {
@@ -22,7 +25,7 @@ export interface InvoiceDocumentData {
     sekundaerfarbe: string;
     fusszeileText: string | null;
   };
-  mietpartei: { name: string; anschrift: string | null };
+  mietpartei: { name: string; anschrift: string | null; plzOrt: string | null };
   rechnung: {
     rechnungsnummer: string;
     typ: string;
@@ -65,7 +68,8 @@ const styles = StyleSheet.create({
   colZahl: { flex: 1, textAlign: "right" },
   summaryBox: { marginTop: 16, alignItems: "flex-end" },
   summaryLine: { flexDirection: "row", gap: 8, marginBottom: 2 },
-  verrechnungBox: { marginTop: 10, padding: 8, backgroundColor: "#f0fdf4", alignItems: "flex-end" },
+  verrechnungBox: { marginTop: 10, padding: 8, backgroundColor: "#f6edda", alignItems: "flex-end" },
+  abschlussBox: { marginTop: 12, fontSize: 9.5, lineHeight: 1.4, color: "#334155" },
   footer: { position: "absolute", bottom: 30, left: 40, right: 40, fontSize: 8, color: "#94a3b8", textAlign: "center" },
 });
 
@@ -92,6 +96,7 @@ export function InvoiceDocument({ firma, designvorlage, mietpartei, rechnung, po
           <View>
             <Text style={{ fontSize: 12, fontWeight: 700, color: designvorlage.primaerfarbe }}>{firma.name}</Text>
             <Text style={styles.firma}>{firma.anschrift}</Text>
+            {(firma.plz || firma.ort) && <Text style={styles.firma}>{`${firma.plz} ${firma.ort}`.trim()}</Text>}
             {firma.steuernummer && <Text style={styles.firma}>Steuernummer: {firma.steuernummer}</Text>}
             {firma.ustIdNr && <Text style={styles.firma}>USt-IdNr.: {firma.ustIdNr}</Text>}
           </View>
@@ -101,6 +106,7 @@ export function InvoiceDocument({ firma, designvorlage, mietpartei, rechnung, po
         <View style={{ marginBottom: 16 }}>
           <Text style={styles.firma}>{mietpartei.name}</Text>
           {mietpartei.anschrift && <Text style={styles.firma}>{mietpartei.anschrift}</Text>}
+          {mietpartei.plzOrt && <Text style={styles.firma}>{mietpartei.plzOrt}</Text>}
         </View>
 
         <Text style={styles.title}>
@@ -172,9 +178,30 @@ export function InvoiceDocument({ firma, designvorlage, mietpartei, rechnung, po
           </Text>
         </View>
 
-        {designvorlage.fusszeileText && (
-          <Text style={styles.footer}>{designvorlage.fusszeileText}</Text>
-        )}
+        <View style={styles.abschlussBox}>
+          {rechnung.verrechnungBetrag >= 0 ? (
+            <Text>
+              Der Nachzahlungsbetrag in Höhe von {fmt(rechnung.verrechnungBetrag)} € ist gemäß Mietvertrag
+              innerhalb von zwei Wochen nach Zugang dieser Abrechnung fällig.
+            </Text>
+          ) : (
+            <Text>
+              Das Guthaben in Höhe von {fmt(Math.abs(rechnung.verrechnungBetrag))} € wird gemäß Mietvertrag mit der
+              nächsten Mietforderung verrechnet oder auf Ihren Wunsch innerhalb von zwei Wochen ausgezahlt.
+            </Text>
+          )}
+        </View>
+
+        <Text style={styles.footer}>
+          {[
+            firma.name,
+            firma.bankname ? `${firma.bankname}` : null,
+            firma.bankverbindung ? `IBAN ${firma.bankverbindung}` : null,
+            designvorlage.fusszeileText,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        </Text>
       </Page>
     </Document>
   );

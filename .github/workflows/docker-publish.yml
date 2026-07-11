@@ -14,6 +14,10 @@ env:
   # staben) statt sich auf ${{ github.repository }} zu verlassen.
   IMAGE_OWNER: jaithn
   IMAGE_NAME: nuola-energy-dashboard
+  # Basis-Version fuer automatische Versionsnummern. Der Patch-Teil ist die
+  # fortlaufende GitHub-Action-Lauf-Nummer -> jeder main-Push erzeugt ohne
+  # manuelles Git-Tag eine echte, aufsteigende Versionsnummer.
+  VERSION_MAJOR_MINOR: "1.0"
 
 jobs:
   build:
@@ -37,12 +41,14 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}
           # Tag-Strategie:
-          #  - main-Push:      "main", "sha-<commit>", "latest" (rollendes Dev-Image)
-          #  - Git-Tag vX.Y.Z: "X.Y.Z", "X.Y", "X" (gepinnte, stabile Releases)
+          #  - main-Push:      "latest", "1.0.<lauf-nr>" (automatische Version),
+          #                    "main", "sha-<commit>"
+          #  - Git-Tag vX.Y.Z: "X.Y.Z", "X.Y", "X" (manuell gepinnte Releases)
           tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ env.VERSION_MAJOR_MINOR }}.${{ github.run_number }},enable={{is_default_branch}}
             type=ref,event=branch
             type=sha
-            type=raw,value=latest,enable={{is_default_branch}}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}

@@ -8,8 +8,11 @@ const initialState: SettingsFormState = {};
 export function FirmenStammdatenForm(props: {
   name: string;
   anschrift: string;
+  plz: string;
+  ort: string;
   steuernummer: string | null;
   ustIdNr: string | null;
+  bankname: string | null;
   bankverbindung: string | null;
 }) {
   const [state, formAction, pending] = useActionState(updateFirmenStammdatenAction, initialState);
@@ -23,8 +26,16 @@ export function FirmenStammdatenForm(props: {
           <input id="name" name="name" type="text" required defaultValue={props.name} />
         </div>
         <div className="field">
-          <label htmlFor="anschrift">Anschrift</label>
+          <label htmlFor="anschrift">Straße &amp; Hausnummer</label>
           <input id="anschrift" name="anschrift" type="text" required defaultValue={props.anschrift} />
+        </div>
+        <div className="field">
+          <label htmlFor="plz">PLZ</label>
+          <input id="plz" name="plz" type="text" defaultValue={props.plz} inputMode="numeric" />
+        </div>
+        <div className="field">
+          <label htmlFor="ort">Ort</label>
+          <input id="ort" name="ort" type="text" defaultValue={props.ort} />
         </div>
         <div className="field">
           <label htmlFor="steuernummer">Steuernummer</label>
@@ -35,7 +46,11 @@ export function FirmenStammdatenForm(props: {
           <input id="ustIdNr" name="ustIdNr" type="text" defaultValue={props.ustIdNr ?? ""} />
         </div>
         <div className="field">
-          <label htmlFor="bankverbindung">Bankverbindung</label>
+          <label htmlFor="bankname">Bankname</label>
+          <input id="bankname" name="bankname" type="text" defaultValue={props.bankname ?? ""} />
+        </div>
+        <div className="field">
+          <label htmlFor="bankverbindung">Bankverbindung (IBAN)</label>
           <input id="bankverbindung" name="bankverbindung" type="text" defaultValue={props.bankverbindung ?? ""} />
         </div>
       </div>
