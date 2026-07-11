@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { verbrauchKwhFuerEinheit } from "@/lib/billing/consumption";
+import { isMietparteiEffectivelyAktiv } from "@/lib/mietpartei";
 import { startOfMonth, endOfMonth } from "date-fns";
 
 function toDateInputValue(d: Date): string {
@@ -47,24 +48,30 @@ export default async function AdminHomePage({
 
   // Nach Objekt gruppieren (geraeteMitStatus ist bereits nach Objektname
   // sortiert, die Map-Reihenfolge bleibt dadurch erhalten).
-  const geraeteNachObjekt = new Map<string, { objektName: string; geraete: typeof geraeteMitStatus }>();
+  const geraeteNachObjekt = new Map<
+    string,
+    { objektId: string; objektName: string; geraete: typeof geraeteMitStatus }
+  >();
   for (const g of geraeteMitStatus) {
     const gruppe = geraeteNachObjekt.get(g.objektId);
     if (gruppe) {
       gruppe.geraete.push(g);
     } else {
-      geraeteNachObjekt.set(g.objektId, { objektName: g.objekt.name, geraete: [g] });
+      geraeteNachObjekt.set(g.objektId, { objektId: g.objektId, objektName: g.objekt.name, geraete: [g] });
     }
   }
 
   const einheiten = await prisma.einheit.findMany({
     where: sp.objektId ? { objektId: sp.objektId } : undefined,
-    include: { objekt: true },
+    include: { objekt: true, mietparteien: true },
+    // Innerhalb eines Objekts primaer nach Einheit sortiert.
     orderBy: [{ objekt: { name: "asc" } }, { bezeichnung: "asc" }],
   });
   const verbrauchProEinheit = await Promise.all(
     einheiten.map(async (e) => ({
       einheit: e,
+      // Aktuell aktive Mietpartei der Einheit (fuer die Anzeige des Mieternamens).
+      mieter: e.mietparteien.find((m) => isMietparteiEffectivelyAktiv(m)) ?? null,
       verbrauchKwh: await verbrauchKwhFuerEinheit(e.id, { von, bis }),
     })),
   );
@@ -86,10 +93,10 @@ export default async function AdminHomePage({
           </thead>
           <tbody>
             {[...geraeteNachObjekt.values()].map((gruppe) => (
-              <Fragment key={gruppe.objektName}>
+              <Fragment key={gruppe.objektId}>
                 <tr>
                   <th colSpan={4} className="group-row">
-                    {gruppe.objektName}
+                    <Link href={`/admin/objekte/${gruppe.objektId}`}>{gruppe.objektName}</Link>
                   </th>
                 </tr>
                 {gruppe.geraete.map((g) => (
@@ -159,20 +166,32 @@ export default async function AdminHomePage({
             <tr>
               <th>Objekt</th>
               <th>Einheit</th>
+              <th>Mieter</th>
               <th>Verbrauch (kWh)</th>
             </tr>
           </thead>
           <tbody>
-            {verbrauchProEinheit.map(({ einheit, verbrauchKwh }) => (
+            {verbrauchProEinheit.map(({ einheit, mieter, verbrauchKwh }) => (
               <tr key={einheit.id}>
-                <td>{einheit.objekt.name}</td>
-                <td>{einheit.bezeichnung}</td>
+                <td>
+                  <Link href={`/admin/objekte/${einheit.objektId}`}>{einheit.objekt.name}</Link>
+                </td>
+                <td>
+                  <Link href={`/admin/einheiten/${einheit.id}`}>{einheit.bezeichnung}</Link>
+                </td>
+                <td>
+                  {mieter ? (
+                    <Link href={`/admin/mietparteien/${mieter.id}`}>{mieter.name}</Link>
+                  ) : (
+                    "–"
+                  )}
+                </td>
                 <td>{verbrauchKwh.toFixed(2)}</td>
               </tr>
             ))}
             {verbrauchProEinheit.length === 0 && (
               <tr>
-                <td colSpan={3}>Keine Einheiten gefunden.</td>
+                <td colSpan={4}>Keine Einheiten gefunden.</td>
               </tr>
             )}
           </tbody>
