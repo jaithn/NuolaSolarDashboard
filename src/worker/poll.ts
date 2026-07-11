@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/db";
 import { fetchDeviceStatuses, type ShellyClientConfig, type ShellyDeviceRef, type DeviceStatusResult } from "@/lib/shelly/client";
+import { sendMail } from "@/lib/mail/mailer";
+import { shellyFehlerEmailHtml, type ShellyFehlerZeile } from "@/lib/mail/templates";
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -11,6 +13,31 @@ function requireEnv(name: string): string {
 
 export function getShellyConfigFromEnv(): ShellyClientConfig {
   return { authKey: requireEnv("SHELLY_CLOUD_AUTH_KEY") };
+}
+
+// Drosselung der Fehler-Mails: bei anhaltenden Fehlern hoechstens alle 6h eine
+// E-Mail (in-memory; ein Worker-Neustart setzt das zurueck).
+const FEHLER_MAIL_INTERVALL_MS = 6 * 60 * 60 * 1000;
+let letzteFehlerMailAt = 0;
+
+async function benachrichtigeUeberFehler(zeilen: ShellyFehlerZeile[]): Promise<void> {
+  if (zeilen.length === 0) return;
+  if (Date.now() - letzteFehlerMailAt < FEHLER_MAIL_INTERVALL_MS) return;
+
+  const firma = await prisma.firmenStammdaten.findUnique({ where: { id: "singleton" } });
+  const to = firma?.shellyFehlerEmail?.trim();
+  if (!to) return;
+
+  try {
+    await sendMail({
+      to,
+      subject: `Shelly-Abruf: ${zeilen.length} Gerät(e) mit Problemen`,
+      html: shellyFehlerEmailHtml(zeilen),
+    });
+    letzteFehlerMailAt = Date.now();
+  } catch (err) {
+    console.error("[worker] Fehler-Benachrichtigung konnte nicht versendet werden:", err);
+  }
 }
 
 /**
@@ -26,7 +53,10 @@ export function getShellyConfigFromEnv(): ShellyClientConfig {
 export async function pollAllDevices(): Promise<void> {
   const config = getShellyConfigFromEnv();
 
-  const geraete = await prisma.shellyGeraet.findMany({ where: { aktiv: true } });
+  const geraete = await prisma.shellyGeraet.findMany({
+    where: { aktiv: true },
+    include: { objekt: true, zuordnungen: { include: { einheit: true } } },
+  });
   if (geraete.length === 0) {
     console.log("[worker] Keine aktiven Shelly-Geräte konfiguriert, überspringe Zyklus.");
     return;
@@ -35,27 +65,37 @@ export async function pollAllDevices(): Promise<void> {
   const refs: ShellyDeviceRef[] = geraete.map((g) => ({ deviceId: g.deviceId, server: g.serverHost }));
   const results = await fetchDeviceStatuses(refs, config);
 
+  const fehler: ShellyFehlerZeile[] = [];
+  const fehlerZeile = (geraet: (typeof geraete)[number], grund: string): ShellyFehlerZeile => ({
+    geraet: geraet.bezeichnung,
+    deviceId: geraet.deviceId,
+    objekt: geraet.objekt.name,
+    einheiten: geraet.zuordnungen.map((z) => z.einheit.bezeichnung).join(", "),
+    grund,
+  });
+
   for (let i = 0; i < geraete.length; i++) {
     const geraet = geraete[i]!;
     const result: PromiseSettledResult<DeviceStatusResult> = results[i]!;
 
     if (result.status === "rejected") {
-      console.error(
-        `[worker] Fehler beim Abruf von Gerät "${geraet.bezeichnung}" (${geraet.deviceId}):`,
-        result.reason,
-      );
+      const grund = result.reason instanceof Error ? result.reason.message : String(result.reason);
+      console.error(`[worker] Fehler beim Abruf von Gerät "${geraet.bezeichnung}" (${geraet.deviceId}):`, grund);
+      fehler.push(fehlerZeile(geraet, `Abruf fehlgeschlagen: ${grund}`));
       continue;
     }
 
     const { online, readings, fetchedAt } = result.value;
     if (!online) {
       console.warn(`[worker] Gerät "${geraet.bezeichnung}" (${geraet.deviceId}) ist offline.`);
+      fehler.push(fehlerZeile(geraet, "Gerät offline"));
       continue;
     }
     if (readings.length === 0) {
       console.warn(
         `[worker] Gerät "${geraet.bezeichnung}" (${geraet.deviceId}) lieferte keine erkennbaren Energiezähler.`,
       );
+      fehler.push(fehlerZeile(geraet, "Keine erkennbaren Energiezähler in der Antwort"));
       continue;
     }
 
@@ -85,4 +125,6 @@ export async function pollAllDevices(): Promise<void> {
       }
     }
   }
+
+  await benachrichtigeUeberFehler(fehler);
 }

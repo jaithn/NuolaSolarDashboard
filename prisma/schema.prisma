@@ -320,6 +320,9 @@ model FirmenStammdaten {
   ustIdNr        String?
   bankname       String?
   bankverbindung String?
+  // E-Mail fuer technische Fehlerbenachrichtigungen (fehlgeschlagener
+  // Shelly-Abruf im Worker). Leer = keine Benachrichtigung.
+  shellyFehlerEmail String?
   updatedAt      DateTime @updatedAt
 }
 

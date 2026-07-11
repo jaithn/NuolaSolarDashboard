@@ -14,6 +14,7 @@ export function FirmenStammdatenForm(props: {
   ustIdNr: string | null;
   bankname: string | null;
   bankverbindung: string | null;
+  shellyFehlerEmail: string | null;
 }) {
   const [state, formAction, pending] = useActionState(updateFirmenStammdatenAction, initialState);
 
@@ -52,6 +53,16 @@ export function FirmenStammdatenForm(props: {
         <div className="field">
           <label htmlFor="bankverbindung">Bankverbindung (IBAN)</label>
           <input id="bankverbindung" name="bankverbindung" type="text" defaultValue={props.bankverbindung ?? ""} />
+        </div>
+        <div className="field">
+          <label htmlFor="shellyFehlerEmail">E-Mail für Shelly-Fehlermeldungen</label>
+          <input
+            id="shellyFehlerEmail"
+            name="shellyFehlerEmail"
+            type="email"
+            defaultValue={props.shellyFehlerEmail ?? ""}
+            placeholder="technik@nuola-solar.de"
+          />
         </div>
       </div>
       <button className="btn" type="submit" disabled={pending} style={{ maxWidth: "16rem" }}>

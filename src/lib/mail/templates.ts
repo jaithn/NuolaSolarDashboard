@@ -45,3 +45,46 @@ export function passwordResetEmailHtml(params: { resetUrl: string }): string {
     `,
   );
 }
+
+export interface ShellyFehlerZeile {
+  geraet: string;
+  deviceId: string;
+  objekt: string;
+  einheiten: string;
+  grund: string;
+}
+
+export function shellyFehlerEmailHtml(zeilen: ShellyFehlerZeile[]): string {
+  const rows = zeilen
+    .map(
+      (z) => `
+      <tr>
+        <td style="padding:4px 8px;border:1px solid #e2e8f0;">${z.objekt}</td>
+        <td style="padding:4px 8px;border:1px solid #e2e8f0;">${z.einheiten || "–"}</td>
+        <td style="padding:4px 8px;border:1px solid #e2e8f0;">${z.geraet}</td>
+        <td style="padding:4px 8px;border:1px solid #e2e8f0;font-family:monospace;">${z.deviceId}</td>
+        <td style="padding:4px 8px;border:1px solid #e2e8f0;">${z.grund}</td>
+      </tr>`,
+    )
+    .join("");
+  return layout(
+    "Shelly-Abruf fehlgeschlagen",
+    `
+      <p>Beim automatischen Abruf der folgenden Shelly-Geräte sind Probleme aufgetreten:</p>
+      <table style="border-collapse:collapse;font-size:0.85rem;width:100%;">
+        <thead>
+          <tr>
+            <th style="padding:4px 8px;border:1px solid #e2e8f0;text-align:left;">Objekt</th>
+            <th style="padding:4px 8px;border:1px solid #e2e8f0;text-align:left;">Einheit(en)</th>
+            <th style="padding:4px 8px;border:1px solid #e2e8f0;text-align:left;">Gerät</th>
+            <th style="padding:4px 8px;border:1px solid #e2e8f0;text-align:left;">Device-ID</th>
+            <th style="padding:4px 8px;border:1px solid #e2e8f0;text-align:left;">Grund</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <p style="color:#64748b;font-size:0.8rem;">Diese Benachrichtigung wird höchstens einmal alle 6 Stunden verschickt,
+      solange Fehler bestehen. Die Erfassung läuft für die übrigen Geräte normal weiter.</p>
+    `,
+  );
+}

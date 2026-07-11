@@ -49,8 +49,12 @@ export async function updateFirmenStammdatenAction(
   const ustIdNr = String(formData.get("ustIdNr") ?? "").trim();
   const bankname = String(formData.get("bankname") ?? "").trim();
   const bankverbindung = String(formData.get("bankverbindung") ?? "").trim();
+  const shellyFehlerEmail = String(formData.get("shellyFehlerEmail") ?? "").trim();
 
   if (!name || !anschrift) return { error: "Bitte Name und Anschrift angeben." };
+  if (shellyFehlerEmail && !z.string().email().max(254).safeParse(shellyFehlerEmail).success) {
+    return { error: "Die Fehler-Benachrichtigungs-E-Mail ist ungültig." };
+  }
 
   const data = {
     name,
@@ -61,6 +65,7 @@ export async function updateFirmenStammdatenAction(
     ustIdNr: ustIdNr || null,
     bankname: bankname || null,
     bankverbindung: bankverbindung || null,
+    shellyFehlerEmail: shellyFehlerEmail || null,
   };
   await prisma.firmenStammdaten.upsert({
     where: { id: "singleton" },
