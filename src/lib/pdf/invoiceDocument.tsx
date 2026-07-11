@@ -35,6 +35,7 @@ export interface InvoiceDocumentData {
     anfangszaehlerstandKwh: number;
     endzaehlerstandKwh: number;
     gesamtVerbrauchKwh: number;
+    verbrauchGeschaetzt: boolean;
     arbeitspreisNetto: number;
     grundgebuehrMonatlichNetto: number | null;
     summeAbschlaegeBrutto: number;
@@ -122,7 +123,9 @@ export function InvoiceDocument({ firma, designvorlage, mietpartei, rechnung, po
         <View style={styles.detailBox}>
           <Text style={styles.detailItem}>Anfangszählerstand: {fmt(rechnung.anfangszaehlerstandKwh)} kWh</Text>
           <Text style={styles.detailItem}>Endzählerstand: {fmt(rechnung.endzaehlerstandKwh)} kWh</Text>
-          <Text style={styles.detailItem}>Ermittelter Verbrauch: {fmt(rechnung.gesamtVerbrauchKwh)} kWh</Text>
+          <Text style={styles.detailItem}>
+            Ermittelter Verbrauch: {fmt(rechnung.gesamtVerbrauchKwh)} kWh{rechnung.verbrauchGeschaetzt ? " (teilw. geschätzt)" : ""}
+          </Text>
           <Text style={styles.detailItem}>
             Arbeitspreis: {rechnung.arbeitspreisNetto.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 4 })} €/kWh (netto)
           </Text>
@@ -177,6 +180,16 @@ export function InvoiceDocument({ firma, designvorlage, mietpartei, rechnung, po
             {rechnung.verrechnungBetrag >= 0 ? "Nachzahlung" : "Guthaben"}: {fmt(Math.abs(rechnung.verrechnungBetrag))} €
           </Text>
         </View>
+
+        {rechnung.verbrauchGeschaetzt && (
+          <View style={[styles.abschlussBox, { marginTop: 8 }]}>
+            <Text>
+              Hinweis: Für Zeiträume ohne Ablesewert wurde der Zählerstand gemäß § 7 des Mietvertrags
+              (Verbrauchsschätzung) auf Basis der vorhandenen Messwerte geschätzt. Nach Vorliegen der
+              tatsächlichen Verbrauchsdaten erfolgt erforderlichenfalls eine Korrektur.
+            </Text>
+          </View>
+        )}
 
         <View style={styles.abschlussBox}>
           {rechnung.verrechnungBetrag >= 0 ? (

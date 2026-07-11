@@ -9,6 +9,45 @@ export interface GeraetFormState {
   error?: string;
 }
 
+export interface ManualMesswertState {
+  error?: string;
+  success?: string;
+}
+
+export async function createManualMesswertAction(
+  _prevState: ManualMesswertState,
+  formData: FormData,
+): Promise<ManualMesswertState> {
+  await requireAdmin();
+
+  const geraetId = String(formData.get("geraetId") ?? "");
+  const phase = String(formData.get("phase") ?? "").trim();
+  const zeitpunktRaw = String(formData.get("zeitpunkt") ?? "");
+  const kwh = Number(formData.get("kwh"));
+
+  if (!geraetId || !phase || !zeitpunktRaw) {
+    return { error: "Bitte Phase, Zeitpunkt und Zählerstand angeben." };
+  }
+  if (!Number.isFinite(kwh) || kwh < 0) {
+    return { error: "Der Zählerstand ist ungültig." };
+  }
+  const zeitpunkt = new Date(zeitpunktRaw);
+  if (Number.isNaN(zeitpunkt.getTime())) {
+    return { error: "Der Zeitpunkt ist ungültig." };
+  }
+
+  // Zaehlerstand wird als kumulativer Wh-Wert gespeichert (Eingabe in kWh).
+  const energyWh = Math.round(kwh * 1000);
+  await prisma.messwert.upsert({
+    where: { geraetId_phase_timestamp: { geraetId, phase, timestamp: zeitpunkt } },
+    update: { energyWh, quelle: "MANUELL" },
+    create: { geraetId, phase, timestamp: zeitpunkt, energyWh, quelle: "MANUELL" },
+  });
+
+  revalidatePath(`/admin/geraete/${geraetId}`);
+  return { success: "Manueller Messwert gespeichert." };
+}
+
 export async function createGeraetAction(
   _prevState: GeraetFormState,
   formData: FormData,

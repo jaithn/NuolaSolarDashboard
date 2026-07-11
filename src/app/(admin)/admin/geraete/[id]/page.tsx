@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { GeraetForm } from "../GeraetForm";
+import { ManualMesswertForm } from "./ManualMesswertForm";
 import { toggleGeraetAktivAction } from "../actions";
 
 export default async function GeraetDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -20,11 +21,13 @@ export default async function GeraetDetailPage({ params }: { params: Promise<{ i
   // Phasen, aktueller Zaehlerstand je Phase, und die letzten 10 Abfragen
   // (nach Zeitstempel gruppiert, ein Messwert je Phase pro Abfrage).
   const phasen = [...new Set(messwerte.map((m) => m.phase))].sort();
-  const aktuellProPhase = new Map<string, { energyWh: number; timestamp: Date }>();
+  const aktuellProPhase = new Map<string, { energyWh: number; timestamp: Date; quelle: string }>();
   for (const m of messwerte) {
-    if (!aktuellProPhase.has(m.phase)) aktuellProPhase.set(m.phase, { energyWh: m.energyWh, timestamp: m.timestamp });
+    if (!aktuellProPhase.has(m.phase)) {
+      aktuellProPhase.set(m.phase, { energyWh: m.energyWh, timestamp: m.timestamp, quelle: m.quelle });
+    }
   }
-  const abfragen = new Map<number, { timestamp: Date; werte: Map<string, number> }>();
+  const abfragen = new Map<number, { timestamp: Date; werte: Map<string, { energyWh: number; quelle: string }> }>();
   for (const m of messwerte) {
     const key = m.timestamp.getTime();
     let g = abfragen.get(key);
@@ -32,7 +35,7 @@ export default async function GeraetDetailPage({ params }: { params: Promise<{ i
       g = { timestamp: m.timestamp, werte: new Map() };
       abfragen.set(key, g);
     }
-    g.werte.set(m.phase, m.energyWh);
+    g.werte.set(m.phase, { energyWh: m.energyWh, quelle: m.quelle });
   }
   const letzteAbfragen = [...abfragen.values()]
     .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
@@ -100,7 +103,14 @@ export default async function GeraetDetailPage({ params }: { params: Promise<{ i
                 return (
                   <tr key={p}>
                     <td>{p}</td>
-                    <td style={{ fontFamily: "var(--font-mono)" }}>{kwh(a.energyWh)}</td>
+                    <td style={{ fontFamily: "var(--font-mono)" }}>
+                      {kwh(a.energyWh)}
+                      {a.quelle === "MANUELL" && (
+                        <span className="status-badge inaktiv" style={{ marginLeft: 6 }}>
+                          manuell
+                        </span>
+                      )}
+                    </td>
                     <td>{a.timestamp.toLocaleString("de-DE")}</td>
                   </tr>
                 );
@@ -128,16 +138,33 @@ export default async function GeraetDetailPage({ params }: { params: Promise<{ i
               {letzteAbfragen.map((a) => (
                 <tr key={a.timestamp.getTime()}>
                   <td>{a.timestamp.toLocaleString("de-DE")}</td>
-                  {phasen.map((p) => (
-                    <td key={p} style={{ fontFamily: "var(--font-mono)" }}>
-                      {a.werte.has(p) ? kwh(a.werte.get(p)!) : "–"}
-                    </td>
-                  ))}
+                  {phasen.map((p) => {
+                    const zelle = a.werte.get(p);
+                    return (
+                      <td key={p} style={{ fontFamily: "var(--font-mono)" }}>
+                        {zelle ? kwh(zelle.energyWh) : "–"}
+                        {zelle?.quelle === "MANUELL" && (
+                          <span className="status-badge inaktiv" style={{ marginLeft: 6 }}>
+                            manuell
+                          </span>
+                        )}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>
           </table>
         )}
+      </div>
+
+      <div className="section">
+        <h2>Manuellen Messwert eintragen</h2>
+        <p style={{ fontSize: "0.85rem", color: "var(--color-muted)" }}>
+          Kumulativer Zählerstand (kWh) zu einem Zeitpunkt, z.B. bei Ausfall oder manueller Ablesung.
+          Manuelle Werte werden im Log und auf der Rechnung markiert.
+        </p>
+        <ManualMesswertForm geraetId={geraet.id} phasen={phasen} />
       </div>
 
       <div className="section">

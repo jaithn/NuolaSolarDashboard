@@ -39,7 +39,10 @@ export async function erstelleRechnungsentwurf(params: GenerateInvoiceParams): P
   const zeitraum: Zeitraum = { von: params.von, bis: params.bis };
 
   const verbrauchKwh = await verbrauchKwhFuerEinheit(mietpartei.einheitId, zeitraum);
-  const { anfangKwh, endeKwh } = await zaehlerstaendeFuerEinheit(mietpartei.einheitId, zeitraum);
+  const { anfangKwh, endeKwh, geschaetzt: verbrauchGeschaetzt } = await zaehlerstaendeFuerEinheit(
+    mietpartei.einheitId,
+    zeitraum,
+  );
   const arbeitspreisGesamtNetto = Math.round(verbrauchKwh * mietpartei.arbeitspreisNetto * 100) / 100;
 
   const positionenEntwurf: RechnungspositionEntwurf[] = [
@@ -105,6 +108,7 @@ export async function erstelleRechnungsentwurf(params: GenerateInvoiceParams): P
       anfangszaehlerstandKwh: Math.round(anfangKwh * 100) / 100,
       endzaehlerstandKwh: Math.round(endeKwh * 100) / 100,
       gesamtVerbrauchKwh: Math.round(verbrauchKwh * 100) / 100,
+      verbrauchGeschaetzt,
       arbeitspreisNetto: mietpartei.arbeitspreisNetto,
       grundgebuehrMonatlichNetto: mietpartei.grundpreisNetto,
       summeAbschlaegeBrutto,

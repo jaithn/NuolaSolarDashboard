@@ -5,43 +5,77 @@ export interface Zeitraum {
   bis: Date;
 }
 
+// Ab dieser Luecke zwischen dem letzten Messwert vor einem Stichtag und dem
+// Stichtag selbst gilt der Zaehlerstand als geschaetzt (Interpolation zum
+// naechsten vorhandenen Messwert). Bei normalem Polling (alle paar Minuten)
+// wird das nie ausgeloest; erst ein echter Ausfall (Geraet ueber einen Tag
+// offline) fuehrt zur Schaetzung - gedeckt durch § 7 des Mietvertrags.
+const SCHAETZ_LUECKE_MS = 25 * 60 * 60 * 1000;
+
+interface Grenzwert {
+  wert: number;
+  geschaetzt: boolean;
+}
+
 /**
- * Ermittelt Anfangs- und Endzählerstand (Wh) einer Geraet/Phase-Kombination im
- * Zeitraum. Fehlt ein Messwert am oder vor "von" (z.B. Geraet erst waehrend
- * des Zeitraums installiert), wird der frueheste im Zeitraum verfuegbare Wert
- * als Startbasis verwendet - fehlende Messwerte vor Installation koennen
- * naturgemaess nicht rekonstruiert werden.
+ * Zaehlerstand (Wh) einer Geraet/Phase zu einem Stichtag. Liegt am Stichtag
+ * kein Messwert vor, aber davor UND danach welche, wird linear interpoliert
+ * (und als geschaetzt markiert), sofern die Luecke groesser als
+ * SCHAETZ_LUECKE_MS ist. Existieren nur Werte nach dem Stichtag (Geraet erst
+ * spaeter installiert), wird der frueheste als Naeherung genutzt.
  */
-async function zaehlerstandGrenzwerte(
-  geraetId: string,
-  phase: string,
-  zeitraum: Zeitraum,
-): Promise<{ start: number; ende: number } | null> {
-  const endReading = await prisma.messwert.findFirst({
-    where: { geraetId, phase, timestamp: { lte: zeitraum.bis } },
-    orderBy: { timestamp: "desc" },
-  });
-  if (!endReading) return null;
-
-  const startReading =
-    (await prisma.messwert.findFirst({
-      where: { geraetId, phase, timestamp: { lte: zeitraum.von } },
+async function zaehlerstandZumZeitpunkt(geraetId: string, phase: string, zeitpunkt: Date): Promise<Grenzwert | null> {
+  const [vor, nach] = await Promise.all([
+    prisma.messwert.findFirst({
+      where: { geraetId, phase, timestamp: { lte: zeitpunkt } },
       orderBy: { timestamp: "desc" },
-    })) ??
-    (await prisma.messwert.findFirst({
-      where: { geraetId, phase, timestamp: { gte: zeitraum.von, lte: zeitraum.bis } },
+    }),
+    prisma.messwert.findFirst({
+      where: { geraetId, phase, timestamp: { gt: zeitpunkt } },
       orderBy: { timestamp: "asc" },
-    }));
-  if (!startReading) return null;
+    }),
+  ]);
 
-  return { start: startReading.energyWh, ende: endReading.energyWh };
+  if (vor && vor.timestamp.getTime() === zeitpunkt.getTime()) {
+    return { wert: vor.energyWh, geschaetzt: false };
+  }
+
+  if (vor && nach) {
+    const luecke = zeitpunkt.getTime() - vor.timestamp.getTime();
+    if (luecke > SCHAETZ_LUECKE_MS) {
+      const t0 = vor.timestamp.getTime();
+      const t1 = nach.timestamp.getTime();
+      const frac = t1 > t0 ? (zeitpunkt.getTime() - t0) / (t1 - t0) : 0;
+      const wert = vor.energyWh + frac * (nach.energyWh - vor.energyWh);
+      return { wert, geschaetzt: true };
+    }
+    return { wert: vor.energyWh, geschaetzt: false };
+  }
+
+  if (vor) return { wert: vor.energyWh, geschaetzt: false };
+  if (nach) return { wert: nach.energyWh, geschaetzt: true };
+  return null;
+}
+
+interface Grenzwerte {
+  start: number;
+  ende: number;
+  geschaetzt: boolean;
+}
+
+async function zaehlerstandGrenzwerte(geraetId: string, phase: string, zeitraum: Zeitraum): Promise<Grenzwerte | null> {
+  const [start, ende] = await Promise.all([
+    zaehlerstandZumZeitpunkt(geraetId, phase, zeitraum.von),
+    zaehlerstandZumZeitpunkt(geraetId, phase, zeitraum.bis),
+  ]);
+  if (!start || !ende) return null;
+  return { start: start.wert, ende: ende.wert, geschaetzt: start.geschaetzt || ende.geschaetzt };
 }
 
 /**
  * Verbrauch (Wh) einer einzelnen Geraet/Phase-Kombination im Zeitraum, als
  * Differenz zweier kumulativer Zaehlerstaende. Ein negativer Delta (z.B.
- * durch Zaehler-Reset bei Geraetetausch) wird auf 0 abgefangen statt eine
- * negative Verbrauchsmenge auszuweisen.
+ * durch Zaehler-Reset bei Geraetetausch) wird auf 0 abgefangen.
  */
 export async function phasenVerbrauchWh(geraetId: string, phase: string, zeitraum: Zeitraum): Promise<number> {
   const grenzwerte = await zaehlerstandGrenzwerte(geraetId, phase, zeitraum);
@@ -61,11 +95,7 @@ async function allePhasenDesGeraets(shellyGeraetId: string): Promise<string[]> {
 /**
  * Gesamtverbrauch (kWh) einer Einheit im Zeitraum: summiert ueber alle ihr
  * zugeordneten Geraete (ADDIEREN) abzueglich aller als SUBTRAHIEREN
- * zugeordneten Geraete (z.B. ein Allgemeinstrom-Zwischenzaehler im Stromkreis
- * eines Mieters). Ein Geraet kann dabei mehreren Einheiten zugeordnet sein
- * (z.B. derselbe Allgemeinstrom-Zaehler bei mehreren Mietparteien). Das
- * Ergebnis wird bei 0 abgeschnitten, falls die Subtraktion rechnerisch
- * negativ wuerde (z.B. durch Messungenauigkeiten).
+ * zugeordneten Geraete. Ergebnis bei 0 abgeschnitten.
  */
 export async function verbrauchKwhFuerEinheit(einheitId: string, zeitraum: Zeitraum): Promise<number> {
   const zuordnungen = await prisma.geraetZuordnung.findMany({ where: { einheitId } });
@@ -86,25 +116,22 @@ export async function verbrauchKwhFuerEinheit(einheitId: string, zeitraum: Zeitr
 export interface Zaehlerstaende {
   anfangKwh: number;
   endeKwh: number;
+  // true, wenn mindestens ein Grenz-Zaehlerstand geschaetzt (interpoliert) wurde.
+  geschaetzt: boolean;
 }
 
 /**
  * Aggregierter Anfangs- und Endzählerstand (kWh) einer Einheit für den
- * Zeitraum - fuer den Pflichtausweis "Anfangs- und Endzählerstand" auf der
- * Rechnung. Bei mehreren zugeordneten Geraeten (z.B. mehrere Shellys pro
- * Einheit oder ein per SUBTRAHIEREN abgezogener Allgemeinstrom-Zwischen-
- * zaehler) werden die jeweiligen Rohzaehlerstaende mit demselben Vorzeichen
- * wie in der Verbrauchsberechnung aufsummiert, sodass "Endstand - Anfangs-
- * stand" rechnerisch dem ausgewiesenen Verbrauch entspricht (Ausnahme: ein
- * Zaehler-Reset/Geraetetausch waehrend des Zeitraums, siehe
- * phasenVerbrauchWh - in diesem seltenen Fall ist "eine durchgehende
- * Zaehlerablesung" ohnehin kein sinnvoller Begriff mehr).
+ * Zeitraum (Pflichtausweis auf der Rechnung), inkl. Schaetz-Flag. Bei mehreren
+ * zugeordneten Geraeten werden die Rohzaehlerstaende mit demselben Vorzeichen
+ * wie in der Verbrauchsberechnung aufsummiert.
  */
 export async function zaehlerstaendeFuerEinheit(einheitId: string, zeitraum: Zeitraum): Promise<Zaehlerstaende> {
   const zuordnungen = await prisma.geraetZuordnung.findMany({ where: { einheitId } });
 
   let anfangWh = 0;
   let endeWh = 0;
+  let geschaetzt = false;
   for (const zuordnung of zuordnungen) {
     const vorzeichen = zuordnung.modus === "SUBTRAHIEREN" ? -1 : 1;
     const phasen = await allePhasenDesGeraets(zuordnung.shellyGeraetId);
@@ -113,8 +140,9 @@ export async function zaehlerstaendeFuerEinheit(einheitId: string, zeitraum: Zei
       if (!grenzwerte) continue;
       anfangWh += vorzeichen * grenzwerte.start;
       endeWh += vorzeichen * grenzwerte.ende;
+      if (grenzwerte.geschaetzt) geschaetzt = true;
     }
   }
 
-  return { anfangKwh: anfangWh / 1000, endeKwh: endeWh / 1000 };
+  return { anfangKwh: anfangWh / 1000, endeKwh: endeWh / 1000, geschaetzt };
 }

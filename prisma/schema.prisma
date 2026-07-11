@@ -93,16 +93,22 @@ model GeraetZuordnung {
   @@index([shellyGeraetId])
 }
 
+enum MesswertQuelle {
+  AUTOMATISCH // per Shelly-Polling erfasst
+  MANUELL // vom Admin manuell eingetragen
+}
+
 // Rohdaten aus dem Shelly-Polling: kumulativer Energiezaehler je Geraet/Phase
 // und Zeitpunkt. Verbrauch wird stets als Differenz zweier Zaehlerstaende
 // berechnet (siehe src/lib/billing/consumption.ts).
 model Messwert {
-  id         String   @id @default(cuid())
+  id         String         @id @default(cuid())
   geraetId   String
   phase      String
   timestamp  DateTime
   energyWh   Float
-  createdAt  DateTime @default(now())
+  quelle     MesswertQuelle @default(AUTOMATISCH)
+  createdAt  DateTime       @default(now())
 
   geraet ShellyGeraet @relation(fields: [geraetId], references: [id], onDelete: Cascade)
 
@@ -270,6 +276,10 @@ model Rechnung {
   anfangszaehlerstandKwh Float
   endzaehlerstandKwh     Float
   gesamtVerbrauchKwh    Float
+  // true, wenn ein Anfangs-/Endzaehlerstand mangels Ablesewert geschaetzt
+  // wurde (siehe § 7 Verbrauchsschaetzung im Mietvertrag). Wird auf der
+  // Rechnung entsprechend ausgewiesen.
+  verbrauchGeschaetzt   Boolean @default(false)
   arbeitspreisNetto     Float
   // Monatliche Grundgebuehr (Netto) laut Mietvertrag zum Ausstellungszeitpunkt -
   // unabhaengig vom taggenau anteilig berechneten Gesamtbetrag der Grundpreis-

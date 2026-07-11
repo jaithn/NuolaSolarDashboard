@@ -37,6 +37,11 @@ export default async function RechnungDetailPage({
           Anfangszählerstand: <strong>{rechnung.anfangszaehlerstandKwh.toFixed(2)} kWh</strong> · Endzählerstand:{" "}
           <strong>{rechnung.endzaehlerstandKwh.toFixed(2)} kWh</strong> · Ermittelter Verbrauch:{" "}
           <strong>{rechnung.gesamtVerbrauchKwh.toFixed(2)} kWh</strong>
+          {rechnung.verbrauchGeschaetzt && (
+            <span className="status-badge inaktiv" style={{ marginLeft: 8 }}>
+              teilw. geschätzt (§ 7)
+            </span>
+          )}
         </p>
         <p>
           Arbeitspreis: <strong>{rechnung.arbeitspreisNetto.toFixed(4)} €/kWh (netto)</strong>

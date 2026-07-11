@@ -263,4 +263,34 @@ describe("zaehlerstaendeFuerEinheit", () => {
     expect(endeKwh).toBeCloseTo(1.7, 3);
     expect(endeKwh - anfangKwh).toBeCloseTo(verbrauch, 3); // 0.8 kWh
   });
+
+  it("schätzt den Endzählerstand bei fehlendem Monatsend-Wert und markiert dies", async () => {
+    const einheit = await prisma.einheit.create({ data: { objektId, bezeichnung: "Whg. Schätzung" } });
+    const geraet = await prisma.shellyGeraet.create({
+      data: { objektId, deviceId: `dev-${suffix}-schaetz`, serverHost: "shelly-test.shelly.cloud", bezeichnung: "Zähler" },
+    });
+    await prisma.geraetZuordnung.create({
+      data: { einheitId: einheit.id, shellyGeraetId: geraet.id, modus: "ADDIEREN" },
+    });
+
+    const von = new Date("2027-01-01T00:00:00.000Z");
+    const bis = new Date("2027-01-31T23:59:59.000Z");
+
+    await prisma.messwert.createMany({
+      data: [
+        { geraetId: geraet.id, phase: "a", timestamp: von, energyWh: 1000 },
+        // letzter Wert vor Monatsende liegt Mitte Januar (grosse Luecke bis bis)
+        { geraetId: geraet.id, phase: "a", timestamp: new Date("2027-01-15T00:00:00.000Z"), energyWh: 1500 },
+        // erst im Folgemonat wieder Daten
+        { geraetId: geraet.id, phase: "a", timestamp: new Date("2027-02-10T00:00:00.000Z"), energyWh: 2500 },
+      ],
+    });
+
+    const { anfangKwh, endeKwh, geschaetzt } = await zaehlerstaendeFuerEinheit(einheit.id, { von, bis });
+    expect(geschaetzt).toBe(true);
+    expect(anfangKwh).toBeCloseTo(1.0, 3); // Anfang exakt vorhanden
+    // Ende zwischen dem Mitte-Januar-Wert (1.5) und dem Februar-Wert (2.5) interpoliert
+    expect(endeKwh).toBeGreaterThan(1.5);
+    expect(endeKwh).toBeLessThan(2.5);
+  });
 });
