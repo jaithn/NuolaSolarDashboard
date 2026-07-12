@@ -31,6 +31,7 @@ function collectValues(formData: FormData): Record<string, string> {
   const keys = [
     "einheitId",
     "anrede",
+    "vorname",
     "name",
     "firma",
     "email",
@@ -53,12 +54,14 @@ function collectValues(formData: FormData): Record<string, string> {
   return out;
 }
 
-type Anrede = "HERR" | "FRAU" | "FAMILIE" | null;
+type Anrede = "HERR" | "FRAU" | "FAMILIE" | "FIRMA" | null;
 
 type ParsedMietpartei = {
   einheitId: string;
-  // Name (natuerliche Person / Ansprechpartner). Leerer String erlaubt, wenn
-  // firma gesetzt ist (Schema: name String @default("")).
+  // Vorname (natuerliche Person). Leer bei Firmen.
+  vorname: string;
+  // Nachname (natuerliche Person). Leerer String erlaubt, wenn firma gesetzt ist
+  // (Schema: name String @default("")).
   name: string;
   firma: string | null;
   anrede: Anrede;
@@ -78,6 +81,7 @@ type ParsedMietpartei = {
 
 function parseMietparteiInput(formData: FormData): { error: string } | { data: ParsedMietpartei } {
   const einheitId = String(formData.get("einheitId") ?? "");
+  const vorname = String(formData.get("vorname") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
   const firma = String(formData.get("firma") ?? "").trim();
   const anredeRaw = String(formData.get("anrede") ?? "").trim();
@@ -92,14 +96,22 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
   const grundpreisNetto = Number(formData.get("grundpreisNetto"));
   const grundpreisSteuersatzId = String(formData.get("grundpreisSteuersatzId") ?? "");
 
-  // Name ist Pflicht, ausser wenn eine Firma hinterlegt ist (dann ist der
-  // Firmenname der Bezeichner und der Name/Ansprechpartner darf leer sein).
   if (!einheitId || !email || !einzugsdatumRaw || !arbeitspreisSteuersatzId) {
     return { error: "Bitte alle Pflichtfelder ausfüllen." };
   }
-  if (!name && !firma) {
-    return { error: "Bitte einen Namen angeben (oder eine Firma hinterlegen)." };
+
+  // Anrede uebernehmen, sobald ein gueltiger Wert gewaehlt wurde. Die Anrede ist
+  // zugleich Diskriminator: FIRMA -> juristische Person (Firmenname Pflicht,
+  // Name/Vorname bleiben leer); HERR/FRAU/FAMILIE/keine -> natuerliche Person
+  // (Nachname Pflicht, keine Firma).
+  const anrede: Anrede = ["HERR", "FRAU", "FAMILIE", "FIRMA"].includes(anredeRaw) ? (anredeRaw as Anrede) : null;
+  const istFirma = anrede === "FIRMA";
+  if (istFirma) {
+    if (!firma) return { error: "Bitte den Firmennamen angeben." };
+  } else if (!name) {
+    return { error: "Bitte den Namen angeben." };
   }
+
   // Strikte E-Mail-Validierung: verhindert u.a. Zeilenumbrueche/Sonderzeichen
   // in der Empfaengeradresse (SMTP-Header-Injection) bei Onboarding- und
   // Rechnungsmails.
@@ -110,17 +122,13 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
     return { error: "Der Arbeitspreis ist ungültig." };
   }
 
-  // Anrede uebernehmen, sobald ein gueltiger Wert gewaehlt wurde. Frueher war
-  // die Anrede zusaetzlich an einen vorhandenen Namen gekoppelt - das fuehrte
-  // dazu, dass bei Mietparteien mit leerem Namensfeld (z.B. reine Firma) eine
-  // ausgewaehlte Anrede beim Speichern stillschweigend wieder verworfen wurde.
-  const anrede: Anrede = ["HERR", "FRAU", "FAMILIE"].includes(anredeRaw) ? (anredeRaw as Anrede) : null;
-
   return {
     data: {
       einheitId,
-      name,
-      firma: firma || null,
+      // Konsistenz erzwingen: Firmen haben keinen Vor-/Nachnamen, Personen keine Firma.
+      vorname: istFirma ? "" : vorname,
+      name: istFirma ? "" : name,
+      firma: istFirma ? firma : null,
       anrede,
       email,
       telefon: telefon || null,
@@ -279,16 +287,21 @@ export async function createAbschlagAction(
   }
 
   const gueltigAb = new Date(gueltigAbRaw);
-  // Der neue Abschlag loest den bisherigen ab: alle noch offenen (gueltigBis
-  // = null) Abschlaege, die vor dem neuen beginnen, werden am Tag vor dem
-  // neuen Gueltigkeitsbeginn beendet - so gibt es keine Ueberschneidung und
-  // keine Doppelberechnung in der Rechnung.
+  // Der neue Abschlag loest den bisherigen ab: jeder vor dem neuen beginnende
+  // Abschlag, der sonst mit ihm ueberschneiden wuerde (offenes Ende ODER Ende
+  // am/nach dem neuen Beginn), wird am Tag VOR dem neuen Gueltigkeitsbeginn
+  // beendet - so entsteht keine Ueberschneidung/Doppelberechnung und der
+  // Vorgaenger hat immer ein sauberes Enddatum.
   const tagVorNeu = new Date(gueltigAb);
   tagVorNeu.setDate(tagVorNeu.getDate() - 1);
 
   await prisma.$transaction(async (tx) => {
     await tx.abschlag.updateMany({
-      where: { mietparteiId, gueltigBis: null, gueltigAb: { lt: gueltigAb } },
+      where: {
+        mietparteiId,
+        gueltigAb: { lt: gueltigAb },
+        OR: [{ gueltigBis: null }, { gueltigBis: { gte: gueltigAb } }],
+      },
       data: { gueltigBis: tagVorNeu },
     });
     await tx.abschlag.create({

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { MietparteiForm } from "../MietparteiForm";
@@ -22,6 +23,15 @@ export default async function MietparteiDetailPage({ params }: { params: Promise
     include: { steuersatz: true },
   });
 
+  // Historie der Jahresverbraeuche: nur FREIGEGEBENE/VERSENDETE (also
+  // freigegebene) Rechnungen - Entwuerfe und Stornos bleiben aussen vor.
+  const freigegebeneRechnungen = await prisma.rechnung.findMany({
+    where: { mietparteiId: id, status: { in: ["FREIGEGEBEN", "VERSENDET"] } },
+    orderBy: { zeitraumVon: "desc" },
+  });
+  const summeVerbrauchKwh = freigegebeneRechnungen.reduce((s, r) => s + r.gesamtVerbrauchKwh, 0);
+  const summeVerrechnung = freigegebeneRechnungen.reduce((s, r) => s + r.verrechnungBetrag, 0);
+
   const einheitOptions = einheiten.map((e) => ({ id: e.id, label: `${e.objekt.name} – ${e.bezeichnung}` }));
 
   return (
@@ -34,6 +44,56 @@ export default async function MietparteiDetailPage({ params }: { params: Promise
       <div className="section">
         <h2>Stammdaten</h2>
         <MietparteiForm mode="edit" einheiten={einheitOptions} steuersaetze={steuersaetze} mietpartei={mietpartei} />
+      </div>
+
+      <div className="section">
+        <h2>Jahresverbräuche (freigegebene Rechnungen)</h2>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Rechnung</th>
+              <th>Zeitraum</th>
+              <th>Verbrauch (<span className="unit">kWh</span>)</th>
+              <th>Verrechnung</th>
+            </tr>
+          </thead>
+          <tbody>
+            {freigegebeneRechnungen.map((r) => (
+              <tr key={r.id}>
+                <td>
+                  <Link href={`/admin/rechnungen/${r.id}`}>{r.rechnungsnummer ?? "—"}</Link>
+                </td>
+                <td>
+                  {r.zeitraumVon.toLocaleDateString("de-DE")} – {r.zeitraumBis.toLocaleDateString("de-DE")}
+                </td>
+                <td>{r.gesamtVerbrauchKwh.toFixed(2)}</td>
+                <td>
+                  {r.verrechnungBetrag >= 0 ? "Nachzahlung" : "Guthaben"}: {Math.abs(r.verrechnungBetrag).toFixed(2)} €
+                </td>
+              </tr>
+            ))}
+            {freigegebeneRechnungen.length === 0 ? (
+              <tr>
+                <td colSpan={4}>Noch keine freigegebenen Rechnungen.</td>
+              </tr>
+            ) : (
+              <tr>
+                <td>
+                  <strong>Summe</strong>
+                </td>
+                <td></td>
+                <td>
+                  <strong>{summeVerbrauchKwh.toFixed(2)}</strong>
+                </td>
+                <td>
+                  <strong>
+                    {summeVerrechnung >= 0 ? "Nachzahlung" : "Guthaben"}: {Math.abs(summeVerrechnung).toFixed(2)} €
+                  </strong>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
       <div className="section">

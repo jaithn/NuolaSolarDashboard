@@ -154,12 +154,14 @@ enum MietverhaeltnisStatus {
   INAKTIV
 }
 
-// Anrede der Mietpartei. Bei Firmen nur gesetzt, wenn zusaetzlich ein
-// Ansprechpartner-Name hinterlegt wurde.
+// Anrede der Mietpartei. FIRMA kennzeichnet eine juristische Person (dann ist
+// "firma" der Pflicht-Bezeichner und "name/vorname" bleiben leer); HERR/FRAU/
+// FAMILIE kennzeichnen eine natuerliche Person (dann ist "name" Pflicht).
 enum Anrede {
   HERR
   FRAU
   FAMILIE
+  FIRMA
 }
 
 model Mietpartei {
@@ -171,6 +173,9 @@ model Mietpartei {
   // Verwendungen im Code erhalten bleiben; die "Firma ODER Name"-Regel wird
   // auf App-Ebene erzwungen. Anzeige-Bezeichner via mietparteiAnzeigeName().
   name          String   @default("")
+  // Vorname der natuerlichen Person. Optional; der Nachname steht in "name"
+  // (fuer die Anrede "Sehr geehrte/r Herr/Frau {name}"). Bei Firmen leer.
+  vorname       String   @default("")
   // Firmenname (juristische Person). Wenn gesetzt, darf "name" leer sein.
   firma         String?
   anrede        Anrede?
@@ -370,6 +375,8 @@ model FirmenStammdaten {
   ustIdNr        String?
   bankname       String?
   bankverbindung String?
+  // Internetseite (Fusszeile Briefe). Optional.
+  webseite       String?
   // Oeffentliche Kontaktdaten (Fusszeile Briefe, Rueckfragen). Die
   // Kontakt-E-Mail muss per Bestaetigungslink verifiziert werden, bevor sie
   // als bestaetigt gilt (kontaktEmailVerifiziert); die noch unbestaetigte

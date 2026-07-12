@@ -23,9 +23,10 @@ interface MietparteiFormProps {
   mietpartei?: {
     id: string;
     einheitId: string;
+    vorname: string;
     name: string;
     firma: string | null;
-    anrede: "HERR" | "FRAU" | "FAMILIE" | null;
+    anrede: "HERR" | "FRAU" | "FAMILIE" | "FIRMA" | null;
     email: string;
     telefon: string | null;
     einzugsdatum: Date;
@@ -47,6 +48,16 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
   // Datensatz (edit), sonst leer. So bleiben Eingaben bei ungueltiger E-Mail
   // erhalten (React 19 wuerde das Formular sonst zuruecksetzen).
   const val = (key: string, fallback = ""): string => state.values?.[key] ?? fallback;
+  // Numerische Variante fuer PriceInput-Defaults: uebernimmt zuletzt eingegebene
+  // Rohwerte (z.B. nach der Umzug-Rueckfrage), damit Arbeits-/Grundpreis/Abschlag
+  // nicht auf 0 zurueckfallen.
+  const valNum = (key: string, fallback: number | null | undefined): number | null | undefined =>
+    state.values?.[key] !== undefined && state.values[key] !== "" ? Number(state.values[key]) : fallback;
+
+  // Anrede steuert, ob es sich um eine Firma (Firmenname statt Vor-/Nachname)
+  // oder eine natuerliche Person handelt.
+  const [anrede, setAnrede] = useState(val("anrede", mietpartei?.anrede ?? ""));
+  const istFirma = anrede === "FIRMA";
 
   // Grundpreis standardmaessig aktiviert (neue Mietparteien haben i.d.R. einen).
   const grundpreisInitial =
@@ -72,15 +83,20 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
           {state.confirmUmzug.auszugBereitsGesetzt ? " (Auszugsdatum bereits gesetzt)" : " (kein Auszugsdatum gesetzt)"}.
           Ist der Wechsel der Mietpartei korrekt? Dann bitte das Auszugsdatum der bisherigen Mietpartei bestätigen – es
           wird automatisch ein Schlussrechnungs-Entwurf für die bisherige Mietpartei erstellt.
-          <div className="field" style={{ marginTop: "0.75rem", maxWidth: "16rem" }}>
-            <label htmlFor="vormieterAuszugsdatum">Auszugsdatum bisherige Mietpartei</label>
-            <input
-              id="vormieterAuszugsdatum"
-              name="vormieterAuszugsdatum"
-              type="date"
-              defaultValue={val("vormieterAuszugsdatum") || state.confirmUmzug.vorschlagAuszug}
-              required
-            />
+          <div style={{ marginTop: "0.75rem", display: "flex", gap: "0.6rem", alignItems: "flex-end", flexWrap: "wrap" }}>
+            <div className="field" style={{ maxWidth: "16rem", margin: 0 }}>
+              <label htmlFor="vormieterAuszugsdatum">Auszugsdatum bisherige Mietpartei</label>
+              <input
+                id="vormieterAuszugsdatum"
+                name="vormieterAuszugsdatum"
+                type="date"
+                defaultValue={val("vormieterAuszugsdatum") || state.confirmUmzug.vorschlagAuszug}
+                required
+              />
+            </div>
+            <button className="btn" type="submit" disabled={pending}>
+              {pending ? "Wird gespeichert…" : "Bestätigen & anlegen"}
+            </button>
           </div>
           <input type="hidden" name="bestaetigeUmzug" value="on" />
         </div>
@@ -109,22 +125,44 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
             id="anrede"
             name="anrede"
             className="select-inline"
-            defaultValue={val("anrede", mietpartei?.anrede ?? "")}
+            value={anrede}
+            onChange={(e) => setAnrede(e.target.value)}
           >
             <option value="">— keine —</option>
             <option value="HERR">Herr</option>
             <option value="FRAU">Frau</option>
             <option value="FAMILIE">Familie</option>
+            <option value="FIRMA">Firma</option>
           </select>
         </div>
-        <div className="field">
-          <label htmlFor="name">Name</label>
-          <input id="name" name="name" type="text" defaultValue={val("name", mietpartei?.name ?? "")} aria-describedby="name-hilfe" />
-          <p id="name-hilfe" className="price-breakdown">Pflicht, außer wenn eine Firma hinterlegt ist.</p>
+        {/* Firma-Feld nur bei Anrede „Firma" (bei Personen ausgeblendet). */}
+        {istFirma && (
+          <div className="field">
+            <label htmlFor="firma">Firma</label>
+            <input id="firma" name="firma" type="text" defaultValue={val("firma", mietpartei?.firma ?? "")} required />
+          </div>
+        )}
+        {/* Vor-/Nachname bei Anrede „Firma" ausgegraut (deaktiviert). */}
+        <div className="field" style={istFirma ? { opacity: 0.5 } : undefined}>
+          <label htmlFor="vorname">Vorname</label>
+          <input
+            id="vorname"
+            name="vorname"
+            type="text"
+            defaultValue={val("vorname", mietpartei?.vorname ?? "")}
+            disabled={istFirma}
+          />
         </div>
-        <div className="field">
-          <label htmlFor="firma">Firma (optional)</label>
-          <input id="firma" name="firma" type="text" defaultValue={val("firma", mietpartei?.firma ?? "")} />
+        <div className="field" style={istFirma ? { opacity: 0.5 } : undefined}>
+          <label htmlFor="name">Name</label>
+          <input
+            id="name"
+            name="name"
+            type="text"
+            defaultValue={val("name", mietpartei?.name ?? "")}
+            disabled={istFirma}
+            required={!istFirma}
+          />
         </div>
         <div className="field">
           <label htmlFor="email">E-Mail</label>
@@ -181,8 +219,8 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
         label="Arbeitspreis (€/kWh)"
         nettoName="arbeitspreisNetto"
         steuersatzName="arbeitspreisSteuersatzId"
-        defaultNetto={mietpartei?.arbeitspreisNetto}
-        defaultSteuersatzId={mietpartei?.arbeitspreisSteuersatzId}
+        defaultNetto={valNum("arbeitspreisNetto", mietpartei?.arbeitspreisNetto)}
+        defaultSteuersatzId={val("arbeitspreisSteuersatzId", mietpartei?.arbeitspreisSteuersatzId ?? "")}
         steuersaetze={steuersaetze}
         required
       />
@@ -204,8 +242,8 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
           label="Grundpreis (€/Monat)"
           nettoName="grundpreisNetto"
           steuersatzName="grundpreisSteuersatzId"
-          defaultNetto={mietpartei?.grundpreisNetto ?? 0}
-          defaultSteuersatzId={mietpartei?.grundpreisSteuersatzId}
+          defaultNetto={valNum("grundpreisNetto", mietpartei?.grundpreisNetto ?? 0)}
+          defaultSteuersatzId={val("grundpreisSteuersatzId", mietpartei?.grundpreisSteuersatzId ?? "")}
           steuersaetze={steuersaetze}
         />
       )}
@@ -217,7 +255,8 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
             label="Abschlag (€/Monat)"
             nettoName="abschlagNetto"
             steuersatzName="abschlagSteuersatzId"
-            defaultNetto={0}
+            defaultNetto={valNum("abschlagNetto", 0)}
+            defaultSteuersatzId={val("abschlagSteuersatzId", "")}
             steuersaetze={steuersaetze}
           />
           <div className="field">

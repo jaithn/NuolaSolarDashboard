@@ -182,8 +182,8 @@ export default async function AdminHomePage({
               <th>Objekt</th>
               <th>Einheit</th>
               <th>Mietende</th>
-              <th>Verbrauch (kWh)</th>
-              <th>Manueller Zählerstand (kWh)</th>
+              <th>Verbrauch (<span className="unit">kWh</span>)</th>
+              <th>Manueller Zählerstand (<span className="unit">kWh</span>)</th>
             </tr>
           </thead>
           <tbody>
@@ -205,9 +205,18 @@ export default async function AdminHomePage({
                 <td>{verbrauchKwh.toFixed(2)}</td>
                 <td>
                   {hatGeraet ? (
-                    <form action={createEinheitManualMesswertAction} style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
+                    <form action={createEinheitManualMesswertAction} style={{ display: "flex", gap: "0.4rem", alignItems: "center", flexWrap: "wrap" }}>
                       <input type="hidden" name="einheitId" value={einheit.id} />
                       <input type="hidden" name="zurueck" value={zurueckUrl} />
+                      <input
+                        className="text-input"
+                        name="datum"
+                        type="date"
+                        required
+                        defaultValue={toDateInputValue(now)}
+                        aria-label={`Datum des Zählerstands für ${einheit.bezeichnung}`}
+                        style={{ maxWidth: "9rem" }}
+                      />
                       <input
                         className="text-input"
                         name="kwh"
@@ -215,7 +224,8 @@ export default async function AdminHomePage({
                         step="0.001"
                         min={0}
                         required
-                        aria-label={`Manueller Zählerstand für ${einheit.bezeichnung}`}
+                        aria-label={`Manueller Zählerstand (kWh) für ${einheit.bezeichnung}`}
+                        placeholder="kWh"
                         style={{ maxWidth: "8rem" }}
                       />
                       <button className="btn-small" type="submit">

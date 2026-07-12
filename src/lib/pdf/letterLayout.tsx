@@ -19,6 +19,7 @@ export interface FirmaBriefData {
   bankverbindung: string | null;
   kontaktTelefon: string | null;
   kontaktEmail: string | null;
+  webseite?: string | null;
 }
 
 export interface EmpfaengerData {
@@ -98,6 +99,7 @@ export function LetterFooter({ firma }: { firma: FirmaBriefData }) {
     firma.bankverbindung ? `IBAN ${firma.bankverbindung}` : null,
     firma.kontaktTelefon ? `Tel. ${firma.kontaktTelefon}` : null,
     firma.kontaktEmail ? firma.kontaktEmail : null,
+    firma.webseite ? firma.webseite : null,
   ]
     .filter(Boolean)
     .join(" · ");

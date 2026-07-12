@@ -58,7 +58,9 @@ export default async function RechnungenPage({
                 <td>
                   <Link href={`/admin/rechnungen/${r.id}`}>{r.rechnungsnummer ?? "Entwurf"}</Link>
                 </td>
-                <td>{mietparteiAnzeigeName(r.mietpartei)}</td>
+                <td>
+                  <Link href={`/admin/mietparteien/${r.mietparteiId}`}>{mietparteiAnzeigeName(r.mietpartei)}</Link>
+                </td>
                 <td>
                   {r.zeitraumVon.toLocaleDateString("de-DE")} – {r.zeitraumBis.toLocaleDateString("de-DE")}
                 </td>

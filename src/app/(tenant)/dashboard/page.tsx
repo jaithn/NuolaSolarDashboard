@@ -1,3 +1,4 @@
+import { format } from "date-fns";
 import { getSession } from "@/lib/auth/getSession";
 import { prisma } from "@/lib/db";
 import { getMonatsverbraeuche } from "@/lib/billing/monatsverbrauch";
@@ -37,10 +38,16 @@ export default async function DashboardPage() {
     mietpartei.grundpreisNetto && mietpartei.grundpreisSteuersatz
       ? berechneBrutto(mietpartei.grundpreisNetto, mietpartei.grundpreisSteuersatz.prozentsatz).bruttoBetrag
       : 0;
-  const kostenDaten = chartDaten.map((m) => {
-    const arbeitBrutto = berechneBrutto(m.verbrauchKwh * mietpartei.arbeitspreisNetto, arbeitsProz).bruttoBetrag;
-    return { label: m.label, kostenBrutto: Math.round((arbeitBrutto + grundBruttoProMonat) * 100) / 100 };
-  });
+  // Nur bereits abgeschlossene Monate (der laufende Monat ist unvollstaendig und
+  // seine Kosten waeren nur eine Schaetzung) - der Kosten-Chart zeigt also
+  // ausschliesslich tatsaechliche Kosten vergangener Monate.
+  const aktuellerMonatKey = format(new Date(), "yyyy-MM");
+  const kostenDaten = chartDaten
+    .filter((m) => m.monat < aktuellerMonatKey)
+    .map((m) => {
+      const arbeitBrutto = berechneBrutto(m.verbrauchKwh * mietpartei.arbeitspreisNetto, arbeitsProz).bruttoBetrag;
+      return { label: m.label, kostenBrutto: Math.round((arbeitBrutto + grundBruttoProMonat) * 100) / 100 };
+    });
 
   // Aktueller Stand: Zeitpunkt des jüngsten Messwerts der zugeordneten Geräte.
   // Wird bei jedem Seitenaufruf (Server-Render) neu gelesen.
@@ -79,11 +86,15 @@ export default async function DashboardPage() {
       <div className="section">
         <h2>Kosten im Jahresverlauf</h2>
         <p style={{ color: "var(--color-muted)", marginTop: 0, fontSize: "0.85rem" }}>
-          Geschätzte monatliche Stromkosten (brutto): Verbrauch × Arbeitspreis
-          {grundBruttoProMonat > 0 ? " zzgl. monatlicher Grundgebühr" : ""}. Die verbindliche Abrechnung
-          erfolgt über Ihre Jahres-/Schlussrechnung.
+          Tatsächliche monatliche Stromkosten (brutto) bereits abgeschlossener Monate: Verbrauch × Arbeitspreis
+          {grundBruttoProMonat > 0 ? " zzgl. monatlicher Grundgebühr" : ""}. Der laufende Monat wird erst nach
+          seinem Ende angezeigt. Die verbindliche Abrechnung erfolgt über Ihre Jahres-/Schlussrechnung.
         </p>
-        <KostenChart daten={kostenDaten} />
+        {kostenDaten.length > 0 ? (
+          <KostenChart daten={kostenDaten} />
+        ) : (
+          <p style={{ color: "var(--color-muted)" }}>Noch keine abgeschlossenen Monate vorhanden.</p>
+        )}
       </div>
     </div>
   );

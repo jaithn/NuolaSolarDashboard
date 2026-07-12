@@ -16,10 +16,17 @@ export async function createEinheitManualMesswertAction(formData: FormData): Pro
 
   const einheitId = String(formData.get("einheitId") ?? "");
   const kwh = Number(formData.get("kwh"));
+  const datumRaw = String(formData.get("datum") ?? "");
   const zurueckUrl = String(formData.get("zurueck") ?? "/admin");
 
   if (!einheitId || !Number.isFinite(kwh) || kwh < 0) {
     redirect(`${zurueckUrl}${zurueckUrl.includes("?") ? "&" : "?"}fehler=${encodeURIComponent("Ungültiger Zählerstand.")}`);
+  }
+  // Datum ist Pflicht (nur Tagesdatum, kein Zeitstempel). Als Zeitpunkt wird
+  // Mitternacht (UTC) des gewaehlten Tages gespeichert.
+  const timestamp = new Date(`${datumRaw}T00:00:00.000Z`);
+  if (!datumRaw || Number.isNaN(timestamp.getTime())) {
+    redirect(`${zurueckUrl}${zurueckUrl.includes("?") ? "&" : "?"}fehler=${encodeURIComponent("Bitte ein gültiges Datum angeben.")}`);
   }
 
   const zuordnung = await prisma.geraetZuordnung.findFirst({
@@ -41,7 +48,6 @@ export async function createEinheitManualMesswertAction(formData: FormData): Pro
     orderBy: { timestamp: "desc" },
   });
   const phase = vorhandenePhase?.phase ?? "a";
-  const timestamp = new Date();
   const energyWh = Math.round(kwh * 1000);
 
   await prisma.messwert.upsert({

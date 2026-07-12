@@ -16,9 +16,9 @@ describe("vergibNaechsteRechnungsnummer", () => {
     const n2 = await vergibNaechsteRechnungsnummer(TEST_JAHR);
     const n3 = await vergibNaechsteRechnungsnummer(TEST_JAHR);
 
-    expect(n1).toBe(`NuolaSolar-${TEST_JAHR}-S0001`);
-    expect(n2).toBe(`NuolaSolar-${TEST_JAHR}-S0002`);
-    expect(n3).toBe(`NuolaSolar-${TEST_JAHR}-S0003`);
+    expect(n1).toBe(`NuolaSolar-Strom-${TEST_JAHR}-0001`);
+    expect(n2).toBe(`NuolaSolar-Strom-${TEST_JAHR}-0002`);
+    expect(n3).toBe(`NuolaSolar-Strom-${TEST_JAHR}-0003`);
   });
 
   it("vergibt bei parallelen Aufrufen jede Nummer genau einmal (keine Duplikate)", async () => {

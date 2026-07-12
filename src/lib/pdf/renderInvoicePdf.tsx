@@ -2,7 +2,7 @@ import path from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { prisma } from "@/lib/db";
-import { mietparteiAnzeigeName, anredeText, anredeKurz } from "@/lib/mietpartei";
+import { mietparteiAnzeigeName, anredeSatz, anredeKurz } from "@/lib/mietpartei";
 import { InvoiceDocument } from "./invoiceDocument";
 import type { FirmaBriefData } from "./letterLayout";
 
@@ -57,8 +57,7 @@ export async function generateAndStoreInvoicePdf(rechnungId: string): Promise<st
   const objekt = rechnung.mietpartei.einheit.objekt;
   const mp = rechnung.mietpartei;
   const displayName = mietparteiAnzeigeName(mp);
-  const nameFuerAnrede = mp.name?.trim() || mp.firma?.trim() || displayName;
-  const anredeSatz = mp.anrede ? `${anredeText(mp.anrede)} ${nameFuerAnrede}` : `Guten Tag ${displayName}`;
+  const anrede = anredeSatz(mp);
 
   const firmaBrief: FirmaBriefData = {
     name: firma.name,
@@ -71,6 +70,7 @@ export async function generateAndStoreInvoicePdf(rechnungId: string): Promise<st
     bankverbindung: firma.bankverbindung,
     kontaktTelefon: firma.kontaktTelefon,
     kontaktEmail: firma.kontaktEmail,
+    webseite: firma.webseite,
   };
 
   const buffer = await renderToBuffer(
@@ -83,7 +83,7 @@ export async function generateAndStoreInvoicePdf(rechnungId: string): Promise<st
         strasse: objekt.adresse || null,
         plzOrt: `${objekt.plz} ${objekt.ort}`.trim() || null,
       }}
-      anredeSatz={anredeSatz}
+      anredeSatz={anrede}
       // Entwuerfe haben noch keine offizielle Nummer (wird erst bei Freigabe
       // vergeben) - im PDF-Entwurf entsprechend als "ENTWURF" kennzeichnen.
       rechnung={{ ...rechnung, rechnungsnummer: rechnung.rechnungsnummer ?? "ENTWURF" }}

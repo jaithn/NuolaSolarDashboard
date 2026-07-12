@@ -18,6 +18,12 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate
+# Von GitHub Actions uebergebene Anzeige-Version (entspricht dem Image-Tag) und
+# Commit-SHA. In den Build inlinen (siehe next.config.mjs / src/lib/version.ts).
+ARG APP_VERSION=""
+ARG GIT_SHA=""
+ENV NEXT_PUBLIC_APP_VERSION=$APP_VERSION
+ENV NEXT_PUBLIC_GIT_SHA=$GIT_SHA
 RUN npm run build
 
 FROM base AS runner

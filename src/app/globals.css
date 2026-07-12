@@ -293,6 +293,12 @@ table.data-table th {
   font-size: 0.78rem;
 }
 
+/* Einheiten wie "kWh" behalten ihre Schreibweise auch in Grossbuchstaben-
+   Ueberschriften (sonst wuerde "kWh" faelschlich als "KWH" erscheinen). */
+table.data-table th .unit {
+  text-transform: none;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));

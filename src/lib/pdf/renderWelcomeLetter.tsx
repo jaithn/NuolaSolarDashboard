@@ -3,7 +3,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { prisma } from "@/lib/db";
 import { berechneBrutto } from "@/lib/steuer";
 import { getAppBaseUrl } from "@/lib/appBaseUrl";
-import { mietparteiAnzeigeName, anredeText, anredeKurz } from "@/lib/mietpartei";
+import { mietparteiAnzeigeName, anredeSatz, anredeKurz } from "@/lib/mietpartei";
 import { WelcomeLetterDocument } from "./welcomeLetterDocument";
 import type { FirmaBriefData } from "./letterLayout";
 
@@ -56,6 +56,7 @@ export async function renderWelcomeLetterPdf(params: {
     bankverbindung: firmaRaw.bankverbindung,
     kontaktTelefon: firmaRaw.kontaktTelefon,
     kontaktEmail: firmaRaw.kontaktEmail,
+    webseite: firmaRaw.webseite,
   };
 
   const arbeitspreisBrutto = berechneBrutto(
@@ -75,10 +76,7 @@ export async function renderWelcomeLetterPdf(params: {
 
   const objekt = mietpartei.einheit.objekt;
   const displayName = mietparteiAnzeigeName(mietpartei);
-  const nameFuerAnrede = mietpartei.name?.trim() || mietpartei.firma?.trim() || displayName;
-  const anredeSatz = mietpartei.anrede
-    ? `${anredeText(mietpartei.anrede)} ${nameFuerAnrede}`
-    : `Guten Tag ${displayName}`;
+  const anrede = anredeSatz(mietpartei);
 
   const loginUrl = `${await getAppBaseUrl()}/login`;
 
@@ -92,7 +90,7 @@ export async function renderWelcomeLetterPdf(params: {
         strasse: objekt.adresse || null,
         plzOrt: `${objekt.plz} ${objekt.ort}`.trim() || null,
       }}
-      anredeSatz={anredeSatz}
+      anredeSatz={anrede}
       mietpartei={{ einzugsdatum: mietpartei.einzugsdatum }}
       konditionen={{ arbeitspreisBrutto, grundpreisBrutto, abschlagBrutto }}
       zugang={{ loginUrl, benutzername: params.benutzername, passwort: params.passwort }}

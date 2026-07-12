@@ -93,7 +93,7 @@ export default async function GeraetDetailPage({ params }: { params: Promise<{ i
             <thead>
               <tr>
                 <th>Phase</th>
-                <th>Zählerstand (kWh)</th>
+                <th>Zählerstand (<span className="unit">kWh</span>)</th>
                 <th>Zeitpunkt</th>
               </tr>
             </thead>

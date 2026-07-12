@@ -14,6 +14,7 @@ export function FirmenStammdatenForm(props: {
   ustIdNr: string | null;
   bankname: string | null;
   bankverbindung: string | null;
+  webseite: string | null;
   kontaktTelefon: string | null;
   kontaktEmail: string | null;
   kontaktEmailVerifiziert: boolean;
@@ -58,6 +59,10 @@ export function FirmenStammdatenForm(props: {
         <div className="field">
           <label htmlFor="bankverbindung">Bankverbindung (IBAN)</label>
           <input id="bankverbindung" name="bankverbindung" type="text" defaultValue={props.bankverbindung ?? ""} />
+        </div>
+        <div className="field">
+          <label htmlFor="webseite">Internetseite</label>
+          <input id="webseite" name="webseite" type="text" defaultValue={props.webseite ?? ""} placeholder="www.nuola-solar.de" inputMode="url" />
         </div>
         <div className="field">
           <label htmlFor="kontaktTelefon">Kontakt-Telefon</label>
