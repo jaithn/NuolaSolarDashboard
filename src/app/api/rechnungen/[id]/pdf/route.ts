@@ -32,7 +32,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="${rechnung.rechnungsnummer}.pdf"`,
+      "Content-Disposition": `inline; filename="${rechnung.rechnungsnummer ?? "Entwurf-" + rechnung.id}.pdf"`,
     },
   });
 }

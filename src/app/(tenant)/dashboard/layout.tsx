@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth/getSession";
 import { prisma } from "@/lib/db";
 import { logoutAction } from "@/app/login/actions";
 import { isMietparteiEffectivelyAktiv } from "@/lib/mietpartei";
+import { AutoBreadcrumbs } from "@/components/AutoBreadcrumbs";
 
 export default async function TenantLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
@@ -32,6 +33,9 @@ export default async function TenantLayout({ children }: { children: React.React
 
   return (
     <div className="app-shell">
+      <a href="#hauptinhalt" className="skip-link">
+        Zum Inhalt springen
+      </a>
       <header className="app-header">
         <Link href="/dashboard" aria-label="Zur Übersicht">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -40,6 +44,7 @@ export default async function TenantLayout({ children }: { children: React.React
         <nav>
           <Link href="/dashboard">Verbrauch</Link>
           <Link href="/dashboard/rechnungen">Abrechnungen</Link>
+          <Link href="/dashboard/profil">Profil</Link>
           <form action={logoutAction}>
             <button className="logout-btn" type="submit">
               Abmelden
@@ -47,7 +52,10 @@ export default async function TenantLayout({ children }: { children: React.React
           </form>
         </nav>
       </header>
-      <main className="app-main">{children}</main>
+      <main className="app-main" id="hauptinhalt">
+        <AutoBreadcrumbs />
+        {children}
+      </main>
     </div>
   );
 }

@@ -2,7 +2,62 @@ import { prisma } from "@/lib/db";
 import { verbrauchKwhFuerEinheit, zaehlerstaendeFuerEinheit } from "./consumption";
 import { splitteNachSteuersatz, tageZwischen, type RechnungspositionEntwurf, type Zeitraum } from "./taxSplit";
 import { berechneBrutto } from "@/lib/steuer";
-import { vergibNaechsteRechnungsnummer } from "./invoiceNumber";
+import { generateAndStoreInvoicePdf } from "@/lib/pdf/renderInvoicePdf";
+
+/**
+ * Fehler, der signalisiert, dass fuer dieselbe Einheit bereits eine Rechnung
+ * mit ueberschneidendem Zeitraum existiert. Die Server-Action faengt ihn ab
+ * und leitet den Nutzer durch den Storno-/Korrektur-Workflow.
+ */
+export class UeberschneidendeRechnungError extends Error {
+  constructor(
+    public readonly existierendeRechnungId: string,
+    public readonly istEntwurf: boolean,
+    public readonly rechnungsnummer: string | null,
+  ) {
+    super(
+      istEntwurf
+        ? "Für diese Einheit existiert bereits ein Entwurf mit überschneidendem Zeitraum."
+        : "Für diese Einheit existiert bereits eine freigegebene Rechnung mit überschneidendem Zeitraum.",
+    );
+    this.name = "UeberschneidendeRechnungError";
+  }
+}
+
+/**
+ * Prueft, ob fuer die Einheit der Mietpartei bereits eine (nicht stornierte)
+ * Rechnung mit ueberschneidendem Abrechnungszeitraum existiert. Wirft
+ * UeberschneidendeRechnungError, wenn ja. Storno-Rechnungen und bereits
+ * stornierte Rechnungen werden ignoriert. Ueber alle Mietparteien derselben
+ * Einheit hinweg (Mieterwechsel), da sich Zeitraeume sonst ueberlappen koennten.
+ */
+export async function pruefeKeineUeberschneidung(
+  einheitId: string,
+  zeitraum: Zeitraum,
+  ignoriereRechnungId?: string,
+): Promise<void> {
+  const stornierteIds = (
+    await prisma.rechnung.findMany({ where: { stornoVonId: { not: null } }, select: { stornoVonId: true } })
+  )
+    .map((r) => r.stornoVonId)
+    .filter((id): id is string => id !== null);
+
+  const konflikt = await prisma.rechnung.findFirst({
+    where: {
+      mietpartei: { einheitId },
+      status: { not: "STORNIERT" },
+      stornoVonId: null, // Stornorechnungen selbst nicht als Konflikt werten
+      id: { notIn: [...stornierteIds, ...(ignoriereRechnungId ? [ignoriereRechnungId] : [])] },
+      zeitraumVon: { lte: zeitraum.bis },
+      zeitraumBis: { gte: zeitraum.von },
+    },
+    orderBy: { erstelltAm: "desc" },
+  });
+
+  if (konflikt) {
+    throw new UeberschneidendeRechnungError(konflikt.id, konflikt.status === "ENTWURF", konflikt.rechnungsnummer);
+  }
+}
 
 // Durchschnittliche Kalendertage pro Monat - Grundlage fuer die taggenaue
 // anteilige Umrechnung der geleisteten Abschlaege auf ihren Ueberschneidungs-
@@ -33,10 +88,19 @@ function anzahlMonate(von: Date, bis: Date): number {
   return Math.max(1, monate);
 }
 
-export async function erstelleRechnungsentwurf(params: GenerateInvoiceParams): Promise<{ rechnungId: string }> {
+export async function erstelleRechnungsentwurf(
+  params: GenerateInvoiceParams & { ueberschneidungErlauben?: boolean },
+): Promise<{ rechnungId: string }> {
   const mietpartei = await prisma.mietpartei.findUniqueOrThrow({ where: { id: params.mietparteiId } });
   const steuersaetze = await prisma.steuersatz.findMany();
   const zeitraum: Zeitraum = { von: params.von, bis: params.bis };
+
+  // Duplikat-/Ueberschneidungs-Sperre (rechtlich: pro Einheit und Zeitraum nur
+  // eine gueltige Rechnung). Kann fuer den bewussten Korrektur-Fall nach Storno
+  // per Flag uebersprungen werden.
+  if (!params.ueberschneidungErlauben) {
+    await pruefeKeineUeberschneidung(mietpartei.einheitId, zeitraum);
+  }
 
   const verbrauchKwh = await verbrauchKwhFuerEinheit(mietpartei.einheitId, zeitraum);
   const { anfangKwh, endeKwh, geschaetzt: verbrauchGeschaetzt } = await zaehlerstaendeFuerEinheit(
@@ -47,7 +111,7 @@ export async function erstelleRechnungsentwurf(params: GenerateInvoiceParams): P
 
   const positionenEntwurf: RechnungspositionEntwurf[] = [
     ...splitteNachSteuersatz(
-      `Stromverbrauch (Zählerstand ${anfangKwh.toFixed(2)} → ${endeKwh.toFixed(2)} kWh = ${verbrauchKwh.toFixed(2)} kWh × ${mietpartei.arbeitspreisNetto.toFixed(4)} €/kWh Arbeitspreis)`,
+      `Stromverbrauch (${verbrauchKwh.toFixed(2)} kWh × ${mietpartei.arbeitspreisNetto.toFixed(4)} €/kWh Arbeitspreis)`,
       arbeitspreisGesamtNetto,
       zeitraum,
       steuersaetze,
@@ -94,13 +158,14 @@ export async function erstelleRechnungsentwurf(params: GenerateInvoiceParams): P
   const verbrauchskostenBrutto = Math.round(positionenEntwurf.reduce((sum, p) => sum + p.bruttoBetrag, 0) * 100) / 100;
   const verrechnungBetrag = Math.round((verbrauchskostenBrutto - summeAbschlaegeBrutto) * 100) / 100;
 
-  const rechnungsnummer = await vergibNaechsteRechnungsnummer(params.bis.getUTCFullYear());
-
+  // Bewusst KEINE Rechnungsnummer im Entwurf: die lueckenlose Nummer wird erst
+  // bei Freigabe/Versand vergeben (siehe releaseInvoice.ts), damit geloeschte
+  // Entwuerfe keine Luecke in der Nummernfolge hinterlassen.
   const rechnung = await prisma.rechnung.create({
     data: {
       mietparteiId: params.mietparteiId,
       typ: params.typ,
-      rechnungsnummer,
+      rechnungsnummer: null,
       zeitraumVon: params.von,
       zeitraumBis: params.bis,
       status: "ENTWURF",
@@ -121,4 +186,57 @@ export async function erstelleRechnungsentwurf(params: GenerateInvoiceParams): P
   });
 
   return { rechnungId: rechnung.id };
+}
+
+export interface BatchErgebnis {
+  erstellt: { mietparteiId: string; rechnungId: string; bezeichner: string }[];
+  uebersprungen: { mietparteiId: string; bezeichner: string; grund: string }[];
+}
+
+/**
+ * Erstellt in einem Schwung Rechnungsentwuerfe fuer alle im Zeitraum aktiven
+ * Mietparteien. Mietparteien mit bereits existierender, ueberschneidender
+ * Rechnung werden uebersprungen (und im Ergebnis ausgewiesen), statt den
+ * ganzen Vorgang abzubrechen.
+ */
+export async function erstelleEntwuerfeFuerAktiveEinheiten(params: {
+  von: Date;
+  bis: Date;
+  typ: "JAHRESABRECHNUNG" | "SCHLUSSRECHNUNG";
+}): Promise<BatchErgebnis> {
+  // Im Zeitraum aktive Mietverhaeltnisse: Status AKTIV und Ein-/Auszug
+  // ueberschneiden den Abrechnungszeitraum.
+  const mietparteien = await prisma.mietpartei.findMany({
+    where: {
+      status: "AKTIV",
+      einzugsdatum: { lte: params.bis },
+      OR: [{ auszugsdatum: null }, { auszugsdatum: { gte: params.von } }],
+    },
+    include: { einheit: { include: { objekt: true } } },
+    orderBy: { einheitId: "asc" },
+  });
+
+  const ergebnis: BatchErgebnis = { erstellt: [], uebersprungen: [] };
+  for (const m of mietparteien) {
+    const bezeichner = `${m.firma?.trim() || m.name || "Mietpartei"} (${m.einheit.objekt.name} – ${m.einheit.bezeichnung})`;
+    try {
+      const { rechnungId } = await erstelleRechnungsentwurf({
+        mietparteiId: m.id,
+        typ: params.typ,
+        von: params.von,
+        bis: params.bis,
+      });
+      await generateAndStoreInvoicePdf(rechnungId);
+      ergebnis.erstellt.push({ mietparteiId: m.id, rechnungId, bezeichner });
+    } catch (err) {
+      const grund =
+        err instanceof UeberschneidendeRechnungError
+          ? "Es existiert bereits eine Rechnung mit überschneidendem Zeitraum."
+          : err instanceof Error
+            ? err.message
+            : "Unbekannter Fehler.";
+      ergebnis.uebersprungen.push({ mietparteiId: m.id, bezeichner, grund });
+    }
+  }
+  return ergebnis;
 }

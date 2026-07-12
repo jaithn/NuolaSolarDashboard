@@ -14,13 +14,18 @@ export function FirmenStammdatenForm(props: {
   ustIdNr: string | null;
   bankname: string | null;
   bankverbindung: string | null;
+  kontaktTelefon: string | null;
+  kontaktEmail: string | null;
+  kontaktEmailVerifiziert: boolean;
+  kontaktEmailPending: string | null;
   shellyFehlerEmail: string | null;
 }) {
   const [state, formAction, pending] = useActionState(updateFirmenStammdatenAction, initialState);
 
   return (
     <form action={formAction}>
-      {state.error && <div className="form-error">{state.error}</div>}
+      {state.error && <div className="form-error" role="alert">{state.error}</div>}
+      {state.success && <div className="form-notice" role="status">{state.success}</div>}
       <div className="form-grid">
         <div className="field">
           <label htmlFor="name">Name</label>
@@ -53,6 +58,30 @@ export function FirmenStammdatenForm(props: {
         <div className="field">
           <label htmlFor="bankverbindung">Bankverbindung (IBAN)</label>
           <input id="bankverbindung" name="bankverbindung" type="text" defaultValue={props.bankverbindung ?? ""} />
+        </div>
+        <div className="field">
+          <label htmlFor="kontaktTelefon">Kontakt-Telefon</label>
+          <input id="kontaktTelefon" name="kontaktTelefon" type="tel" defaultValue={props.kontaktTelefon ?? ""} placeholder="0123 456789" />
+        </div>
+        <div className="field">
+          <label htmlFor="kontaktEmail">Kontakt-E-Mail</label>
+          <input
+            id="kontaktEmail"
+            name="kontaktEmail"
+            type="email"
+            defaultValue={props.kontaktEmail ?? ""}
+            placeholder="kontakt@nuola-solar.de"
+            aria-describedby="kontaktEmail-status"
+          />
+          <p id="kontaktEmail-status" className="price-breakdown">
+            {props.kontaktEmail
+              ? props.kontaktEmailVerifiziert
+                ? "Bestätigt."
+                : "Noch nicht bestätigt."
+              : "Optional – erscheint in der Fußzeile der Briefe."}
+            {props.kontaktEmailPending ? ` Änderung auf „${props.kontaktEmailPending}" wartet auf Bestätigung.` : ""}
+            {" "}Bei Änderung wird ein Bestätigungslink an die neue Adresse gesendet.
+          </p>
         </div>
         <div className="field">
           <label htmlFor="shellyFehlerEmail">E-Mail für Shelly-Fehlermeldungen</label>

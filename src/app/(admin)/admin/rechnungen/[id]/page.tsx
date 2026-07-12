@@ -1,35 +1,77 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { freigebenAction } from "../actions";
+import { mietparteiAnzeigeName } from "@/lib/mietpartei";
+import { freigebenAction, erneutVersendenAction, loescheEntwurfAction, storniereAction } from "../actions";
+
+const STATUS_LABEL: Record<string, string> = {
+  ENTWURF: "Entwurf",
+  FREIGEGEBEN: "Freigegeben",
+  VERSENDET: "Versendet",
+  STORNIERT: "Storniert",
+};
 
 export default async function RechnungDetailPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ fehler?: string; versendet?: string }>;
+  searchParams: Promise<{ fehler?: string; versendet?: string; storniert?: string }>;
 }) {
   const { id } = await params;
-  const { fehler, versendet } = await searchParams;
+  const { fehler, versendet, storniert } = await searchParams;
 
   const rechnung = await prisma.rechnung.findUnique({
     where: { id },
     include: {
       mietpartei: { include: { einheit: { include: { objekt: true } } } },
       positionen: { include: { steuersatz: true }, orderBy: { sortierung: "asc" } },
+      stornoVon: true,
+      storniertDurch: true,
     },
   });
   if (!rechnung) notFound();
 
+  const titel = rechnung.rechnungsnummer ?? "Entwurf (noch keine Nummer)";
+  const istStorno = rechnung.stornoVonId !== null;
+
   return (
     <div>
-      <h1>{rechnung.rechnungsnummer}</h1>
+      <h1>{titel}</h1>
       <p>
-        {rechnung.mietpartei.name} – {rechnung.mietpartei.einheit.objekt.name} {rechnung.mietpartei.einheit.bezeichnung}
+        {mietparteiAnzeigeName(rechnung.mietpartei)} – {rechnung.mietpartei.einheit.objekt.name}{" "}
+        {rechnung.mietpartei.einheit.bezeichnung}
       </p>
 
       {fehler && <div className="form-error">{fehler}</div>}
-      {versendet === "ok" && <div className="form-notice">Rechnung wurde freigegeben und per E-Mail versendet.</div>}
+      {versendet === "ok" && <div className="form-notice">Rechnung wurde erfolgreich per E-Mail versendet.</div>}
+      {storniert === "ok" && (
+        <div className="form-notice">
+          Stornorechnung wurde erstellt. Für den Zeitraum kann nun eine neue (korrigierte) Rechnung erstellt werden.
+        </div>
+      )}
+
+      {istStorno && rechnung.stornoVon && (
+        <div className="form-notice">
+          Dies ist eine <strong>Stornorechnung</strong> zur Rechnung{" "}
+          <Link href={`/admin/rechnungen/${rechnung.stornoVonId}`}>
+            {rechnung.stornoVon.rechnungsnummer ?? rechnung.stornoVonId}
+          </Link>
+          .
+        </div>
+      )}
+      {rechnung.storniertDurch.length > 0 && (
+        <div className="form-error">
+          Diese Rechnung wurde storniert durch{" "}
+          {rechnung.storniertDurch.map((s, i) => (
+            <span key={s.id}>
+              {i > 0 && ", "}
+              <Link href={`/admin/rechnungen/${s.id}`}>{s.rechnungsnummer ?? s.id}</Link>
+            </span>
+          ))}
+          .
+        </div>
+      )}
 
       <div className="section">
         <h2>Zählerstände &amp; Konditionen</h2>
@@ -80,8 +122,12 @@ export default async function RechnungDetailPage({
         </table>
 
         <div style={{ marginTop: "1rem" }}>
-          <p>Verbrauchskosten gesamt (brutto): <strong>{rechnung.verbrauchskostenBrutto.toFixed(2)} €</strong></p>
-          <p>Geleistete Abschläge (brutto): <strong>{rechnung.summeAbschlaegeBrutto.toFixed(2)} €</strong></p>
+          <p>
+            Verbrauchskosten gesamt (brutto): <strong>{rechnung.verbrauchskostenBrutto.toFixed(2)} €</strong>
+          </p>
+          <p>
+            Geleistete Abschläge (brutto): <strong>{rechnung.summeAbschlaegeBrutto.toFixed(2)} €</strong>
+          </p>
           <p style={{ fontSize: "1.1rem" }}>
             {rechnung.verrechnungBetrag >= 0 ? "Nachzahlung" : "Guthaben"}:{" "}
             <strong>{Math.abs(rechnung.verrechnungBetrag).toFixed(2)} €</strong>
@@ -91,7 +137,21 @@ export default async function RechnungDetailPage({
 
       <div className="section">
         <h2>Status &amp; Freigabe</h2>
-        <p>Aktueller Status: <strong>{rechnung.status}</strong></p>
+        <p>
+          Aktueller Status: <strong>{STATUS_LABEL[rechnung.status] ?? rechnung.status}</strong>
+        </p>
+
+        {rechnung.emailFehler && (
+          <div className="form-error">
+            Der E-Mail-Versand ist gescheitert: {rechnung.emailFehler}
+            <form action={erneutVersendenAction} style={{ marginTop: "0.6rem" }}>
+              <input type="hidden" name="id" value={rechnung.id} />
+              <button className="btn-small" type="submit">
+                E-Mail erneut senden
+              </button>
+            </form>
+          </div>
+        )}
 
         {rechnung.pdfPfad && (
           <p>
@@ -101,21 +161,43 @@ export default async function RechnungDetailPage({
           </p>
         )}
 
-        {rechnung.status === "ENTWURF" ? (
+        {rechnung.status === "ENTWURF" && (
           <>
             <p>
-              Die Rechnung ist noch ein Entwurf und für den Mieter nicht sichtbar. Nach der Freigabe wird
-              sie im Mieterbereich sichtbar und automatisch per E-Mail als PDF versendet.
+              Die Rechnung ist noch ein Entwurf (ohne offizielle Nummer) und für den Mieter nicht sichtbar. Bei der
+              Freigabe wird die lückenlose Rechnungsnummer vergeben, das PDF final erzeugt und automatisch per E-Mail
+              versendet.
             </p>
-            <form action={freigebenAction}>
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              <form action={freigebenAction}>
+                <input type="hidden" name="id" value={rechnung.id} />
+                <button className="btn-small" type="submit">
+                  Freigeben &amp; versenden
+                </button>
+              </form>
+              <form action={loescheEntwurfAction}>
+                <input type="hidden" name="id" value={rechnung.id} />
+                <button className="btn-small btn-danger" type="submit">
+                  Entwurf löschen
+                </button>
+              </form>
+            </div>
+          </>
+        )}
+
+        {(rechnung.status === "FREIGEGEBEN" || rechnung.status === "VERSENDET") && !istStorno && (
+          <>
+            <p>
+              Diese Rechnung ist freigegeben und unveränderlich. Zur Korrektur bitte stornieren (erzeugt eine
+              Stornorechnung mit eigener Nummer, die die Beträge aufhebt) und anschließend eine neue Rechnung erstellen.
+            </p>
+            <form action={storniereAction}>
               <input type="hidden" name="id" value={rechnung.id} />
-              <button className="btn-small" type="submit">
-                Freigeben &amp; versenden
+              <button className="btn-small btn-danger" type="submit">
+                Rechnung stornieren
               </button>
             </form>
           </>
-        ) : (
-          <p>Diese Rechnung wurde bereits freigegeben und ist unveränderlich.</p>
         )}
       </div>
     </div>

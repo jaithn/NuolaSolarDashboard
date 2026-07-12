@@ -53,12 +53,37 @@ async function benachrichtigeUeberFehler(zeilen: ShellyFehlerZeile[]): Promise<v
 export async function pollAllDevices(): Promise<void> {
   const config = getShellyConfigFromEnv();
 
-  const geraete = await prisma.shellyGeraet.findMany({
+  const alleAktiven = await prisma.shellyGeraet.findMany({
     where: { aktiv: true },
     include: { objekt: true, zuordnungen: { include: { einheit: true } } },
   });
-  if (geraete.length === 0) {
+  if (alleAktiven.length === 0) {
     console.log("[worker] Keine aktiven Shelly-Geräte konfiguriert, überspringe Zyklus.");
+    return;
+  }
+
+  // Pro-Gerät-Abrufintervall: ein Gerät wird nur abgefragt, wenn seit seinem
+  // letzten Messwert mindestens abrufIntervallMinuten vergangen sind. So kann
+  // der Worker-Cron haeufig laufen, ohne jedes Geraet jedes Mal abzufragen.
+  // Kleine Toleranz (30s), damit ein 15-min-Geraet bei einem 15-min-Cron nicht
+  // durch Sekunden-Drift eine Runde aussetzt.
+  const TOLERANZ_MS = 30_000;
+  const jetzt = Date.now();
+  const letzteMesswerte = await prisma.messwert.groupBy({
+    by: ["geraetId"],
+    where: { geraetId: { in: alleAktiven.map((g) => g.id) } },
+    _max: { timestamp: true },
+  });
+  const letzterStandProGeraet = new Map(
+    letzteMesswerte.map((m) => [m.geraetId, m._max.timestamp?.getTime() ?? 0]),
+  );
+
+  const geraete = alleAktiven.filter((g) => {
+    const letzter = letzterStandProGeraet.get(g.id) ?? 0;
+    return jetzt - letzter >= g.abrufIntervallMinuten * 60_000 - TOLERANZ_MS;
+  });
+  if (geraete.length === 0) {
+    console.log("[worker] Kein Gerät ist fällig (Abrufintervall noch nicht erreicht), überspringe Zyklus.");
     return;
   }
 

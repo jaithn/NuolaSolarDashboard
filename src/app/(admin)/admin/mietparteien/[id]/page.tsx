@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { MietparteiForm } from "../MietparteiForm";
 import { NewAbschlagForm } from "../NewAbschlagForm";
 import { ZugangPanel } from "./ZugangPanel";
+import { mietparteiAnzeigeName } from "@/lib/mietpartei";
 
 export default async function MietparteiDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -25,7 +26,7 @@ export default async function MietparteiDetailPage({ params }: { params: Promise
 
   return (
     <div>
-      <h1>{mietpartei.name}</h1>
+      <h1>{mietparteiAnzeigeName(mietpartei)}</h1>
       <p>
         {mietpartei.einheit.objekt.name} – {mietpartei.einheit.bezeichnung}
       </p>

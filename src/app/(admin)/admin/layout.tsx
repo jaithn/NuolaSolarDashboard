@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/getSession";
 import { logoutAction } from "@/app/login/actions";
+import { AutoBreadcrumbs } from "@/components/AutoBreadcrumbs";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
@@ -11,6 +12,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="app-shell">
+      <a href="#hauptinhalt" className="skip-link">
+        Zum Inhalt springen
+      </a>
       <header className="app-header">
         <Link href="/admin" aria-label="Zur Übersicht">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -20,7 +24,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin">Übersicht</Link>
           <Link href="/admin/objekte">Objekte</Link>
           <Link href="/admin/mietparteien">Mietparteien</Link>
-          <Link href="/admin/geraete">Geräte</Link>
           <Link href="/admin/rechnungen">Rechnungen</Link>
           <Link href="/admin/einstellungen">Einstellungen</Link>
           <form action={logoutAction}>
@@ -30,7 +33,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </form>
         </nav>
       </header>
-      <main className="app-main">{children}</main>
+      <main className="app-main" id="hauptinhalt">
+        <AutoBreadcrumbs />
+        {children}
+      </main>
     </div>
   );
 }

@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
-import { createRechnungsentwurfAction, type RechnungFormState } from "./actions";
+import { createRechnungsentwurfAction, storniereAction, type RechnungFormState } from "./actions";
 
 const initialState: RechnungFormState = {};
 
@@ -17,9 +18,42 @@ export function NewRechnungForm({ mietparteien }: { mietparteien: MietparteiOpti
   const jahresende = `${jetzt.getFullYear()}-12-31`;
 
   return (
-    <form action={formAction}>
-      {state.error && <div className="form-error">{state.error}</div>}
-      <div className="form-grid">
+    <>
+      {/* Konflikt-Panel bewusst AUSSERHALB des Erstell-Formulars (kein
+          verschachteltes <form> - die Storno-Aktion ist ein eigenes Formular). */}
+      {state.konflikt && (
+        <div className="form-error">
+          {state.konflikt.istEntwurf ? (
+            <>
+              Es existiert bereits ein <strong>Entwurf</strong> für diesen Zeitraum.{" "}
+              <Link href={`/admin/rechnungen/${state.konflikt.existierendeRechnungId}`}>Entwurf öffnen</Link> – dort
+              können Sie ihn bearbeiten oder löschen und danach neu erstellen.
+            </>
+          ) : (
+            <>
+              Es existiert bereits eine <strong>freigegebene Rechnung</strong>
+              {state.konflikt.rechnungsnummer ? ` (${state.konflikt.rechnungsnummer})` : ""} für diesen Zeitraum. Zur
+              Korrektur muss diese zuerst storniert werden (Stornorechnung mit eigener Nummer), danach kann die neue
+              Rechnung erstellt werden.
+              <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.6rem", flexWrap: "wrap", alignItems: "center" }}>
+                <Link className="btn-small" href={`/admin/rechnungen/${state.konflikt.existierendeRechnungId}`}>
+                  Bestehende Rechnung öffnen
+                </Link>
+                <form action={storniereAction}>
+                  <input type="hidden" name="id" value={state.konflikt.existierendeRechnungId} />
+                  <button className="btn-small btn-danger" type="submit">
+                    Bestehende Rechnung stornieren
+                  </button>
+                </form>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      <form action={formAction}>
+        {state.error && !state.konflikt && <div className="form-error">{state.error}</div>}
+        <div className="form-grid">
         <div className="field">
           <label htmlFor="mietparteiId">Mietpartei</label>
           <select id="mietparteiId" name="mietparteiId" className="select-inline" required>
@@ -46,9 +80,10 @@ export function NewRechnungForm({ mietparteien }: { mietparteien: MietparteiOpti
           <input id="bis" name="bis" type="date" required defaultValue={jahresende} />
         </div>
       </div>
-      <button className="btn" type="submit" disabled={pending} style={{ maxWidth: "16rem" }}>
-        {pending ? "Wird erstellt…" : "Entwurf erstellen"}
-      </button>
-    </form>
+        <button className="btn" type="submit" disabled={pending} style={{ maxWidth: "16rem" }}>
+          {pending ? "Wird erstellt…" : "Entwurf erstellen"}
+        </button>
+      </form>
+    </>
   );
 }

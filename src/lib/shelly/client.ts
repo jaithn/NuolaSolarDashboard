@@ -46,6 +46,21 @@ interface ShellyStatusResponse {
   errors?: Record<string, unknown>;
 }
 
+/**
+ * Normalisiert die vom Nutzer eingegebene Cloud-Server-Adresse auf den reinen
+ * Host: entfernt ein optionales `http://`/`https://`, einen abschliessenden
+ * Slash sowie einen etwaigen Pfad/Query. Dadurch kann der Nutzer die Adresse
+ * mit oder ohne Schema angeben (z.B. "https://shelly-103-eu.shelly.cloud/"
+ * oder "shelly-103-eu.shelly.cloud").
+ */
+export function normalizeShellyHost(input: string): string {
+  return input
+    .trim()
+    .replace(/^https?:\/\//i, "")
+    .replace(/[/?#].*$/, "")
+    .trim();
+}
+
 export class ShellyApiError extends Error {
   readonly deviceId: string;
   readonly cause?: unknown;
@@ -133,6 +148,39 @@ export async function fetchDeviceStatus(
   const readings = online && body.data.device_status ? normalizeDeviceStatus(body.data.device_status) : [];
 
   return { deviceId: device.deviceId, online, readings, fetchedAt: new Date() };
+}
+
+/**
+ * Prueft einmalig die Erreichbarkeit eines Geraets ueber die Shelly Cloud API
+ * (z.B. direkt nach dem Anlegen). Wirft nicht, sondern liefert ein Ergebnis mit
+ * einer nutzerfreundlichen Meldung samt Hinweisen, was zu pruefen ist.
+ */
+export async function pruefeGeraetErreichbar(
+  device: ShellyDeviceRef,
+  config: ShellyClientConfig,
+): Promise<{ ok: boolean; online: boolean; meldung: string }> {
+  try {
+    const status = await fetchDeviceStatus(device, config);
+    if (status.online) {
+      return { ok: true, online: true, meldung: "Gerät ist über die Shelly Cloud erreichbar und online." };
+    }
+    return {
+      ok: true,
+      online: false,
+      meldung:
+        "Gerät ist über die Shelly Cloud erreichbar, meldet sich aber als offline. Bitte prüfen, ob das Gerät mit Strom versorgt und mit dem Internet verbunden ist.",
+    };
+  } catch (err) {
+    const grund = err instanceof ShellyApiError ? err.message : err instanceof Error ? err.message : String(err);
+    return {
+      ok: false,
+      online: false,
+      meldung:
+        `Gerät konnte nicht abgerufen werden (${grund}). Bitte prüfen: ` +
+        "Device-ID korrekt? Cloud-Server richtig (in der Shelly-App unter Geräteeinstellungen › Cloud der zugewiesene Server, z.B. shelly-103-eu.shelly.cloud)? " +
+        "Ist der Cloud-Auth-Key (SHELLY_CLOUD_AUTH_KEY) gesetzt und gültig? Ist das Gerät in der Shelly-App online?",
+    };
+  }
 }
 
 /**

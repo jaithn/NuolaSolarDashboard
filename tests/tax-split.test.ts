@@ -35,13 +35,31 @@ describe("ermittleTeilzeitraeume", () => {
   });
 
   it("splittet am Stichtag eines Satzwechsels innerhalb des Zeitraums", () => {
+    // Start bewusst innerhalb der "alt"-Periode (ab 2020-07-01), damit im
+    // Zeitraum GENAU EIN Satzwechsel liegt (zum 2021-01-01). Ein früherer Start
+    // (z.B. 2020-06-01) würde zusätzlich den Beginn von "alt" (2020-07-01)
+    // überschreiten und korrekterweise 3 Teilzeiträume ergeben.
     const teile = ermittleTeilzeitraeume(
-      { von: new Date("2020-06-01"), bis: new Date("2021-06-30") },
+      { von: new Date("2020-08-01"), bis: new Date("2021-06-30") },
       steuersaetzeMitWechsel,
     );
     expect(teile).toHaveLength(2);
     expect(teile[0]!.bis.toISOString()).toBe(new Date("2020-12-31").toISOString());
     expect(teile[1]!.von.toISOString()).toBe(new Date("2021-01-01").toISOString());
+  });
+
+  it("splittet an ALLEN Satz-Stichtagen im Zeitraum (mehrere Wechsel)", () => {
+    // Zeitraum überschreitet den Beginn von "alt" (2020-07-01) UND "neu"
+    // (2021-01-01) -> drei lückenlose Teilzeiträume (rechtlich korrekt).
+    const teile = ermittleTeilzeitraeume(
+      { von: new Date("2020-06-01"), bis: new Date("2021-06-30") },
+      steuersaetzeMitWechsel,
+    );
+    expect(teile).toHaveLength(3);
+    expect(teile[0]!.bis.toISOString()).toBe(new Date("2020-06-30").toISOString());
+    expect(teile[1]!.von.toISOString()).toBe(new Date("2020-07-01").toISOString());
+    expect(teile[1]!.bis.toISOString()).toBe(new Date("2020-12-31").toISOString());
+    expect(teile[2]!.von.toISOString()).toBe(new Date("2021-01-01").toISOString());
   });
 });
 

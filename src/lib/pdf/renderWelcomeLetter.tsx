@@ -3,7 +3,9 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { prisma } from "@/lib/db";
 import { berechneBrutto } from "@/lib/steuer";
 import { getAppBaseUrl } from "@/lib/appBaseUrl";
+import { mietparteiAnzeigeName, anredeText, anredeKurz } from "@/lib/mietpartei";
 import { WelcomeLetterDocument } from "./welcomeLetterDocument";
+import type { FirmaBriefData } from "./letterLayout";
 
 /**
  * Rendert den Willkommensbrief (PDF) fuer eine Mietpartei mit den frisch
@@ -26,7 +28,7 @@ export async function renderWelcomeLetterPdf(params: {
     },
   });
 
-  const [firma, designvorlage] = await Promise.all([
+  const [firmaRaw, designvorlage] = await Promise.all([
     prisma.firmenStammdaten.upsert({
       where: { id: "singleton" },
       update: {},
@@ -42,7 +44,19 @@ export async function renderWelcomeLetterPdf(params: {
   const logoAbsolutePath = designvorlage.logoPfad
     ? path.join(process.cwd(), "public", designvorlage.logoPfad)
     : path.join(process.cwd(), "public", "nuola-solar-logo.png");
-  const primaerfarbe = designvorlage.primaerfarbe === "#0f766e" ? "#d9a441" : designvorlage.primaerfarbe;
+
+  const firma: FirmaBriefData = {
+    name: firmaRaw.name,
+    anschrift: firmaRaw.anschrift,
+    plz: firmaRaw.plz,
+    ort: firmaRaw.ort,
+    steuernummer: firmaRaw.steuernummer,
+    ustIdNr: firmaRaw.ustIdNr,
+    bankname: firmaRaw.bankname,
+    bankverbindung: firmaRaw.bankverbindung,
+    kontaktTelefon: firmaRaw.kontaktTelefon,
+    kontaktEmail: firmaRaw.kontaktEmail,
+  };
 
   const arbeitspreisBrutto = berechneBrutto(
     mietpartei.arbeitspreisNetto,
@@ -60,22 +74,28 @@ export async function renderWelcomeLetterPdf(params: {
     : null;
 
   const objekt = mietpartei.einheit.objekt;
-  const anschrift =
-    [objekt.adresse, `${objekt.plz} ${objekt.ort}`.trim()].filter((s) => s && s.length > 0).join(", ") || null;
+  const displayName = mietparteiAnzeigeName(mietpartei);
+  const nameFuerAnrede = mietpartei.name?.trim() || mietpartei.firma?.trim() || displayName;
+  const anredeSatz = mietpartei.anrede
+    ? `${anredeText(mietpartei.anrede)} ${nameFuerAnrede}`
+    : `Guten Tag ${displayName}`;
 
   const loginUrl = `${await getAppBaseUrl()}/login`;
 
   return renderToBuffer(
     <WelcomeLetterDocument
-      firma={{ name: firma.name, anschrift: firma.anschrift, bankverbindung: firma.bankverbindung }}
-      design={{ logoPfad: logoAbsolutePath, primaerfarbe }}
-      mietpartei={{ name: mietpartei.name, anschrift, einzugsdatum: mietpartei.einzugsdatum }}
-      konditionen={{ arbeitspreisBrutto, grundpreisBrutto, abschlagBrutto }}
-      zugang={{
-        loginUrl,
-        benutzername: params.benutzername,
-        passwort: params.passwort,
+      firma={firma}
+      logoPfad={logoAbsolutePath}
+      empfaenger={{
+        anredeKurz: anredeKurz(mietpartei.anrede),
+        name: displayName,
+        strasse: objekt.adresse || null,
+        plzOrt: `${objekt.plz} ${objekt.ort}`.trim() || null,
       }}
+      anredeSatz={anredeSatz}
+      mietpartei={{ einzugsdatum: mietpartei.einzugsdatum }}
+      konditionen={{ arbeitspreisBrutto, grundpreisBrutto, abschlagBrutto }}
+      zugang={{ loginUrl, benutzername: params.benutzername, passwort: params.passwort }}
     />,
   );
 }

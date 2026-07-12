@@ -73,8 +73,27 @@ export async function createEinheitAction(
   const bezeichnung = String(formData.get("bezeichnung") ?? "").trim();
   if (!bezeichnung) return { error: "Bitte eine Bezeichnung angeben." };
 
+  if (!objektId) return { error: "Bitte ein Objekt wählen." };
   await prisma.einheit.create({ data: { objektId, bezeichnung } });
   revalidatePath(`/admin/objekte/${objektId}`);
+  revalidatePath("/admin/objekte");
+  return {};
+}
+
+export async function updateEinheitAction(
+  _prevState: ObjektFormState,
+  formData: FormData,
+): Promise<ObjektFormState> {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  const bezeichnung = String(formData.get("bezeichnung") ?? "").trim();
+  if (!bezeichnung) return { error: "Bitte eine Bezeichnung angeben." };
+
+  const einheit = await prisma.einheit.update({ where: { id }, data: { bezeichnung } });
+  revalidatePath(`/admin/einheiten/${id}`);
+  revalidatePath(`/admin/objekte/${einheit.objektId}`);
+  revalidatePath("/admin/objekte");
   return {};
 }
 

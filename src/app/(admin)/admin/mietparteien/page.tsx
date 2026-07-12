@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { MietparteiForm } from "./MietparteiForm";
-import { isMietparteiEffectivelyAktiv } from "@/lib/mietpartei";
+import { isMietparteiEffectivelyAktiv, mietparteiAnzeigeName } from "@/lib/mietpartei";
 
 export default async function MietparteienPage() {
   const [mietparteien, einheiten, steuersaetze] = await Promise.all([
@@ -23,10 +23,10 @@ export default async function MietparteienPage() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Name</th>
+              <th>Name / Firma</th>
               <th>Einheit</th>
-              <th>Einzug</th>
-              <th>Auszug</th>
+              <th>Lieferbeginn</th>
+              <th>Lieferende</th>
               <th>Status</th>
             </tr>
           </thead>
@@ -36,7 +36,7 @@ export default async function MietparteienPage() {
               return (
                 <tr key={m.id}>
                   <td>
-                    <Link href={`/admin/mietparteien/${m.id}`}>{m.name}</Link>
+                    <Link href={`/admin/mietparteien/${m.id}`}>{mietparteiAnzeigeName(m)}</Link>
                   </td>
                   <td>
                     {m.einheit.objekt.name} – {m.einheit.bezeichnung}

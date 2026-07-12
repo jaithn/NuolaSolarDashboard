@@ -1,4 +1,14 @@
-import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
+import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import {
+  letterStyles,
+  LetterHeader,
+  EmpfaengerAdresse,
+  LetterFooter,
+  Falzmarken,
+  GOLD,
+  type FirmaBriefData,
+  type EmpfaengerData,
+} from "./letterLayout";
 
 export interface InvoicePositionData {
   bezeichnung: string;
@@ -9,23 +19,10 @@ export interface InvoicePositionData {
 }
 
 export interface InvoiceDocumentData {
-  firma: {
-    name: string;
-    anschrift: string;
-    plz: string;
-    ort: string;
-    steuernummer: string | null;
-    ustIdNr: string | null;
-    bankname: string | null;
-    bankverbindung: string | null;
-  };
-  designvorlage: {
-    logoPfad: string | null;
-    primaerfarbe: string;
-    sekundaerfarbe: string;
-    fusszeileText: string | null;
-  };
-  mietpartei: { name: string; anschrift: string | null; plzOrt: string | null };
+  firma: FirmaBriefData;
+  logoPfad: string | null;
+  empfaenger: EmpfaengerData;
+  anredeSatz: string;
   rechnung: {
     rechnungsnummer: string;
     typ: string;
@@ -46,32 +43,16 @@ export interface InvoiceDocumentData {
 }
 
 const styles = StyleSheet.create({
-  page: { padding: 40, fontSize: 10, fontFamily: "Helvetica", color: "#1c1c21" },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 24 },
-  firma: { fontSize: 9, color: "#475569" },
-  logo: { width: 120, height: "auto" },
-  title: { fontSize: 16, fontWeight: 700, marginBottom: 4 },
-  metaRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
-  detailBox: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    columnGap: 16,
-    rowGap: 4,
-    marginBottom: 20,
-    padding: 8,
-    backgroundColor: "#f8fafc",
-  },
-  detailItem: { fontSize: 9 },
-  table: { marginTop: 8, borderTopWidth: 1, borderTopColor: "#cbd5e1" },
+  metaRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 12, fontSize: 9.5 },
+  infoLine: { fontSize: 9, color: "#334155", marginBottom: 2 },
+  table: { marginTop: 10, borderTopWidth: 1, borderTopColor: "#cbd5e1" },
   tableRow: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: "#e2e8f0", paddingVertical: 4 },
-  tableHeader: { fontWeight: 700, backgroundColor: "#f1f5f9" },
+  tableHeader: { fontFamily: "Helvetica-Bold", backgroundColor: "#f1f5f9" },
   colBezeichnung: { flex: 3 },
   colZahl: { flex: 1, textAlign: "right" },
   summaryBox: { marginTop: 16, alignItems: "flex-end" },
-  summaryLine: { flexDirection: "row", gap: 8, marginBottom: 2 },
   verrechnungBox: { marginTop: 10, padding: 8, backgroundColor: "#f6edda", alignItems: "flex-end" },
   abschlussBox: { marginTop: 12, fontSize: 9.5, lineHeight: 1.4, color: "#334155" },
-  footer: { position: "absolute", bottom: 30, left: 40, right: 40, fontSize: 8, color: "#94a3b8", textAlign: "center" },
 });
 
 function fmt(n: number): string {
@@ -80,8 +61,11 @@ function fmt(n: number): string {
 function fmtDate(d: Date): string {
   return d.toLocaleDateString("de-DE");
 }
+function fmtDateTime(d: Date): string {
+  return d.toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
+}
 
-export function InvoiceDocument({ firma, designvorlage, mietpartei, rechnung, positionen }: InvoiceDocumentData) {
+export function InvoiceDocument({ firma, logoPfad, empfaenger, anredeSatz, rechnung, positionen }: InvoiceDocumentData) {
   const steuerGruppen = new Map<number, { netto: number; steuer: number }>();
   for (const p of positionen) {
     const bucket = steuerGruppen.get(p.steuersatzProzent) ?? { netto: 0, steuer: 0 };
@@ -90,29 +74,19 @@ export function InvoiceDocument({ firma, designvorlage, mietpartei, rechnung, po
     steuerGruppen.set(p.steuersatzProzent, bucket);
   }
 
+  const typLabel = rechnung.typ === "SCHLUSSRECHNUNG" ? "Schlussrechnung" : "Jahresabrechnung";
+
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
-        <View style={styles.headerRow}>
-          <View>
-            <Text style={{ fontSize: 12, fontWeight: 700, color: designvorlage.primaerfarbe }}>{firma.name}</Text>
-            <Text style={styles.firma}>{firma.anschrift}</Text>
-            {(firma.plz || firma.ort) && <Text style={styles.firma}>{`${firma.plz} ${firma.ort}`.trim()}</Text>}
-            {firma.steuernummer && <Text style={styles.firma}>Steuernummer: {firma.steuernummer}</Text>}
-            {firma.ustIdNr && <Text style={styles.firma}>USt-IdNr.: {firma.ustIdNr}</Text>}
-          </View>
-          {designvorlage.logoPfad && <Image src={designvorlage.logoPfad} style={styles.logo} />}
-        </View>
+      <Page size="A4" style={letterStyles.page}>
+        <Falzmarken />
+        <LetterHeader logoPfad={logoPfad} firma={firma} />
+        <EmpfaengerAdresse empfaenger={empfaenger} />
 
-        <View style={{ marginBottom: 16 }}>
-          <Text style={styles.firma}>{mietpartei.name}</Text>
-          {mietpartei.anschrift && <Text style={styles.firma}>{mietpartei.anschrift}</Text>}
-          {mietpartei.plzOrt && <Text style={styles.firma}>{mietpartei.plzOrt}</Text>}
-        </View>
-
-        <Text style={styles.title}>
-          {rechnung.typ === "SCHLUSSRECHNUNG" ? "Schlussrechnung" : "Jahresabrechnung"} {rechnung.rechnungsnummer}
+        <Text style={letterStyles.title}>
+          {typLabel} {rechnung.rechnungsnummer}
         </Text>
+
         <View style={styles.metaRow}>
           <Text>Ausstellungsdatum: {fmtDate(rechnung.ausstellungsdatum)}</Text>
           <Text>
@@ -120,17 +94,39 @@ export function InvoiceDocument({ firma, designvorlage, mietpartei, rechnung, po
           </Text>
         </View>
 
-        <View style={styles.detailBox}>
-          <Text style={styles.detailItem}>Anfangszählerstand: {fmt(rechnung.anfangszaehlerstandKwh)} kWh</Text>
-          <Text style={styles.detailItem}>Endzählerstand: {fmt(rechnung.endzaehlerstandKwh)} kWh</Text>
-          <Text style={styles.detailItem}>
-            Ermittelter Verbrauch: {fmt(rechnung.gesamtVerbrauchKwh)} kWh{rechnung.verbrauchGeschaetzt ? " (teilw. geschätzt)" : ""}
+        <View style={letterStyles.section}>
+          <Text>{anredeSatz},</Text>
+          <Text>
+            anbei erhalten Sie Ihre {typLabel} für den Zeitraum {fmtDate(rechnung.zeitraumVon)} bis{" "}
+            {fmtDate(rechnung.zeitraumBis)}.
           </Text>
-          <Text style={styles.detailItem}>
+        </View>
+
+        {/* Zählerstände im Nuola-Gold-Kasten (wie die Zugangsdaten im Willkommensbrief). */}
+        <View style={letterStyles.goldBox}>
+          <Text style={letterStyles.boxTitle}>Zählerstände</Text>
+          <View style={letterStyles.row}>
+            <Text style={letterStyles.label}>Anfangszählerstand ({fmtDateTime(rechnung.zeitraumVon)})</Text>
+            <Text style={letterStyles.value}>{fmt(rechnung.anfangszaehlerstandKwh)} kWh</Text>
+          </View>
+          <View style={letterStyles.row}>
+            <Text style={letterStyles.label}>Endzählerstand ({fmtDateTime(rechnung.zeitraumBis)})</Text>
+            <Text style={letterStyles.value}>{fmt(rechnung.endzaehlerstandKwh)} kWh</Text>
+          </View>
+          <View style={letterStyles.row}>
+            <Text style={letterStyles.label}>
+              Ermittelter Verbrauch{rechnung.verbrauchGeschaetzt ? " (teilw. geschätzt)" : ""}
+            </Text>
+            <Text style={[letterStyles.value, { color: GOLD }]}>{fmt(rechnung.gesamtVerbrauchKwh)} kWh</Text>
+          </View>
+        </View>
+
+        <View style={{ marginBottom: 8 }}>
+          <Text style={styles.infoLine}>
             Arbeitspreis: {rechnung.arbeitspreisNetto.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 4 })} €/kWh (netto)
           </Text>
           {rechnung.grundgebuehrMonatlichNetto !== null && (
-            <Text style={styles.detailItem}>
+            <Text style={styles.infoLine}>
               Monatliche Grundgebühr: {fmt(rechnung.grundgebuehrMonatlichNetto)} € (netto)
             </Text>
           )}
@@ -157,26 +153,24 @@ export function InvoiceDocument({ firma, designvorlage, mietpartei, rechnung, po
 
         {steuerGruppen.size > 1 && (
           <View style={{ marginTop: 12 }}>
-            <Text style={{ fontWeight: 700, marginBottom: 4 }}>Sammelsumme je Steuersatz</Text>
+            <Text style={{ fontFamily: "Helvetica-Bold", marginBottom: 4 }}>Sammelsumme je Steuersatz</Text>
             {[...steuerGruppen.entries()].map(([satz, w]) => (
-              <View style={styles.summaryLine} key={satz}>
-                <Text>
-                  {satz}%: Netto {fmt(w.netto)} € · MwSt. {fmt(w.steuer)} €
-                </Text>
-              </View>
+              <Text key={satz}>
+                {satz}%: Netto {fmt(w.netto)} € · MwSt. {fmt(w.steuer)} €
+              </Text>
             ))}
           </View>
         )}
 
         <View style={styles.summaryBox}>
-          <Text style={{ fontWeight: 700, marginTop: 10 }}>
+          <Text style={{ fontFamily: "Helvetica-Bold", marginTop: 10 }}>
             Verbrauchskosten gesamt (brutto): {fmt(rechnung.verbrauchskostenBrutto)} €
           </Text>
           <Text>Geleistete Abschläge (brutto): {fmt(rechnung.summeAbschlaegeBrutto)} €</Text>
         </View>
 
         <View style={styles.verrechnungBox}>
-          <Text style={{ fontWeight: 700, fontSize: 12 }}>
+          <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 12 }}>
             {rechnung.verrechnungBetrag >= 0 ? "Nachzahlung" : "Guthaben"}: {fmt(Math.abs(rechnung.verrechnungBetrag))} €
           </Text>
         </View>
@@ -205,16 +199,13 @@ export function InvoiceDocument({ firma, designvorlage, mietpartei, rechnung, po
           )}
         </View>
 
-        <Text style={styles.footer}>
-          {[
-            firma.name,
-            firma.bankname ? `${firma.bankname}` : null,
-            firma.bankverbindung ? `IBAN ${firma.bankverbindung}` : null,
-            designvorlage.fusszeileText,
-          ]
-            .filter(Boolean)
-            .join(" · ")}
-        </Text>
+        <View style={[letterStyles.section, { marginTop: 14 }]}>
+          <Text>Bei Fragen wenden Sie sich gerne an uns.</Text>
+          <Text style={{ marginTop: 10 }}>Mit freundlichen Grüßen</Text>
+          <Text>{firma.name}</Text>
+        </View>
+
+        <LetterFooter firma={firma} />
       </Page>
     </Document>
   );

@@ -24,6 +24,8 @@ interface MietparteiFormProps {
     id: string;
     einheitId: string;
     name: string;
+    firma: string | null;
+    anrede: "HERR" | "FRAU" | "FAMILIE" | null;
     email: string;
     telefon: string | null;
     einzugsdatum: Date;
@@ -59,9 +61,30 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
   const [abschlagGueltigAb, setAbschlagGueltigAb] = useState(val("abschlagGueltigAb") || einzugsdatum);
 
   return (
-    <form action={formAction}>
+    <form action={formAction} key={`${mietpartei?.id ?? "create"}-${state.confirmUmzug ? "confirm" : "form"}`}>
       {state.error && <div className="form-error">{state.error}</div>}
+      {state.success && <div className="form-notice" role="status">{state.success}</div>}
       {mietpartei && <input type="hidden" name="id" value={mietpartei.id} />}
+
+      {state.confirmUmzug && (
+        <div className="form-error" role="alert" style={{ background: "var(--color-primary-tint)", color: "var(--color-ink)", borderColor: "var(--color-primary)" }}>
+          <strong>Diese Einheit ist bereits belegt:</strong> „{state.confirmUmzug.vorhandenBezeichner}&quot; wohnt dort noch
+          {state.confirmUmzug.auszugBereitsGesetzt ? " (Auszugsdatum bereits gesetzt)" : " (kein Auszugsdatum gesetzt)"}.
+          Ist der Mieterwechsel korrekt? Dann bitte das Auszugsdatum des Vormieters bestätigen – es wird automatisch ein
+          Schlussrechnungs-Entwurf für den Vormieter erstellt.
+          <div className="field" style={{ marginTop: "0.75rem", maxWidth: "16rem" }}>
+            <label htmlFor="vormieterAuszugsdatum">Auszugsdatum Vormieter</label>
+            <input
+              id="vormieterAuszugsdatum"
+              name="vormieterAuszugsdatum"
+              type="date"
+              defaultValue={val("vormieterAuszugsdatum") || state.confirmUmzug.vorschlagAuszug}
+              required
+            />
+          </div>
+          <input type="hidden" name="bestaetigeUmzug" value="on" />
+        </div>
+      )}
 
       <div className="form-grid">
         <div className="field">
@@ -81,8 +104,27 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
           </select>
         </div>
         <div className="field">
+          <label htmlFor="anrede">Anrede</label>
+          <select
+            id="anrede"
+            name="anrede"
+            className="select-inline"
+            defaultValue={val("anrede", mietpartei?.anrede ?? "")}
+          >
+            <option value="">— keine —</option>
+            <option value="HERR">Herr</option>
+            <option value="FRAU">Frau</option>
+            <option value="FAMILIE">Familie</option>
+          </select>
+        </div>
+        <div className="field">
           <label htmlFor="name">Name</label>
-          <input id="name" name="name" type="text" required defaultValue={val("name", mietpartei?.name ?? "")} />
+          <input id="name" name="name" type="text" defaultValue={val("name", mietpartei?.name ?? "")} aria-describedby="name-hilfe" />
+          <p id="name-hilfe" className="price-breakdown">Pflicht, außer wenn eine Firma hinterlegt ist.</p>
+        </div>
+        <div className="field">
+          <label htmlFor="firma">Firma (optional)</label>
+          <input id="firma" name="firma" type="text" defaultValue={val("firma", mietpartei?.firma ?? "")} />
         </div>
         <div className="field">
           <label htmlFor="email">E-Mail</label>
@@ -93,7 +135,7 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
           <input id="telefon" name="telefon" type="text" defaultValue={val("telefon", mietpartei?.telefon ?? "")} />
         </div>
         <div className="field">
-          <label htmlFor="einzugsdatum">Einzugsdatum</label>
+          <label htmlFor="einzugsdatum">Beginn der Stromlieferung</label>
           <input
             id="einzugsdatum"
             name="einzugsdatum"
@@ -189,7 +231,7 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
             />
           </div>
           <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", margin: 0 }}>
-            Wird bei Betrag 0 nicht angelegt. Standard-Beginn ist das Einzugsdatum.
+            Wird bei Betrag 0 nicht angelegt. Standard-Beginn ist der Beginn der Stromlieferung.
           </p>
         </div>
       )}

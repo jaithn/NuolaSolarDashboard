@@ -3,6 +3,14 @@
 Projekt-spezifische Hinweise für Claude Code. (Die CLAUDE.md im übergeordneten
 Ordner „Nuola Solar GbR" ist allgemein und bleibt davon unberührt.)
 
+## Workflow-Regel (verbindlich)
+
+Nach **jeder** Code-Änderung:
+
+1. **Lokal testen** – mindestens `npm test` (vitest) sowie `npx tsc --noEmit`; bei UI-/PDF-Änderungen zusätzlich im laufenden Dev-Server bzw. per PDF-Rendering verifizieren.
+2. **Nur wenn die Tests durchlaufen** (alle grün): die Änderungen committen und auf **GitHub pushen** (`git push`).
+3. Schlägt ein Test fehl, **nicht** pushen – erst die Ursache beheben (oder Rücksprache halten), dann erneut testen.
+
 ## Architecture
 
 ### High-Level-Überblick
@@ -12,17 +20,18 @@ Ordner „Nuola Solar GbR" ist allgemein und bleibt davon unberührt.)
 
 ### Modul-/Ordnerstruktur
 - `prisma/schema.prisma` — Datenmodell (SQLite, bewusst ohne SQLite-Spezifika für späteren Postgres-Wechsel). `seed.ts` (Admin+Grunddaten), `demo-seed.ts` (Testdaten).
-- `src/app/(admin)/admin/**` — Admin-Bereich (Objekte, Einheiten, Geräte, Mietparteien, Abschläge, Steuersätze, Rechnungen, Einstellungen, Übersicht). Je Ressource: `page.tsx` (RSC), `actions.ts` (Server Actions), `*Form.tsx` (Client-Komponenten).
-- `src/app/(tenant)/dashboard/**` — Mieter-Bereich (Monatsverbrauch + Chart, Rechnungsübersicht).
+- `src/app/(admin)/admin/**` — Admin-Bereich (Objekte, Einheiten, Geräte, Mietparteien, Abschläge, Steuersätze, Rechnungen, Einstellungen, Übersicht). Je Ressource: `page.tsx` (RSC), `actions.ts` (Server Actions), `*Form.tsx` (Client-Komponenten). Die Objekt-Seite (`objekte/page.tsx`) ist der gemeinsame Stammdaten-Hub: Übersicht aller Objekte inkl. ihrer Einheiten UND Geräte plus Anlegen aller drei über `StammdatenAnlegenPanel` (Buttons klappen das jeweilige Formular auf). Es gibt daher keinen eigenen Geräte-Nav-Punkt mehr; `/admin/geraete` leitet auf `/admin/objekte` um, die Detailseiten (`geraete/[id]`, `einheiten/[id]` inkl. Umbenennen) bleiben.
+- `src/app/(tenant)/dashboard/**` — Mieter-Bereich (Monatsverbrauch + Chart inkl. „Stand"/letztem Messwert, Kosten-im-Jahresverlauf-Chart, Rechnungsübersicht, Reiter `profil/` zur Selbstpflege von Telefon/E-Mail).
+- `src/app/e-mail-bestaetigen/[token]/**` — öffentliche Bestätigungsseite für E-Mail-Änderungen (Button-POST, nicht Auto-GET).
 - `src/app/login|change-password|reset-password|access-revoked` — Auth-Flows.
 - `src/app/api/**` — Route Handler für Downloads/Export (Rechnungs-PDF, Willkommensbrief-PDF, CSV-Export). Binärdaten/Streams, die nicht über Server Actions gehen.
 - `src/middleware.ts` — Host-Check (gegen `APP_BASE_URL`) + rollenbasierter Seitenschutz.
-- `src/lib/auth/**` — Session (`iron-session`), `guards.ts` (`requireAdmin`/`requireSession`), Passwort-Hashing, Reset-Token (SHA-256-gehasht gespeichert), Onboarding/Zugang.
+- `src/lib/auth/**` — Session (`iron-session`), `guards.ts` (`requireAdmin`/`requireSession`), Passwort-Hashing, Reset-Token (SHA-256-gehasht gespeichert), Onboarding/Zugang, `emailVerification.ts` (E-Mail-Bestätigung via SHA-256-Token für Mieter-E-Mail und Firmen-Kontakt-E-Mail, Modell `EmailVerifizierung`).
 - `src/lib/billing/**` — Abrechnungskern: `consumption.ts` (Verbrauch aus Zählerdifferenzen inkl. Interpolation/Schätzung), `taxSplit.ts` (MwSt.-Splitting bei Satzwechsel), `invoiceNumber.ts` (lückenlose Nummern), `generateInvoice.ts` (Entwurf), `releaseInvoice.ts` (Freigabe+Versand), `monatsverbrauch.ts`.
-- `src/lib/pdf/**` — React-PDF: `invoiceDocument.tsx`/`renderInvoicePdf.tsx` (Rechnung), `welcomeLetterDocument.tsx`/`renderWelcomeLetter.tsx` (Willkommensbrief).
+- `src/lib/pdf/**` — React-PDF: gemeinsames `letterLayout.tsx` (einheitlicher Briefkopf Logo-links/Absender-rechts, Empfänger-Adressfeld im Fensterumschlag-Bereich mit Anrede, Falzmarken in Nuola-Gold, einheitliche Fußzeile) – von ALLEN Brief-Arten genutzt; `invoiceDocument.tsx`/`renderInvoicePdf.tsx` (Rechnung), `welcomeLetterDocument.tsx`/`renderWelcomeLetter.tsx` (Willkommensbrief).
 - `src/lib/shelly/client.ts` — Shelly-Cloud-Client (`/device/status`, Rate-Limit 1 req/s, Timeout, Profil-Normalisierung Tri-/Monophase).
 - `src/lib/mail/**` — `mailer.ts` (Nodemailer, Multipart + Text-Alternative, SMTP-Test), `templates.ts` (HTML-Mails).
-- `src/lib/**` (Sonstige) — `db.ts` (Prisma-Singleton), `steuer.ts` (Brutto/Netto), `mietpartei.ts` (Aktiv-Status), `appHost.ts` (Host-Vergleich, rein/testbar), `appBaseUrl.ts` (Basis-URL request-abgeleitet), `clientIp.ts`, `rateLimit.ts`.
+- `src/lib/**` (Sonstige) — `db.ts` (Prisma-Singleton), `steuer.ts` (Brutto/Netto), `mietpartei.ts` (Aktiv-Status; `mietparteiAnzeigeName`/`anredeText` - Mietpartei kann Privatperson (Pflichtfeld `name`) ODER Firma (`firma`, dann `name` optional/leer) sein, plus `anrede` Herr/Frau/Familie; Regel „Name ODER Firma" auf App-Ebene), `appHost.ts` (Host-Vergleich, rein/testbar), `appBaseUrl.ts` (Basis-URL request-abgeleitet), `clientIp.ts`, `rateLimit.ts`.
 - `src/worker/**` — `index.ts` (node-cron Scheduler), `poll.ts` (ein Poll-Zyklus + Fehler-Mail).
 - `tests/` — vitest gegen echte SQLite-Test-DB (Kernlogik). `Dockerfile`, `docker-entrypoint.sh`, `docker-compose.yml`, `nginx.example.conf`, `swag/`, `.github/workflows/docker-publish.yml`.
 
@@ -36,7 +45,7 @@ Ordner „Nuola Solar GbR" ist allgemein und bleibt davon unberührt.)
 - **Sicherheit**: Security-Header/CSP in `next.config.mjs`, In-Memory-Rate-Limiter für Login/Reset, Reset-Token nur als Hash gespeichert, Non-Root-Container (gosu + PUID/PGID) mit Laufzeit-chown der Volumes.
 
 ### Wichtige Datenflüsse
-- **Erfassung**: `worker/index.ts` (cron) → `poll.ts` → `shelly/client.ts` (Cloud-Abruf) → `Messwert`-Upsert. Fehler je Gerät isoliert; pro Zyklus optional gedrosselte Fehler-Mail (`FirmenStammdaten.shellyFehlerEmail`).
+- **Erfassung**: `worker/index.ts` (cron) → `poll.ts` → `shelly/client.ts` (Cloud-Abruf) → `Messwert`-Upsert. Der Worker fragt ein Gerät nur ab, wenn seit dessen letztem Messwert das individuelle `ShellyGeraet.abrufIntervallMinuten` (Default 15) vergangen ist (Cron kann häufiger laufen). `shelly/client.ts` normalisiert die Cloud-Server-Eingabe auf den reinen Host (`normalizeShellyHost`, mit/ohne `https://`) und bietet einen Erreichbarkeitstest (`pruefeGeraetErreichbar`, direkt nach dem Anlegen). Fehler je Gerät isoliert; pro Zyklus optional gedrosselte Fehler-Mail (`FirmenStammdaten.shellyFehlerEmail`).
 - **Abrechnung**: `generateInvoice.ts` → `consumption.ts` (kWh + Zählerstände + Schätz-Flag) + `taxSplit.ts` + `invoiceNumber.ts` → `Rechnung`+`Rechnungsposition` (Status ENTWURF). Freigabe: `releaseInvoice.ts` → `renderInvoicePdf.tsx` (PDF ins Volume, nicht public) → Status VERSENDET + `mail/`.
 - **UI**: RSC-`page.tsx` lesen via `lib/db` (Prisma); Mutationen ausschließlich über Server Actions (`actions.ts`), die `revalidatePath` aufrufen; Client-Formulare nutzen `useActionState`.
 - **Auth**: `login/actions.ts` → `iron-session`-Cookie `{userId, role, mustChangePassword}` → `middleware.ts` + `guards.ts` werten es aus.

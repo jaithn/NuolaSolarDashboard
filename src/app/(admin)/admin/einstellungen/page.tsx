@@ -1,21 +1,14 @@
 import { prisma } from "@/lib/db";
 import { FirmenStammdatenForm } from "./FirmenStammdatenForm";
-import { DesignvorlageForm } from "./DesignvorlageForm";
 import { TestMailForm } from "./TestMailForm";
+import { ThemeToggle } from "./ThemeToggle";
 
 export default async function EinstellungenPage() {
-  const [firma, designvorlage] = await Promise.all([
-    prisma.firmenStammdaten.upsert({
-      where: { id: "singleton" },
-      update: {},
-      create: { id: "singleton", name: "Nuola Solar GbR", anschrift: "" },
-    }),
-    prisma.rechnungsDesignvorlage.upsert({
-      where: { id: "singleton" },
-      update: {},
-      create: { id: "singleton" },
-    }),
-  ]);
+  const firma = await prisma.firmenStammdaten.upsert({
+    where: { id: "singleton" },
+    update: {},
+    create: { id: "singleton", name: "Nuola Solar GbR", anschrift: "" },
+  });
 
   return (
     <div>
@@ -28,9 +21,9 @@ export default async function EinstellungenPage() {
       </div>
 
       <div className="section">
-        <h2>Rechnungs-Designvorlage</h2>
-        <p>Logo, Farben und Fußzeile für das PDF-Layout der Rechnungen.</p>
-        <DesignvorlageForm {...designvorlage} />
+        <h2>Darstellung</h2>
+        <p>Zwischen hellem und dunklem Design umschalten. Die Auswahl gilt für dieses Gerät.</p>
+        <ThemeToggle />
       </div>
 
       <div className="section">

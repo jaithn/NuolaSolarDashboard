@@ -54,6 +54,10 @@ model ShellyGeraet {
   bezeichnung   String
   aktiv         Boolean   @default(true)
   deaktiviertAb DateTime?
+  // Abrufintervall dieses Geraets in Minuten (Worker pollt es nur, wenn seit
+  // dem letzten Messwert mindestens so viele Minuten vergangen sind). Default
+  // 15 Minuten.
+  abrufIntervallMinuten Int @default(15)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -150,11 +154,32 @@ enum MietverhaeltnisStatus {
   INAKTIV
 }
 
+// Anrede der Mietpartei. Bei Firmen nur gesetzt, wenn zusaetzlich ein
+// Ansprechpartner-Name hinterlegt wurde.
+enum Anrede {
+  HERR
+  FRAU
+  FAMILIE
+}
+
 model Mietpartei {
   id            String                @id @default(cuid())
   einheitId     String
-  name          String
+  // Name der (natuerlichen) Person bzw. des Ansprechpartners. Darf leer ("")
+  // sein, WENN eine Firma hinterlegt ist - dann ist "firma" der Pflicht-
+  // Bezeichner. Bewusst non-null (Default ""), damit bestehende String-
+  // Verwendungen im Code erhalten bleiben; die "Firma ODER Name"-Regel wird
+  // auf App-Ebene erzwungen. Anzeige-Bezeichner via mietparteiAnzeigeName().
+  name          String   @default("")
+  // Firmenname (juristische Person). Wenn gesetzt, darf "name" leer sein.
+  firma         String?
+  anrede        Anrede?
   email         String
+  // E-Mail bestaetigt? Vom Admin angelegte Adressen gelten als bestaetigt
+  // (@default(true)); vom Mieter selbst geaenderte muessen per Link bestaetigt
+  // werden (dann bis zur Bestaetigung false, neue Adresse in emailPending).
+  emailVerifiziert Boolean            @default(true)
+  emailPending  String?
   telefon       String?
   anschrift     String?
   einzugsdatum  DateTime
@@ -258,16 +283,40 @@ model RechnungsnummernZaehler {
   letzteNummer Int   @default(0)
 }
 
+// Eigene, ebenfalls lueckenlose Nummernfolge fuer ausserhalb des Systems
+// geschriebene Rechnungen (Praefix NUOLA-EXT-...). Bewusst als separates
+// Modell (statt zusammengesetztem PK am regulaeren Zaehler), damit die
+// Migration den bestehenden regulaeren Zaehler nicht anfasst.
+model ExterneRechnungsnummernZaehler {
+  jahr         Int   @id
+  letzteNummer Int   @default(0)
+}
+
 model Rechnung {
   id                    String         @id @default(cuid())
   mietparteiId          String
   typ                   RechnungTyp
-  rechnungsnummer       String         @unique
+  // Offizielle Rechnungsnummer. NULL solange die Rechnung Entwurf ist - die
+  // lueckenlose Nummer wird erst bei Freigabe/Versand vergeben, damit
+  // geloeschte Entwuerfe keine Luecke hinterlassen.
+  rechnungsnummer       String?        @unique
   zeitraumVon           DateTime
   zeitraumBis           DateTime
   status                RechnungStatus @default(ENTWURF)
   ausstellungsdatum     DateTime
   pdfPfad               String?
+
+  // Storno: verweist auf die Original-Rechnung, die diese Stornorechnung
+  // aufhebt (nur bei typ-gleicher Stornorechnung gesetzt). Die Betraege der
+  // Stornorechnung sind die negierten Werte des Originals.
+  stornoVonId           String?
+  stornoVon             Rechnung?      @relation("Storno", fields: [stornoVonId], references: [id])
+  storniertDurch        Rechnung[]     @relation("Storno")
+
+  // Ergebnis des letzten E-Mail-Versands: NULL = ok / noch nicht versucht,
+  // sonst die Fehlermeldung. Steuert die "erneut senden"-Funktion und den
+  // Warnhinweis in der Admin-UI.
+  emailFehler           String?
 
   // Anfangs-/Endzaehlerstand: aggregiert ueber alle der Einheit zugeordneten
   // Geraete (ADDIEREN/SUBTRAHIEREN, siehe zaehlerstaendeFuerEinheit) - Pflicht-
@@ -316,6 +365,21 @@ model Rechnungsposition {
   @@index([rechnungId])
 }
 
+// Ausserhalb des Systems geschriebene Rechnung: hier wird lediglich die
+// vergebene Nummer (eigener Praefix NUOLA-EXT-...) samt Minimal-Metadaten
+// dokumentiert, damit die externe Nummernfolge ebenfalls lueckenlos und
+// nachvollziehbar bleibt.
+model ExterneRechnung {
+  id                String   @id @default(cuid())
+  rechnungsnummer   String   @unique
+  empfaenger        String
+  betreff           String?
+  betragBrutto      Float?
+  ausstellungsdatum DateTime
+  notiz             String?
+  createdAt         DateTime @default(now())
+}
+
 // ---------------------------------------------------------------------------
 // Firmenstammdaten & Design (jeweils Singleton, id fest "singleton")
 // ---------------------------------------------------------------------------
@@ -330,10 +394,34 @@ model FirmenStammdaten {
   ustIdNr        String?
   bankname       String?
   bankverbindung String?
+  // Oeffentliche Kontaktdaten (Fusszeile Briefe, Rueckfragen). Die
+  // Kontakt-E-Mail muss per Bestaetigungslink verifiziert werden, bevor sie
+  // als bestaetigt gilt (kontaktEmailVerifiziert); die noch unbestaetigte
+  // Adresse liegt bis dahin in kontaktEmailPending.
+  kontaktTelefon        String?
+  kontaktEmail          String?
+  kontaktEmailVerifiziert Boolean @default(false)
+  kontaktEmailPending   String?
   // E-Mail fuer technische Fehlerbenachrichtigungen (fehlgeschlagener
   // Shelly-Abruf im Worker). Leer = keine Benachrichtigung.
   shellyFehlerEmail String?
   updatedAt      DateTime @updatedAt
+}
+
+// Generischer Bestaetigungs-Token fuer E-Mail-Verifizierung (Mieter-Profil
+// sowie Firmen-Kontaktadresse). Token wird nur SHA-256-gehasht gespeichert
+// (analog PasswordResetToken).
+model EmailVerifizierung {
+  id           String    @id @default(cuid())
+  tokenHash    String    @unique
+  zweck        String    // "MIETER_EMAIL" | "FIRMA_KONTAKT_EMAIL"
+  refId        String    // mietparteiId bzw. "singleton"
+  neueEmail    String
+  expiresAt    DateTime
+  bestaetigtAm DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([refId])
 }
 
 model RechnungsDesignvorlage {

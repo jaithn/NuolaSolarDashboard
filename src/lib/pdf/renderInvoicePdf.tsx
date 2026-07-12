@@ -2,7 +2,9 @@ import path from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { prisma } from "@/lib/db";
+import { mietparteiAnzeigeName, anredeText, anredeKurz } from "@/lib/mietpartei";
 import { InvoiceDocument } from "./invoiceDocument";
+import type { FirmaBriefData } from "./letterLayout";
 
 // Bewusst NICHT unter public/ - Rechnungs-PDFs duerfen nur dem jeweiligen
 // Mieter bzw. dem Admin zugaenglich sein (siehe /api/rechnungen/[id]/pdf),
@@ -50,23 +52,41 @@ export async function generateAndStoreInvoicePdf(rechnungId: string): Promise<st
     ? path.join(process.cwd(), "public", designvorlage.logoPfad)
     : path.join(process.cwd(), "public", "nuola-solar-logo.png");
 
-  // Alte Default-Farben (Teal/„Grün“) auf die Nuola-Solar-Style-Guide-Farben
-  // umsetzen, ohne bewusst gesetzte Admin-Farben zu ueberschreiben.
-  const primaerfarbe = designvorlage.primaerfarbe === "#0f766e" ? "#d9a441" : designvorlage.primaerfarbe;
-  const sekundaerfarbe = designvorlage.sekundaerfarbe === "#0f172a" ? "#1c1c21" : designvorlage.sekundaerfarbe;
-
   // Empfaengeranschrift = Objektadresse (die Mietpartei wohnt im Objekt).
   // Strasse und PLZ/Ort getrennt, damit sie auf zwei Zeilen dargestellt werden.
   const objekt = rechnung.mietpartei.einheit.objekt;
-  const empfaengerStrasse = objekt.adresse || null;
-  const empfaengerPlzOrt = `${objekt.plz} ${objekt.ort}`.trim() || null;
+  const mp = rechnung.mietpartei;
+  const displayName = mietparteiAnzeigeName(mp);
+  const nameFuerAnrede = mp.name?.trim() || mp.firma?.trim() || displayName;
+  const anredeSatz = mp.anrede ? `${anredeText(mp.anrede)} ${nameFuerAnrede}` : `Guten Tag ${displayName}`;
+
+  const firmaBrief: FirmaBriefData = {
+    name: firma.name,
+    anschrift: firma.anschrift,
+    plz: firma.plz,
+    ort: firma.ort,
+    steuernummer: firma.steuernummer,
+    ustIdNr: firma.ustIdNr,
+    bankname: firma.bankname,
+    bankverbindung: firma.bankverbindung,
+    kontaktTelefon: firma.kontaktTelefon,
+    kontaktEmail: firma.kontaktEmail,
+  };
 
   const buffer = await renderToBuffer(
     <InvoiceDocument
-      firma={firma}
-      designvorlage={{ ...designvorlage, logoPfad: logoAbsolutePath, primaerfarbe, sekundaerfarbe }}
-      mietpartei={{ name: rechnung.mietpartei.name, anschrift: empfaengerStrasse, plzOrt: empfaengerPlzOrt }}
-      rechnung={rechnung}
+      firma={firmaBrief}
+      logoPfad={logoAbsolutePath}
+      empfaenger={{
+        anredeKurz: anredeKurz(mp.anrede),
+        name: displayName,
+        strasse: objekt.adresse || null,
+        plzOrt: `${objekt.plz} ${objekt.ort}`.trim() || null,
+      }}
+      anredeSatz={anredeSatz}
+      // Entwuerfe haben noch keine offizielle Nummer (wird erst bei Freigabe
+      // vergeben) - im PDF-Entwurf entsprechend als "ENTWURF" kennzeichnen.
+      rechnung={{ ...rechnung, rechnungsnummer: rechnung.rechnungsnummer ?? "ENTWURF" }}
       positionen={rechnung.positionen.map((p) => ({
         bezeichnung: p.bezeichnung,
         nettoBetrag: p.nettoBetrag,
@@ -78,7 +98,10 @@ export async function generateAndStoreInvoicePdf(rechnungId: string): Promise<st
   );
 
   await mkdir(PDF_STORAGE_DIR, { recursive: true });
-  const filename = `${rechnung.rechnungsnummer}.pdf`;
+  // Dateiname bewusst ueber die (stabile) Rechnungs-ID statt der Nummer:
+  // Entwuerfe haben noch keine Nummer, und die ID bleibt auch nach Vergabe der
+  // Nummer bei Freigabe unveraendert (kein Umbenennen der Datei noetig).
+  const filename = `${rechnung.id}.pdf`;
   await writeFile(resolvePdfFilePath(filename), buffer);
 
   await prisma.rechnung.update({ where: { id: rechnungId }, data: { pdfPfad: filename } });

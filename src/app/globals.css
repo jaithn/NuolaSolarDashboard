@@ -12,10 +12,44 @@
   --color-secondary: #1c1c21;
   --color-muted: #64748b; /* Slate 500 */
   --color-bg: #f9f9fb;
+  --color-surface: #ffffff; /* Karten/Header/Tabellen-Hintergrund */
   --color-border: #e2e8f0;
+  --color-focus: #1c1c21; /* Fokus-Ring (WCAG 2.2 Sichtbarkeit) */
+  --logo-bg: transparent;
+  --logo-pad: 0;
 
   --font-sans: var(--font-plex-sans), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+
+/* Dunkles Design: automatisch nach Systemvorgabe (sofern nicht explizit "light"
+   gewaehlt) sowie explizit ueber data-theme="dark" (Umschalter in den
+   Einstellungen). Style-Guide-Gold bleibt als Akzent erhalten. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-ink: #f1f5f9;
+    --color-text: #cbd5e1;
+    --color-muted: #94a3b8;
+    --color-bg: #0f1115;
+    --color-surface: #1b1e25;
+    --color-border: #2d323c;
+    --color-primary-tint: #33280f;
+    --color-focus: #d9a441;
+    --logo-bg: #ffffff;
+    --logo-pad: 4px 10px;
+  }
+}
+:root[data-theme="dark"] {
+  --color-ink: #f1f5f9;
+  --color-text: #cbd5e1;
+  --color-muted: #94a3b8;
+  --color-bg: #0f1115;
+  --color-surface: #1b1e25;
+  --color-border: #2d323c;
+  --color-primary-tint: #33280f;
+  --color-focus: #d9a441;
+  --logo-bg: #ffffff;
+  --logo-pad: 4px 10px;
 }
 
 * {
@@ -44,8 +78,13 @@ a {
 /* Offizielles Nuola Solar Logo (keine eigene Textwortmarke). */
 .brand-logo {
   display: block;
-  height: 34px;
+  height: 68px;
   width: auto;
+  /* Im dunklen Design bekommt das (dunkle) Wortmarken-Logo einen hellen Chip,
+     damit es lesbar bleibt (Variablen werden von :root[data-theme] gesetzt). */
+  background: var(--logo-bg);
+  border-radius: 8px;
+  padding: var(--logo-pad);
 }
 .brand-logo--login {
   height: 52px;
@@ -61,7 +100,7 @@ a {
 }
 
 .card {
-  background: white;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 0.75rem;
   padding: 2rem;
@@ -148,7 +187,7 @@ a {
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.5rem;
-  background: white;
+  background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   border-top: 3px solid var(--color-primary); /* Solar-Gold-Akzentkante */
 }
@@ -178,6 +217,39 @@ a {
   margin: 0 auto;
 }
 
+.breadcrumbs {
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+}
+.breadcrumbs ol {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+}
+.breadcrumbs li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.breadcrumbs a {
+  color: var(--color-primary-dark);
+  text-decoration: none;
+}
+.breadcrumbs a:hover {
+  text-decoration: underline;
+}
+.breadcrumbs [aria-current="page"] {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+.breadcrumbs-sep {
+  color: var(--color-muted);
+}
+
 .logout-btn {
   background: none;
   border: 1px solid var(--color-border);
@@ -188,7 +260,7 @@ a {
 }
 
 .section {
-  background: white;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 0.75rem;
   padding: 1.5rem;
@@ -257,7 +329,7 @@ table.data-table th {
   padding: 0.3rem 0.6rem;
   border-radius: 0.3rem;
   border: 1px solid var(--color-border);
-  background: white;
+  background: var(--color-surface);
   cursor: pointer;
 }
 
@@ -301,4 +373,109 @@ table.data-table th.group-row {
   border: 1px solid var(--color-border);
   border-radius: 0.375rem;
   font-size: 0.9rem;
+}
+
+/* Native Steuerelemente (Datepicker, Scrollbars) an das Theme koppeln. */
+:root { color-scheme: light; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { color-scheme: dark; }
+}
+:root[data-theme="dark"] { color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }
+
+/* Formularsteuerungen an das Theme koppeln (auch im Dark-Mode lesbar). */
+input,
+select,
+textarea {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+/* WCAG 2.2 (2.4.11/2.4.13): deutlich sichtbarer, nicht verdeckter Fokus. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Skip-Link: erst bei Fokus sichtbar (Tastaturnutzer). */
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -60px;
+  background: var(--color-ink);
+  color: #fff;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.375rem;
+  z-index: 1000;
+  transition: top 0.15s ease;
+}
+.skip-link:focus {
+  top: 8px;
+}
+
+/* WCAG 2.2 (2.5.8): Mindest-Zielgröße für kleine Bedienelemente. */
+.btn-small,
+.logout-btn {
+  min-height: 24px;
+}
+
+/* Brotkrümel-Navigation ("Sie befinden sich hier"). */
+.breadcrumbs {
+  margin-bottom: 0.85rem;
+  font-size: 0.85rem;
+}
+.breadcrumbs ol {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0;
+  margin: 0;
+}
+.breadcrumbs li {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+.breadcrumbs a {
+  color: var(--color-primary-dark);
+  text-decoration: none;
+}
+.breadcrumbs a:hover {
+  text-decoration: underline;
+}
+.breadcrumbs [aria-current="page"] {
+  color: var(--color-muted);
+  font-weight: 600;
+}
+.breadcrumbs-sep {
+  color: var(--color-muted);
+}
+
+/* Theme-Umschalter (Einstellungen). */
+.theme-toggle {
+  display: inline-flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.theme-toggle button {
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.375rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.theme-toggle button[aria-pressed="true"] {
+  background: var(--color-primary);
+  color: var(--color-ink);
+  border-color: var(--color-primary);
+  font-weight: 600;
 }

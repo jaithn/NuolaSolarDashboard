@@ -5,19 +5,34 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { erstelleOderResetZugang } from "@/lib/auth/onboarding";
+import { erstelleRechnungsentwurf } from "@/lib/billing/generateInvoice";
+import { generateAndStoreInvoicePdf } from "@/lib/pdf/renderInvoicePdf";
+import { mietparteiAnzeigeName } from "@/lib/mietpartei";
 
 export interface MietparteiFormState {
   error?: string;
+  success?: string;
   // Rohwerte zum Wiederbefuellen des Formulars nach einem Validierungsfehler
   // (React 19 setzt unkontrollierte Felder sonst nach der Server-Action zurueck).
   values?: Record<string, string>;
+  // Gesetzt, wenn die gewaehlte Einheit bereits eine aktive Mietpartei hat:
+  // die UI fragt dann zurueck ("Ist das richtig?") und erhebt das Auszugsdatum
+  // des Vormieters, bevor der Umzug bestaetigt wird.
+  confirmUmzug?: {
+    vorhandenId: string;
+    vorhandenBezeichner: string;
+    vorschlagAuszug: string;
+    auszugBereitsGesetzt: boolean;
+  };
 }
 
 // Alle rohen Formularwerte fuer die Wiederbefuellung einsammeln.
 function collectValues(formData: FormData): Record<string, string> {
   const keys = [
     "einheitId",
+    "anrede",
     "name",
+    "firma",
     "email",
     "telefon",
     "einzugsdatum",
@@ -31,15 +46,22 @@ function collectValues(formData: FormData): Record<string, string> {
     "abschlagNetto",
     "abschlagSteuersatzId",
     "abschlagGueltigAb",
+    "vormieterAuszugsdatum",
   ];
   const out: Record<string, string> = {};
   for (const k of keys) out[k] = String(formData.get(k) ?? "");
   return out;
 }
 
+type Anrede = "HERR" | "FRAU" | "FAMILIE" | null;
+
 type ParsedMietpartei = {
   einheitId: string;
+  // Name (natuerliche Person / Ansprechpartner). Leerer String erlaubt, wenn
+  // firma gesetzt ist (Schema: name String @default("")).
   name: string;
+  firma: string | null;
+  anrede: Anrede;
   email: string;
   telefon: string | null;
   // anschrift entfaellt bewusst: die Anschrift einer Mietpartei entspricht der
@@ -57,6 +79,8 @@ type ParsedMietpartei = {
 function parseMietparteiInput(formData: FormData): { error: string } | { data: ParsedMietpartei } {
   const einheitId = String(formData.get("einheitId") ?? "");
   const name = String(formData.get("name") ?? "").trim();
+  const firma = String(formData.get("firma") ?? "").trim();
+  const anredeRaw = String(formData.get("anrede") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
   const telefon = String(formData.get("telefon") ?? "").trim();
   const einzugsdatumRaw = String(formData.get("einzugsdatum") ?? "");
@@ -68,8 +92,13 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
   const grundpreisNetto = Number(formData.get("grundpreisNetto"));
   const grundpreisSteuersatzId = String(formData.get("grundpreisSteuersatzId") ?? "");
 
-  if (!einheitId || !name || !email || !einzugsdatumRaw || !arbeitspreisSteuersatzId) {
+  // Name ist Pflicht, ausser wenn eine Firma hinterlegt ist (dann ist der
+  // Firmenname der Bezeichner und der Name/Ansprechpartner darf leer sein).
+  if (!einheitId || !email || !einzugsdatumRaw || !arbeitspreisSteuersatzId) {
     return { error: "Bitte alle Pflichtfelder ausfüllen." };
+  }
+  if (!name && !firma) {
+    return { error: "Bitte einen Namen angeben (oder eine Firma hinterlegen)." };
   }
   // Strikte E-Mail-Validierung: verhindert u.a. Zeilenumbrueche/Sonderzeichen
   // in der Empfaengeradresse (SMTP-Header-Injection) bei Onboarding- und
@@ -81,10 +110,16 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
     return { error: "Der Arbeitspreis ist ungültig." };
   }
 
+  // Anrede nur uebernehmen, wenn gueltig UND ein Name vorhanden ist (bei reinen
+  // Firmen ohne Ansprechpartner gibt es keine Anrede - Vorgabe).
+  const anrede: Anrede = ["HERR", "FRAU", "FAMILIE"].includes(anredeRaw) && name ? (anredeRaw as Anrede) : null;
+
   return {
     data: {
       einheitId,
       name,
+      firma: firma || null,
+      anrede,
       email,
       telefon: telefon || null,
       anschrift: null,
@@ -99,6 +134,12 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
   };
 }
 
+function tagVor(datum: Date): Date {
+  const d = new Date(datum);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d;
+}
+
 export async function createMietparteiAction(
   _prevState: MietparteiFormState,
   formData: FormData,
@@ -108,6 +149,33 @@ export async function createMietparteiAction(
   const parsed = parseMietparteiInput(formData);
   if ("error" in parsed) return { error: parsed.error, values: collectValues(formData) };
 
+  const bestaetigeUmzug = formData.get("bestaetigeUmzug") === "on";
+
+  // Belegt-Pruefung: existiert auf der Einheit bereits eine (effektiv) aktive
+  // Mietpartei, deren Mietverhaeltnis den Einzug des neuen Mieters ueberschneidet?
+  const vorhandener = await prisma.mietpartei.findFirst({
+    where: {
+      einheitId: parsed.data.einheitId,
+      status: "AKTIV",
+      OR: [{ auszugsdatum: null }, { auszugsdatum: { gte: parsed.data.einzugsdatum } }],
+    },
+    orderBy: { einzugsdatum: "desc" },
+  });
+
+  // Erste Runde: Es gibt einen Vormieter und der Umzug wurde noch nicht
+  // bestaetigt -> Rueckfrage + Auszugsdatum erheben.
+  if (vorhandener && !bestaetigeUmzug) {
+    return {
+      values: collectValues(formData),
+      confirmUmzug: {
+        vorhandenId: vorhandener.id,
+        vorhandenBezeichner: mietparteiAnzeigeName(vorhandener),
+        vorschlagAuszug: (vorhandener.auszugsdatum ?? tagVor(parsed.data.einzugsdatum)).toISOString().slice(0, 10),
+        auszugBereitsGesetzt: vorhandener.auszugsdatum !== null,
+      },
+    };
+  }
+
   // Optionaler Abschlag direkt beim Anlegen. Standard-Gueltigkeitsbeginn ist
   // das Einzugsdatum (falls im Formular nicht anders gesetzt).
   const abschlagNetto = Number(formData.get("abschlagNetto"));
@@ -115,7 +183,22 @@ export async function createMietparteiAction(
   const abschlagGueltigAbRaw = String(formData.get("abschlagGueltigAb") ?? "");
   const legeAbschlagAn = Number.isFinite(abschlagNetto) && abschlagNetto > 0 && abschlagSteuersatzId;
 
+  // Bestaetigter Umzug: Auszugsdatum des Vormieters setzen (falls noch offen)
+  // und dessen Schlussrechnungs-Entwurf vormerken.
+  let vormieterAuszug: Date | null = null;
+  if (vorhandener && bestaetigeUmzug) {
+    const raw = String(formData.get("vormieterAuszugsdatum") ?? "");
+    const datum = raw ? new Date(raw) : vorhandener.auszugsdatum;
+    if (!datum || Number.isNaN(datum.getTime())) {
+      return { error: "Bitte ein gültiges Auszugsdatum für den Vormieter angeben.", values: collectValues(formData) };
+    }
+    vormieterAuszug = datum;
+  }
+
   await prisma.$transaction(async (tx) => {
+    if (vorhandener && vormieterAuszug) {
+      await tx.mietpartei.update({ where: { id: vorhandener.id }, data: { auszugsdatum: vormieterAuszug } });
+    }
     const mietpartei = await tx.mietpartei.create({ data: parsed.data });
     if (legeAbschlagAn) {
       await tx.abschlag.create({
@@ -130,7 +213,31 @@ export async function createMietparteiAction(
   });
 
   revalidatePath("/admin/mietparteien");
-  return {};
+
+  // Nach dem Anlegen: automatisch einen Schlussrechnungs-Entwurf fuer den
+  // Vormieter erzeugen (best-effort - schlaegt es fehl, z.B. weil bereits eine
+  // ueberschneidende Rechnung existiert, wird das nur als Hinweis gemeldet).
+  if (vorhandener && vormieterAuszug) {
+    try {
+      const { rechnungId } = await erstelleRechnungsentwurf({
+        mietparteiId: vorhandener.id,
+        typ: "SCHLUSSRECHNUNG",
+        von: vorhandener.einzugsdatum,
+        bis: vormieterAuszug,
+      });
+      await generateAndStoreInvoicePdf(rechnungId).catch(() => {});
+      return {
+        success: `Neuer Mieter angelegt, Vormieter „${mietparteiAnzeigeName(vorhandener)}" abgemeldet und ein Schlussrechnungs-Entwurf erstellt.`,
+      };
+    } catch (err) {
+      const grund = err instanceof Error ? err.message : "Unbekannter Fehler.";
+      return {
+        success: `Neuer Mieter angelegt und Vormieter abgemeldet. Hinweis: Schlussrechnungs-Entwurf konnte nicht automatisch erstellt werden (${grund}). Bitte manuell im Bereich Rechnungen anlegen.`,
+      };
+    }
+  }
+
+  return { success: "Mietpartei angelegt." };
 }
 
 export async function updateMietparteiAction(

@@ -4,37 +4,91 @@ import { generateAndStoreInvoicePdf, resolvePdfFilePath } from "@/lib/pdf/render
 import { sendMail } from "@/lib/mail/mailer";
 import { invoiceSentEmailHtml } from "@/lib/mail/templates";
 import { getAppBaseUrl } from "@/lib/appBaseUrl";
+import { vergibNaechsteRechnungsnummer } from "./invoiceNumber";
 
 /**
- * Freigabe-Workflow: generiert (falls noch nicht geschehen) das PDF, macht
- * die Rechnung im Mieterbereich sichtbar und verschickt sie per E-Mail -
- * beides in einem Schritt, wie im Auftrag als gemeinsamer Freigabe-Vorgang
- * beschrieben. Einmal versendete Rechnungen sind unveraenderlich (siehe
- * Auftrag: Korrekturen nur ueber Stornorechnung + neue Rechnung).
+ * Versucht, das Rechnungs-PDF per E-Mail an den Mieter zu versenden, und
+ * protokolliert das Ergebnis am Datensatz:
+ *  - Erfolg  -> status VERSENDET, versendetAm gesetzt, emailFehler = null
+ *  - Fehler  -> status bleibt/wird FREIGEGEBEN, emailFehler = Meldung
+ * So steht in der UI nie faelschlich "VERSENDET", wenn der Mailversand
+ * gescheitert ist; die Rechnung kann dann gezielt erneut versendet werden.
  */
-export async function freigebenUndVersenden(rechnungId: string): Promise<void> {
+async function versendePerMail(rechnungId: string): Promise<void> {
   const rechnung = await prisma.rechnung.findUniqueOrThrow({
     where: { id: rechnungId },
     include: { mietpartei: true },
   });
+  if (!rechnung.rechnungsnummer || !rechnung.pdfPfad) {
+    throw new Error("Rechnung ist noch nicht freigegeben (keine Nummer/PDF).");
+  }
+
+  try {
+    const pdfBuffer = await readFile(resolvePdfFilePath(rechnung.pdfPfad));
+    const loginUrl = `${await getAppBaseUrl()}/login`;
+    await sendMail({
+      to: rechnung.mietpartei.email,
+      subject: `Ihre ${rechnung.typ === "SCHLUSSRECHNUNG" ? "Schlussrechnung" : "Jahresabrechnung"} ${rechnung.rechnungsnummer}`,
+      html: invoiceSentEmailHtml({ rechnungsnummer: rechnung.rechnungsnummer, typ: rechnung.typ, loginUrl }),
+      attachments: [
+        { filename: `${rechnung.rechnungsnummer}.pdf`, content: pdfBuffer, contentType: "application/pdf" },
+      ],
+    });
+    await prisma.rechnung.update({
+      where: { id: rechnungId },
+      data: { status: "VERSENDET", versendetAm: new Date(), emailFehler: null },
+    });
+  } catch (err) {
+    const meldung = err instanceof Error ? err.message : "Unbekannter Fehler beim E-Mail-Versand.";
+    await prisma.rechnung.update({
+      where: { id: rechnungId },
+      // Status bleibt FREIGEGEBEN: Rechnung ist gueltig und dem Mieter im
+      // Portal sichtbar, nur der Mailversand ist gescheitert.
+      data: { emailFehler: meldung },
+    });
+    throw new Error(`E-Mail-Versand fehlgeschlagen: ${meldung}`);
+  }
+}
+
+/**
+ * Freigabe-Workflow: vergibt die (bis dahin fehlende) lueckenlose Rechnungs-
+ * nummer, erzeugt das finale PDF mit dieser Nummer, macht die Rechnung im
+ * Mieterbereich sichtbar (status FREIGEGEBEN) und versucht den E-Mail-Versand.
+ * Ab der Freigabe ist die Rechnung unveraenderlich (Korrekturen nur ueber
+ * Stornorechnung + neue Rechnung).
+ */
+export async function freigebenUndVersenden(rechnungId: string): Promise<void> {
+  const rechnung = await prisma.rechnung.findUniqueOrThrow({ where: { id: rechnungId } });
   if (rechnung.status !== "ENTWURF") {
     throw new Error("Nur Entwürfe können freigegeben werden.");
   }
 
-  const filename = rechnung.pdfPfad ?? (await generateAndStoreInvoicePdf(rechnungId));
-  const pdfBuffer = await readFile(resolvePdfFilePath(filename));
+  // 1. Offizielle Nummer erst jetzt vergeben (lueckenlos - Entwuerfe verbrauchen
+  //    keine Nummer). Massgeblich ist das Jahr des Abrechnungsendes.
+  const rechnungsnummer = await vergibNaechsteRechnungsnummer(rechnung.zeitraumBis.getUTCFullYear());
 
   const now = new Date();
   await prisma.rechnung.update({
     where: { id: rechnungId },
-    data: { status: "VERSENDET", freigegebenAm: now, versendetAm: now, pdfPfad: filename },
+    data: { status: "FREIGEGEBEN", freigegebenAm: now, rechnungsnummer },
   });
 
-  const loginUrl = `${await getAppBaseUrl()}/login`;
-  await sendMail({
-    to: rechnung.mietpartei.email,
-    subject: `Ihre ${rechnung.typ === "SCHLUSSRECHNUNG" ? "Schlussrechnung" : "Jahresabrechnung"} ${rechnung.rechnungsnummer}`,
-    html: invoiceSentEmailHtml({ rechnungsnummer: rechnung.rechnungsnummer, typ: rechnung.typ, loginUrl }),
-    attachments: [{ filename: `${rechnung.rechnungsnummer}.pdf`, content: pdfBuffer, contentType: "application/pdf" }],
-  });
+  // 2. Finales PDF MIT Nummer erzeugen (ueberschreibt den Entwurfs-PDF).
+  await generateAndStoreInvoicePdf(rechnungId);
+
+  // 3. Versenden (Fehler wird am Datensatz protokolliert und weitergereicht).
+  await versendePerMail(rechnungId);
+}
+
+/**
+ * Erneuter E-Mail-Versand einer bereits freigegebenen Rechnung (z.B. nachdem
+ * ein zuvor gescheiterter Versand behoben wurde). Aendert die Rechnung selbst
+ * nicht, nur den Versandstatus.
+ */
+export async function rechnungErneutVersenden(rechnungId: string): Promise<void> {
+  const rechnung = await prisma.rechnung.findUniqueOrThrow({ where: { id: rechnungId } });
+  if (rechnung.status !== "FREIGEGEBEN" && rechnung.status !== "VERSENDET") {
+    throw new Error("Nur freigegebene Rechnungen können erneut versendet werden.");
+  }
+  await versendePerMail(rechnungId);
 }

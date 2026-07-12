@@ -164,7 +164,7 @@ export default async function GeraetDetailPage({ params }: { params: Promise<{ i
           Kumulativer Zählerstand (kWh) zu einem Zeitpunkt, z.B. bei Ausfall oder manueller Ablesung.
           Manuelle Werte werden im Log und auf der Rechnung markiert.
         </p>
-        <ManualMesswertForm geraetId={geraet.id} phasen={phasen} />
+        <ManualMesswertForm geraetId={geraet.id} />
       </div>
 
       <div className="section">

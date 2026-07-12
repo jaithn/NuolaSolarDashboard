@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { NewZuordnungForm } from "./NewZuordnungForm";
+import { EditEinheitForm } from "./EditEinheitForm";
 import { deleteZuordnungAction } from "../actions";
+import { mietparteiAnzeigeName } from "@/lib/mietpartei";
 
 export default async function EinheitDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -27,6 +29,11 @@ export default async function EinheitDetailPage({ params }: { params: Promise<{ 
       <h1>
         {einheit.objekt.name} – {einheit.bezeichnung}
       </h1>
+
+      <div className="section">
+        <h2>Stammdaten</h2>
+        <EditEinheitForm id={einheit.id} bezeichnung={einheit.bezeichnung} />
+      </div>
 
       <div className="section">
         <h2>Geräte-Zuordnungen</h2>
@@ -83,16 +90,16 @@ export default async function EinheitDetailPage({ params }: { params: Promise<{ 
         <table className="data-table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Einzug</th>
-              <th>Auszug</th>
+              <th>Name / Firma</th>
+              <th>Lieferbeginn</th>
+              <th>Lieferende</th>
             </tr>
           </thead>
           <tbody>
             {einheit.mietparteien.map((m) => (
               <tr key={m.id}>
                 <td>
-                  <Link href={`/admin/mietparteien/${m.id}`}>{m.name}</Link>
+                  <Link href={`/admin/mietparteien/${m.id}`}>{mietparteiAnzeigeName(m)}</Link>
                 </td>
                 <td>{m.einzugsdatum.toLocaleDateString("de-DE")}</td>
                 <td>{m.auszugsdatum ? m.auszugsdatum.toLocaleDateString("de-DE") : "–"}</td>
