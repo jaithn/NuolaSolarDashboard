@@ -164,7 +164,7 @@ export default async function RechnungDetailPage({
         {rechnung.status === "ENTWURF" && (
           <>
             <p>
-              Die Rechnung ist noch ein Entwurf (ohne offizielle Nummer) und für den Mieter nicht sichtbar. Bei der
+              Die Rechnung ist noch ein Entwurf (ohne offizielle Nummer) und für die Mietpartei nicht sichtbar. Bei der
               Freigabe wird die lückenlose Rechnungsnummer vergeben, das PDF final erzeugt und automatisch per E-Mail
               versendet.
             </p>

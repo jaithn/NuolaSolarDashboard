@@ -181,7 +181,7 @@ export default async function AdminHomePage({
             <tr>
               <th>Objekt</th>
               <th>Einheit</th>
-              <th>Mieter</th>
+              <th>Mietende</th>
               <th>Verbrauch (kWh)</th>
               <th>Manueller Zählerstand (kWh)</th>
             </tr>

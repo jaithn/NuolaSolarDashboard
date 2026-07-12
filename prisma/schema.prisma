@@ -283,15 +283,6 @@ model RechnungsnummernZaehler {
   letzteNummer Int   @default(0)
 }
 
-// Eigene, ebenfalls lueckenlose Nummernfolge fuer ausserhalb des Systems
-// geschriebene Rechnungen (Praefix NUOLA-EXT-...). Bewusst als separates
-// Modell (statt zusammengesetztem PK am regulaeren Zaehler), damit die
-// Migration den bestehenden regulaeren Zaehler nicht anfasst.
-model ExterneRechnungsnummernZaehler {
-  jahr         Int   @id
-  letzteNummer Int   @default(0)
-}
-
 model Rechnung {
   id                    String         @id @default(cuid())
   mietparteiId          String
@@ -363,21 +354,6 @@ model Rechnungsposition {
   steuersatz Steuersatz @relation(fields: [steuersatzId], references: [id])
 
   @@index([rechnungId])
-}
-
-// Ausserhalb des Systems geschriebene Rechnung: hier wird lediglich die
-// vergebene Nummer (eigener Praefix NUOLA-EXT-...) samt Minimal-Metadaten
-// dokumentiert, damit die externe Nummernfolge ebenfalls lueckenlos und
-// nachvollziehbar bleibt.
-model ExterneRechnung {
-  id                String   @id @default(cuid())
-  rechnungsnummer   String   @unique
-  empfaenger        String
-  betreff           String?
-  betragBrutto      Float?
-  ausstellungsdatum DateTime
-  notiz             String?
-  createdAt         DateTime @default(now())
 }
 
 // ---------------------------------------------------------------------------

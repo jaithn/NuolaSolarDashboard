@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { FirmenStammdatenForm } from "./FirmenStammdatenForm";
 import { TestMailForm } from "./TestMailForm";
 import { ThemeToggle } from "./ThemeToggle";
+import { APP_VERSION, APP_GIT_SHA } from "@/lib/version";
 
 export default async function EinstellungenPage() {
   const firma = await prisma.firmenStammdaten.upsert({
@@ -34,6 +35,20 @@ export default async function EinstellungenPage() {
           können.
         </p>
         <TestMailForm />
+      </div>
+
+      <div className="section">
+        <h2>Version</h2>
+        <p>
+          Nuola Energy Dashboard{" "}
+          <strong>v{APP_VERSION}</strong>
+          {APP_GIT_SHA && (
+            <>
+              {" "}
+              (<code>{APP_GIT_SHA}</code>)
+            </>
+          )}
+        </p>
       </div>
     </div>
   );

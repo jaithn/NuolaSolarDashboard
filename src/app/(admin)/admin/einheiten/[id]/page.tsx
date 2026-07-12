@@ -39,8 +39,8 @@ export default async function EinheitDetailPage({ params }: { params: Promise<{ 
         <h2>Geräte-Zuordnungen</h2>
         <p>
           Ein Gerät kann mehreren Einheiten zugeordnet sein. Mit &quot;Subtrahieren&quot; lässt sich z.B. ein
-          Allgemeinstrom-Zwischenzähler abbilden, der im Stromkreis dieser Einheit hängt - der Mieter
-          zahlt dann nur die Differenz aus seinem Zähler abzüglich des Allgemeinstrom-Zählers.
+          Allgemeinstrom-Zwischenzähler abbilden, der im Stromkreis dieser Einheit hängt - die Mietpartei
+          zahlt dann nur die Differenz aus ihrem Zähler abzüglich des Allgemeinstrom-Zählers.
         </p>
         <table className="data-table">
           <thead>

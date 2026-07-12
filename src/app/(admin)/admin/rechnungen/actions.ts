@@ -12,7 +12,6 @@ import { generateAndStoreInvoicePdf } from "@/lib/pdf/renderInvoicePdf";
 import { freigebenUndVersenden, rechnungErneutVersenden } from "@/lib/billing/releaseInvoice";
 import { storniereRechnung } from "@/lib/billing/storno";
 import { loescheRechnungsentwurf } from "@/lib/billing/deleteDraft";
-import { erfasseExterneRechnung } from "@/lib/billing/externalInvoice";
 
 export interface RechnungFormState {
   error?: string;
@@ -139,47 +138,6 @@ export async function storniereAction(formData: FormData): Promise<void> {
     redirect(`/admin/rechnungen/${id}?fehler=${encodeURIComponent(errorMessage)}`);
   }
   redirect(`/admin/rechnungen/${stornoId}?storniert=ok`);
-}
-
-export interface ExterneRechnungFormState {
-  error?: string;
-  success?: string;
-  rechnungsnummer?: string;
-}
-
-export async function erfasseExterneRechnungAction(
-  _prevState: ExterneRechnungFormState,
-  formData: FormData,
-): Promise<ExterneRechnungFormState> {
-  await requireAdmin();
-
-  const empfaenger = String(formData.get("empfaenger") ?? "").trim();
-  const betreff = String(formData.get("betreff") ?? "").trim();
-  const betragRaw = String(formData.get("betragBrutto") ?? "").trim().replace(",", ".");
-  const datumRaw = String(formData.get("ausstellungsdatum") ?? "");
-  const notiz = String(formData.get("notiz") ?? "").trim();
-
-  if (!empfaenger || !datumRaw) {
-    return { error: "Bitte mindestens Empfänger und Ausstellungsdatum angeben." };
-  }
-  const betragBrutto = betragRaw ? Number(betragRaw) : null;
-  if (betragBrutto !== null && Number.isNaN(betragBrutto)) {
-    return { error: "Der Betrag ist keine gültige Zahl." };
-  }
-
-  try {
-    const { rechnungsnummer } = await erfasseExterneRechnung({
-      empfaenger,
-      betreff,
-      betragBrutto,
-      ausstellungsdatum: new Date(datumRaw),
-      notiz,
-    });
-    revalidatePath("/admin/rechnungen");
-    return { success: `Externe Rechnungsnummer vergeben: ${rechnungsnummer}`, rechnungsnummer };
-  } catch (err) {
-    return { error: err instanceof Error ? err.message : "Externe Rechnung konnte nicht erfasst werden." };
-  }
 }
 
 export interface BatchFormState {

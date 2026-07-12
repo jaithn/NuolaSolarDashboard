@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
@@ -22,6 +22,13 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Nuola Energy Dashboard",
   description: "Stromverbrauchs- und Abrechnungsportal der Nuola Solar GbR",
+};
+
+// Explizites Viewport-Meta für die optimale Darstellung auf mobilen Endgeräten
+// (Next.js setzt den Standard zwar automatisch, hier bewusst dokumentiert).
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

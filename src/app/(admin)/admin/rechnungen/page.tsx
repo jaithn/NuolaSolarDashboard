@@ -3,7 +3,6 @@ import { prisma } from "@/lib/db";
 import { mietparteiAnzeigeName } from "@/lib/mietpartei";
 import { NewRechnungForm } from "./NewRechnungForm";
 import { BatchEntwuerfeForm } from "./BatchEntwuerfeForm";
-import { ExterneRechnungForm } from "./ExterneRechnungForm";
 
 const STATUS_LABEL: Record<string, string> = {
   ENTWURF: "Entwurf",
@@ -19,7 +18,7 @@ export default async function RechnungenPage({
 }) {
   const { geloescht } = await searchParams;
 
-  const [rechnungen, mietparteien, externeRechnungen] = await Promise.all([
+  const [rechnungen, mietparteien] = await Promise.all([
     prisma.rechnung.findMany({
       orderBy: { erstelltAm: "desc" },
       include: { mietpartei: true },
@@ -29,7 +28,6 @@ export default async function RechnungenPage({
       include: { einheit: { include: { objekt: true } } },
       orderBy: { name: "asc" },
     }),
-    prisma.externeRechnung.findMany({ orderBy: { createdAt: "desc" }, take: 50 }),
   ]);
 
   const mietparteiOptions = mietparteien.map((m) => ({
@@ -95,41 +93,6 @@ export default async function RechnungenPage({
           bestehender, überschneidender Rechnung werden übersprungen.
         </p>
         <BatchEntwuerfeForm />
-      </div>
-
-      <div className="section">
-        <h2>Externe Rechnung erfassen</h2>
-        <p>
-          Für außerhalb des Systems geschriebene Rechnungen: vergibt die nächste Nummer aus der eigenen, lückenlosen
-          Folge (Präfix <code>NUOLA-EXT-…</code>). Diese Nummer tragen Sie dann auf Ihrer extern erstellten Rechnung
-          ein.
-        </p>
-        <ExterneRechnungForm />
-
-        {externeRechnungen.length > 0 && (
-          <table className="data-table" style={{ marginTop: "1rem" }}>
-            <thead>
-              <tr>
-                <th>Nummer</th>
-                <th>Empfänger</th>
-                <th>Betreff</th>
-                <th>Datum</th>
-                <th>Betrag (brutto)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {externeRechnungen.map((e) => (
-                <tr key={e.id}>
-                  <td>{e.rechnungsnummer}</td>
-                  <td>{e.empfaenger}</td>
-                  <td>{e.betreff ?? "–"}</td>
-                  <td>{e.ausstellungsdatum.toLocaleDateString("de-DE")}</td>
-                  <td>{e.betragBrutto != null ? `${e.betragBrutto.toFixed(2)} €` : "–"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
       </div>
     </div>
   );

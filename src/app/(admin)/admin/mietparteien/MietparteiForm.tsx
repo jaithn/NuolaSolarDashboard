@@ -70,10 +70,10 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
         <div className="form-error" role="alert" style={{ background: "var(--color-primary-tint)", color: "var(--color-ink)", borderColor: "var(--color-primary)" }}>
           <strong>Diese Einheit ist bereits belegt:</strong> „{state.confirmUmzug.vorhandenBezeichner}&quot; wohnt dort noch
           {state.confirmUmzug.auszugBereitsGesetzt ? " (Auszugsdatum bereits gesetzt)" : " (kein Auszugsdatum gesetzt)"}.
-          Ist der Mieterwechsel korrekt? Dann bitte das Auszugsdatum des Vormieters bestätigen – es wird automatisch ein
-          Schlussrechnungs-Entwurf für den Vormieter erstellt.
+          Ist der Wechsel der Mietpartei korrekt? Dann bitte das Auszugsdatum der bisherigen Mietpartei bestätigen – es
+          wird automatisch ein Schlussrechnungs-Entwurf für die bisherige Mietpartei erstellt.
           <div className="field" style={{ marginTop: "0.75rem", maxWidth: "16rem" }}>
-            <label htmlFor="vormieterAuszugsdatum">Auszugsdatum Vormieter</label>
+            <label htmlFor="vormieterAuszugsdatum">Auszugsdatum bisherige Mietpartei</label>
             <input
               id="vormieterAuszugsdatum"
               name="vormieterAuszugsdatum"

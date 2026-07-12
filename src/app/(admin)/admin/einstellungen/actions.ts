@@ -87,7 +87,15 @@ export async function updateFirmenStammdatenAction(
   if (kontaktEmail && kontaktEmail !== (bisher?.kontaktEmail ?? "")) {
     const res = await starteEmailVerifizierung({ zweck: "FIRMA_KONTAKT_EMAIL", refId: "singleton", neueEmail: kontaktEmail });
     if (!res.ok) {
-      return { error: `Stammdaten gespeichert, aber die Bestätigungs-E-Mail konnte nicht versendet werden (${res.error}).` };
+      // Wichtig: Die uebrigen Stammdaten wurden gespeichert, die neue
+      // Kontakt-E-Mail aber NICHT uebernommen (sie wird erst nach Bestaetigung
+      // aktiv, und die Bestaetigungs-E-Mail konnte nicht versendet werden).
+      return {
+        error:
+          `Die übrigen Stammdaten wurden gespeichert, aber die neue Kontakt-E-Mail „${kontaktEmail}" wurde NICHT übernommen: ` +
+          `Die dafür nötige Bestätigungs-E-Mail konnte nicht versendet werden (${res.error}). ` +
+          `Bitte die SMTP-Einstellungen prüfen und die E-Mail-Adresse anschließend erneut speichern.`,
+      };
     }
     await prisma.firmenStammdaten.update({ where: { id: "singleton" }, data: { kontaktEmailPending: kontaktEmail } });
     hinweis = `Gespeichert. Eine Bestätigungs-E-Mail wurde an ${kontaktEmail} gesendet – die Kontakt-E-Mail wird nach Bestätigung übernommen.`;

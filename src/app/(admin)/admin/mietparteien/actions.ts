@@ -110,9 +110,11 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
     return { error: "Der Arbeitspreis ist ungültig." };
   }
 
-  // Anrede nur uebernehmen, wenn gueltig UND ein Name vorhanden ist (bei reinen
-  // Firmen ohne Ansprechpartner gibt es keine Anrede - Vorgabe).
-  const anrede: Anrede = ["HERR", "FRAU", "FAMILIE"].includes(anredeRaw) && name ? (anredeRaw as Anrede) : null;
+  // Anrede uebernehmen, sobald ein gueltiger Wert gewaehlt wurde. Frueher war
+  // die Anrede zusaetzlich an einen vorhandenen Namen gekoppelt - das fuehrte
+  // dazu, dass bei Mietparteien mit leerem Namensfeld (z.B. reine Firma) eine
+  // ausgewaehlte Anrede beim Speichern stillschweigend wieder verworfen wurde.
+  const anrede: Anrede = ["HERR", "FRAU", "FAMILIE"].includes(anredeRaw) ? (anredeRaw as Anrede) : null;
 
   return {
     data: {
@@ -190,7 +192,7 @@ export async function createMietparteiAction(
     const raw = String(formData.get("vormieterAuszugsdatum") ?? "");
     const datum = raw ? new Date(raw) : vorhandener.auszugsdatum;
     if (!datum || Number.isNaN(datum.getTime())) {
-      return { error: "Bitte ein gültiges Auszugsdatum für den Vormieter angeben.", values: collectValues(formData) };
+      return { error: "Bitte ein gültiges Auszugsdatum für die bisherige Mietpartei angeben.", values: collectValues(formData) };
     }
     vormieterAuszug = datum;
   }
@@ -227,12 +229,12 @@ export async function createMietparteiAction(
       });
       await generateAndStoreInvoicePdf(rechnungId).catch(() => {});
       return {
-        success: `Neuer Mieter angelegt, Vormieter „${mietparteiAnzeigeName(vorhandener)}" abgemeldet und ein Schlussrechnungs-Entwurf erstellt.`,
+        success: `Neue Mietpartei angelegt, bisherige Mietpartei „${mietparteiAnzeigeName(vorhandener)}" abgemeldet und ein Schlussrechnungs-Entwurf erstellt.`,
       };
     } catch (err) {
       const grund = err instanceof Error ? err.message : "Unbekannter Fehler.";
       return {
-        success: `Neuer Mieter angelegt und Vormieter abgemeldet. Hinweis: Schlussrechnungs-Entwurf konnte nicht automatisch erstellt werden (${grund}). Bitte manuell im Bereich Rechnungen anlegen.`,
+        success: `Neue Mietpartei angelegt und bisherige Mietpartei abgemeldet. Hinweis: Schlussrechnungs-Entwurf konnte nicht automatisch erstellt werden (${grund}). Bitte manuell im Bereich Rechnungen anlegen.`,
       };
     }
   }
