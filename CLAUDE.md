@@ -27,6 +27,14 @@ Nach **jeder** Code-Änderung:
 
 **Grundsatz:** Beim Stagen **selektiv** vorgehen (`git add -u` für getrackte Änderungen + `git add src/ …` für neue Quellcode-Dateien), **nie blind `git add -A`** – sonst landen untrackte lokale Ordner (Style Guide, Handoff) oder Kundendaten versehentlich im Repo. Vor jedem Push mit `git status` prüfen, dass wirklich nur Code/Config gestaged ist.
 
+## Befehle
+
+Wiederverwendbare Session-Befehle liegen im (lokalen, nicht versionierten) Ordner `02 commands/`. Wird einer davon aufgerufen, führe die darin beschriebenen Schritte aus:
+
+- **`session-handoff.md`** – vollständiger Session-Abschluss: **Schritt 0** prüft zuerst, ob alle Änderungen getestet **und** auf GitHub gepusht sind (sonst zuerst nachholen); danach Architektur-Abschnitt in CLAUDE.md aktualisieren, `HANDOFF.md` schreiben und optional `/clear` anbieten.
+- **`handoff.md`** – schreibt nur den Übergabe-Snapshot `HANDOFF.md`.
+- **`architecture-sync.md`** – aktualisiert ausschließlich den `## Architecture`-Abschnitt dieser CLAUDE.md.
+
 ## Architecture
 
 ### High-Level-Überblick
@@ -43,7 +51,7 @@ Nach **jeder** Code-Änderung:
 - `src/app/api/**` — Route Handler für Downloads/Export (Rechnungs-PDF, Willkommensbrief-PDF, CSV-Export). Binärdaten/Streams, die nicht über Server Actions gehen.
 - `src/middleware.ts` — Host-Check (gegen `APP_BASE_URL`) + rollenbasierter Seitenschutz.
 - `src/lib/auth/**` — Session (`iron-session`), `guards.ts` (`requireAdmin`/`requireSession`), Passwort-Hashing, Reset-Token (SHA-256-gehasht gespeichert), Onboarding/Zugang, `emailVerification.ts` (E-Mail-Bestätigung via SHA-256-Token für Mieter-E-Mail und Firmen-Kontakt-E-Mail, Modell `EmailVerifizierung`).
-- `src/lib/billing/**` — Abrechnungskern: `consumption.ts` (Verbrauch aus Zählerdifferenzen inkl. Interpolation/Schätzung), `taxSplit.ts` (MwSt.-Splitting bei Satzwechsel), `invoiceNumber.ts` (lückenlose Nummern), `generateInvoice.ts` (Entwurf), `releaseInvoice.ts` (Freigabe+Versand), `monatsverbrauch.ts`.
+- `src/lib/billing/**` — Abrechnungskern: `consumption.ts` (Verbrauch aus Zählerdifferenzen inkl. Interpolation/Schätzung), `taxSplit.ts` (MwSt.-Splitting bei Satzwechsel), `invoiceNumber.ts` (lückenlose Nummern, regulär + eigener externer Zähler), `generateInvoice.ts` (Entwurf + `pruefeKeineUeberschneidung`-Duplikatsperre + `erstelleEntwuerfeFuerAktiveEinheiten`-Batch), `releaseInvoice.ts` (Freigabe: Nummernvergabe + Versand + Fehlerprotokoll), `storno.ts` (Stornorechnung), `deleteDraft.ts` (Entwurf löschen), `externalInvoice.ts` (externe Rechnung erfassen), `monatsverbrauch.ts`.
 - `src/lib/pdf/**` — React-PDF: gemeinsames `letterLayout.tsx` (einheitlicher Briefkopf Logo-links/Absender-rechts, Empfänger-Adressfeld im Fensterumschlag-Bereich mit Anrede, Falzmarken in Nuola-Gold, einheitliche Fußzeile) – von ALLEN Brief-Arten genutzt; `invoiceDocument.tsx`/`renderInvoicePdf.tsx` (Rechnung), `welcomeLetterDocument.tsx`/`renderWelcomeLetter.tsx` (Willkommensbrief).
 - `src/lib/shelly/client.ts` — Shelly-Cloud-Client (`/device/status`, Rate-Limit 1 req/s, Timeout, Profil-Normalisierung Tri-/Monophase).
 - `src/lib/mail/**` — `mailer.ts` (Nodemailer, Multipart + Text-Alternative, SMTP-Test), `templates.ts` (HTML-Mails).
@@ -57,12 +65,15 @@ Nach **jeder** Code-Änderung:
 - **Verbrauch = Differenz kumulativer Zählerstände** (`Messwert.energyWh` je Gerät/Phase/Zeitpunkt). Robust gegen verpasste Polls. Fehlt am Stichtag ein Wert bei Lücke > ~1 Tag, wird interpoliert und als *geschätzt* markiert (§ 7 Mietvertrag).
 - **Geräte ↔ Einheiten als n:m** (`GeraetZuordnung`) mit `modus ADDIEREN|SUBTRAHIEREN`: bildet mehrere Shellys pro Einheit und Allgemeinstrom-Zwischenzähler (Differenzbildung) ab.
 - **Zeitlich gültige Steuersätze** (`Steuersatz.gueltigAb/Bis`, nie überschrieben) + Positions-Splitting am Stichtag → korrekte rückwirkende MwSt.
+- **Rechnungsnummer erst bei Freigabe** (§ 14 UStG/GoBD): Entwürfe haben `rechnungsnummer = null`, die lückenlose Nummer wird erst in `releaseInvoice.ts` vergeben – so hinterlässt das Löschen eines Entwurfs (`deleteDraft.ts`) keine Lücke. Duplikatsperre pro Einheit+Zeitraum (`pruefeKeineUeberschneidung`). Freigegebene Rechnungen sind unveränderlich; Korrektur ausschließlich über **Storno** (`storno.ts`: eigene Nummer, negierte Beträge, Original → `STORNIERT`) + neue Rechnung. Externe Rechnungen (`externalInvoice.ts`) laufen über einen **eigenen Nummernkreis** (`NUOLA-EXT-…`, `ExterneRechnungsnummernZaehler`).
+- **Theme (Hell/Dunkel)** über CSS-Variablen: Auswahl im Cookie `theme`, vom Root-Layout serverseitig als `data-theme` gesetzt (flackerfrei); ohne Cookie entscheidet `prefers-color-scheme`. Marke/Logo bleiben, dunkles Logo bekommt im Dark-Mode einen hellen Chip.
 - **Defense in Depth Auth**: Middleware schützt nur Navigation; jede Admin-Server-Action ruft zuerst `requireAdmin()` (Server Actions sind eigene HTTP-Endpunkte; vgl. CVE-2025-29927).
 - **Sicherheit**: Security-Header/CSP in `next.config.mjs`, In-Memory-Rate-Limiter für Login/Reset, Reset-Token nur als Hash gespeichert, Non-Root-Container (gosu + PUID/PGID) mit Laufzeit-chown der Volumes.
 
 ### Wichtige Datenflüsse
 - **Erfassung**: `worker/index.ts` (cron) → `poll.ts` → `shelly/client.ts` (Cloud-Abruf) → `Messwert`-Upsert. Der Worker fragt ein Gerät nur ab, wenn seit dessen letztem Messwert das individuelle `ShellyGeraet.abrufIntervallMinuten` (Default 15) vergangen ist (Cron kann häufiger laufen). `shelly/client.ts` normalisiert die Cloud-Server-Eingabe auf den reinen Host (`normalizeShellyHost`, mit/ohne `https://`) und bietet einen Erreichbarkeitstest (`pruefeGeraetErreichbar`, direkt nach dem Anlegen). Fehler je Gerät isoliert; pro Zyklus optional gedrosselte Fehler-Mail (`FirmenStammdaten.shellyFehlerEmail`).
-- **Abrechnung**: `generateInvoice.ts` → `consumption.ts` (kWh + Zählerstände + Schätz-Flag) + `taxSplit.ts` + `invoiceNumber.ts` → `Rechnung`+`Rechnungsposition` (Status ENTWURF). Freigabe: `releaseInvoice.ts` → `renderInvoicePdf.tsx` (PDF ins Volume, nicht public) → Status VERSENDET + `mail/`.
+- **Abrechnung**: `generateInvoice.ts` → `consumption.ts` (kWh + Zählerstände + Schätz-Flag) + `taxSplit.ts` → `Rechnung`+`Rechnungsposition` (Status ENTWURF, ohne Nummer). Freigabe: `releaseInvoice.ts` vergibt die Nummer (`invoiceNumber.ts`), rendert das finale PDF (`renderInvoicePdf.tsx`, PDF ins Volume, nicht public), setzt Status FREIGEGEBEN und versucht den Mailversand; nur bei Erfolg → VERSENDET, sonst bleibt FREIGEGEBEN mit `emailFehler` (in der UI „erneut senden"). Alle Briefe teilen sich `pdf/letterLayout.tsx`.
+- **E-Mail-Verifizierung**: Mieter-Profil bzw. Firmen-Kontakt-E-Mail → `auth/emailVerification.ts` (SHA-256-Token, Modell `EmailVerifizierung`) → Bestätigungslink `/e-mail-bestaetigen/[token]` (Button-POST) übernimmt die neue Adresse.
 - **UI**: RSC-`page.tsx` lesen via `lib/db` (Prisma); Mutationen ausschließlich über Server Actions (`actions.ts`), die `revalidatePath` aufrufen; Client-Formulare nutzen `useActionState`.
 - **Auth**: `login/actions.ts` → `iron-session`-Cookie `{userId, role, mustChangePassword}` → `middleware.ts` + `guards.ts` werten es aus.
 
@@ -81,7 +92,7 @@ Nach **jeder** Code-Änderung:
 - **Geld als `Float`** statt Integer-Cents/Decimal (für aktuelle Größenordnung ausreichend).
 - **In-Memory-Zustand** (Rate-Limiter, Fehler-Mail-Drosselung) wird bei Container-Neustart zurückgesetzt; kein Redis.
 - **Shelly Cloud** liefert keine dokumentierte Historie → Ausfälle werden nicht rückwirkend gefüllt (nur robuste Retries/kurze Intervalle); Monatsend-Lücken werden geschätzt.
-- **Storno-Workflow** (`RechnungStatus.STORNIERT`) im Modell vorgesehen, aber noch keine eigene Admin-Funktion.
+- **Storno/Korrektur** ist umgesetzt (Stornorechnung + neue Rechnung). Externe Rechnungen (`ExterneRechnung`) werden nur als Nummern-/Metadaten-Eintrag dokumentiert – **ohne** PDF/E-Mail (das PDF entsteht außerhalb des Systems).
 - **E-Mail-Zustellbarkeit** hängt an DNS (SPF/DKIM/DMARC) außerhalb der App.
 
 **WICHTIG:** Wenn im Rahmen dieser oder künftiger Sessions strukturelle Änderungen vorgenommen werden (neue Module, geänderte Datenflüsse, neue Design-Entscheidungen, entfernte/umbenannte Komponenten, geänderte Konventionen), aktualisiere diesen Architecture-Abschnitt in CLAUDE.md unmittelbar danach – nicht erst am Ende der Session. Halte Änderungen minimal-invasiv: nur den betroffenen Teil anpassen, nicht den gesamten Abschnitt neu schreiben. Kleinere Implementierungsdetails gehören NICHT hierhin, nur Architektur-relevante Änderungen.
