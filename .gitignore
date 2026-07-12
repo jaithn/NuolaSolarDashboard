@@ -18,3 +18,8 @@ coverage/
 *Style Guide/
 # Claude-Projektinstruktionen bewusst lokal (nicht ins oeffentliche Repo)
 CLAUDE.md
+# Session-Interna & lokale Vorlagen (nicht ins Repo). "03 Vorlagen/" enthaelt
+# Vertragsvorlagen mit potenziell personenbezogenen Daten -> nie committen.
+HANDOFF.md
+02 commands/
+03 Vorlagen/
