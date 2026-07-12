@@ -11,6 +11,22 @@ Nach **jeder** Code-Änderung:
 2. **Nur wenn die Tests durchlaufen** (alle grün): die Änderungen committen und auf **GitHub pushen** (`git push`).
 3. Schlägt ein Test fehl, **nicht** pushen – erst die Ursache beheben (oder Rücksprache halten), dann erneut testen.
 
+### Was gehört ins Repo (pushen) – und was nicht
+
+**Ins Repo (versionieren & pushen):**
+- Quellcode `src/`, Datenmodell `prisma/schema.prisma`, Seeds (`seed.ts`, `demo-seed.ts`), Tests `tests/`.
+- Konfiguration: `package.json` **und `package-lock.json`** (feste Dependency-Versionen → reproduzierbare Docker-/CI-Builds), `tsconfig*.json`, `next.config.mjs`, ESLint-Config, `Dockerfile`, `docker-*.yml`, `nginx.example.conf`, `swag/`, `.github/`, **`.env.example`** (Vorlage ohne Secrets).
+- Doku: `CLAUDE.md`, `README`.
+
+**NICHT ins Repo (bleibt lokal, per `.gitignore` ausgeschlossen):**
+- **Secrets/Umgebung:** `.env` (nur `.env.example` versionieren).
+- **Laufzeit-/Kundendaten:** der Ordner `data/` – enthält die SQLite-DB **und die gerenderten Rechnungs-PDFs (personenbezogene Daten!)** –, außerdem `public/uploads/` und `prisma/data/`.
+- **Generierte Artefakte:** `node_modules/`, `.next/`, `dist/`, `*.tsbuildinfo`, `coverage/`, `*.log`.
+- **Editor/Tooling:** `.claude/`, `.fuse_hidden*`.
+- **Marken-Assets & Session-Interna (bewusst lokal):** `01 Nuola Style Guide/` (Logos/Style Guide), `02 commands/`, `HANDOFF.md`.
+
+**Grundsatz:** Beim Stagen **selektiv** vorgehen (`git add -u` für getrackte Änderungen + `git add src/ …` für neue Quellcode-Dateien), **nie blind `git add -A`** – sonst landen untrackte lokale Ordner (Style Guide, Handoff) oder Kundendaten versehentlich im Repo. Vor jedem Push mit `git status` prüfen, dass wirklich nur Code/Config gestaged ist.
+
 ## Architecture
 
 ### High-Level-Überblick
