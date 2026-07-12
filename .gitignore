@@ -16,3 +16,5 @@ coverage/
 # Brand-Referenz & Session-Interna (lokal), gehoeren nicht ins Repo
 *Style Guide*.html
 *Style Guide/
+# Claude-Projektinstruktionen bewusst lokal (nicht ins oeffentliche Repo)
+CLAUDE.md
