@@ -8,6 +8,8 @@ import { erstelleOderResetZugang } from "@/lib/auth/onboarding";
 import { erstelleRechnungsentwurf } from "@/lib/billing/generateInvoice";
 import { generateAndStoreInvoicePdf } from "@/lib/pdf/renderInvoicePdf";
 import { mietparteiAnzeigeName } from "@/lib/mietpartei";
+import { speichereDokument, loescheDokument } from "@/lib/dokumente";
+import type { DokumentTyp } from "@prisma/client";
 
 export interface MietparteiFormState {
   error?: string;
@@ -48,6 +50,10 @@ function collectValues(formData: FormData): Record<string, string> {
     "abschlagSteuersatzId",
     "abschlagGueltigAb",
     "vormieterAuszugsdatum",
+    "grundversorgerName",
+    "grundversorgerTarif",
+    "grundversorgerGrundpreisBrutto",
+    "grundversorgerArbeitspreisBrutto",
   ];
   const out: Record<string, string> = {};
   for (const k of keys) out[k] = String(formData.get(k) ?? "");
@@ -72,11 +78,16 @@ type ParsedMietpartei = {
   anschrift: null;
   einzugsdatum: Date;
   auszugsdatum: Date | null;
-  status: "AKTIV" | "INAKTIV";
+  status: "INTERESSENT" | "AKTIV" | "INAKTIV";
   arbeitspreisNetto: number;
   arbeitspreisSteuersatzId: string;
   grundpreisNetto: number | null;
   grundpreisSteuersatzId: string | null;
+  // Grundversorger-Vergleich (Onboarding-Anschreiben), Preise brutto.
+  grundversorgerName: string | null;
+  grundversorgerTarif: string | null;
+  grundversorgerGrundpreisBrutto: number | null;
+  grundversorgerArbeitspreisBrutto: number | null;
 };
 
 function parseMietparteiInput(formData: FormData): { error: string } | { data: ParsedMietpartei } {
@@ -89,12 +100,22 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
   const telefon = String(formData.get("telefon") ?? "").trim();
   const einzugsdatumRaw = String(formData.get("einzugsdatum") ?? "");
   const auszugsdatumRaw = String(formData.get("auszugsdatum") ?? "");
-  const status = String(formData.get("status") ?? "AKTIV") as "AKTIV" | "INAKTIV";
+  const statusRaw = String(formData.get("status") ?? "AKTIV");
+  const status = (["INTERESSENT", "AKTIV", "INAKTIV"].includes(statusRaw) ? statusRaw : "AKTIV") as
+    | "INTERESSENT"
+    | "AKTIV"
+    | "INAKTIV";
   const arbeitspreisNetto = Number(formData.get("arbeitspreisNetto"));
   const arbeitspreisSteuersatzId = String(formData.get("arbeitspreisSteuersatzId") ?? "");
   const hatGrundpreis = formData.get("hatGrundpreis") === "on";
   const grundpreisNetto = Number(formData.get("grundpreisNetto"));
   const grundpreisSteuersatzId = String(formData.get("grundpreisSteuersatzId") ?? "");
+
+  // Grundversorger-Vergleich (optional, nur fuer das Anschreiben). Preise brutto.
+  const grundversorgerName = String(formData.get("grundversorgerName") ?? "").trim();
+  const grundversorgerTarif = String(formData.get("grundversorgerTarif") ?? "").trim();
+  const gvGrund = Number(formData.get("grundversorgerGrundpreisBrutto"));
+  const gvArbeit = Number(formData.get("grundversorgerArbeitspreisBrutto"));
 
   if (!einheitId || !email || !einzugsdatumRaw || !arbeitspreisSteuersatzId) {
     return { error: "Bitte alle Pflichtfelder ausfüllen." };
@@ -140,6 +161,10 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
       arbeitspreisSteuersatzId,
       grundpreisNetto: hatGrundpreis && Number.isFinite(grundpreisNetto) ? grundpreisNetto : null,
       grundpreisSteuersatzId: hatGrundpreis && grundpreisSteuersatzId ? grundpreisSteuersatzId : null,
+      grundversorgerName: grundversorgerName || null,
+      grundversorgerTarif: grundversorgerTarif || null,
+      grundversorgerGrundpreisBrutto: Number.isFinite(gvGrund) && gvGrund > 0 ? gvGrund : null,
+      grundversorgerArbeitspreisBrutto: Number.isFinite(gvArbeit) && gvArbeit > 0 ? gvArbeit : null,
     },
   };
 }
@@ -352,4 +377,112 @@ export async function createZugangAction(_prevState: ZugangState, formData: Form
 export async function resetZugangAction(_prevState: ZugangState, formData: FormData): Promise<ZugangState> {
   await requireAdmin();
   return zugangAktion(String(formData.get("mietparteiId") ?? ""), "zuruecksetzen");
+}
+
+// ---------------------------------------------------------------------------
+// Onboarding: Statuswechsel + gescannte Dokumente
+// ---------------------------------------------------------------------------
+
+export interface OnboardingState {
+  error?: string;
+  success?: string;
+}
+
+/**
+ * Überführt eine Mietpartei in einen neuen Status (typischerweise
+ * INTERESSENT → AKTIV/INAKTIV). Scans sind bewusst NICHT verpflichtend; fehlen
+ * bei der Aktivierung Vertrag oder SEPA-Mandat, wird nur ein Hinweis ergänzt.
+ */
+export async function setMietparteiStatusAction(
+  _prevState: OnboardingState,
+  formData: FormData,
+): Promise<OnboardingState> {
+  await requireAdmin();
+
+  const mietparteiId = String(formData.get("mietparteiId") ?? "");
+  const zielStatus = String(formData.get("status") ?? "");
+  if (!["INTERESSENT", "AKTIV", "INAKTIV"].includes(zielStatus)) {
+    return { error: "Ungültiger Zielstatus." };
+  }
+
+  const mietpartei = await prisma.mietpartei.findUnique({
+    where: { id: mietparteiId },
+    include: { dokumente: true },
+  });
+  if (!mietpartei) return { error: "Mietpartei nicht gefunden." };
+
+  await prisma.mietpartei.update({
+    where: { id: mietparteiId },
+    data: { status: zielStatus as "INTERESSENT" | "AKTIV" | "INAKTIV" },
+  });
+  revalidatePath("/admin/mietparteien");
+  revalidatePath(`/admin/mietparteien/${mietparteiId}`);
+
+  const statusLabel = zielStatus === "AKTIV" ? "aktiv" : zielStatus === "INAKTIV" ? "inaktiv" : "Interessent";
+  // Bei Aktivierung auf fehlende Scan-Rückläufer hinweisen (nicht blockierend).
+  if (zielStatus === "AKTIV") {
+    const hatVertrag = mietpartei.dokumente.some((d) => d.typ === "VERTRAG");
+    const hatSepa = mietpartei.dokumente.some((d) => d.typ === "SEPA");
+    const fehlend = [!hatVertrag ? "unterschriebener Vertrag" : null, !hatSepa ? "SEPA-Mandat" : null].filter(
+      Boolean,
+    );
+    if (fehlend.length > 0) {
+      return {
+        success: `Status auf „${statusLabel}" gesetzt. Hinweis: Es fehlt noch ein Scan (${fehlend.join(
+          " und ",
+        )}). Bitte bei Vorliegen nachreichen.`,
+      };
+    }
+  }
+  return { success: `Status auf „${statusLabel}" gesetzt.` };
+}
+
+const DOKUMENT_TYPEN: DokumentTyp[] = ["VERTRAG", "SEPA", "ANSCHREIBEN", "SONSTIGES"];
+
+/** Nimmt eine hochgeladene, gescannte Datei entgegen und legt sie dauerhaft ab. */
+export async function uploadDokumentAction(
+  _prevState: OnboardingState,
+  formData: FormData,
+): Promise<OnboardingState> {
+  await requireAdmin();
+
+  const mietparteiId = String(formData.get("mietparteiId") ?? "");
+  const typRaw = String(formData.get("typ") ?? "");
+  const typ = (DOKUMENT_TYPEN.includes(typRaw as DokumentTyp) ? typRaw : "SONSTIGES") as DokumentTyp;
+  const datei = formData.get("datei");
+
+  if (!mietparteiId) return { error: "Mietpartei fehlt." };
+  if (!(datei instanceof File) || datei.size === 0) return { error: "Bitte eine Datei auswählen." };
+
+  const mietpartei = await prisma.mietpartei.findUnique({ where: { id: mietparteiId } });
+  if (!mietpartei) return { error: "Mietpartei nicht gefunden." };
+
+  try {
+    const bytes = Buffer.from(await datei.arrayBuffer());
+    await speichereDokument({ mietparteiId, typ, originalName: datei.name, bytes });
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Datei konnte nicht gespeichert werden." };
+  }
+
+  revalidatePath(`/admin/mietparteien/${mietparteiId}`);
+  return { success: "Dokument hochgeladen." };
+}
+
+/** Löscht ein hinterlegtes Dokument (Datei + Datensatz). */
+export async function deleteDokumentAction(
+  _prevState: OnboardingState,
+  formData: FormData,
+): Promise<OnboardingState> {
+  await requireAdmin();
+
+  const mietparteiId = String(formData.get("mietparteiId") ?? "");
+  const dokumentId = String(formData.get("dokumentId") ?? "");
+  if (!dokumentId) return { error: "Dokument fehlt." };
+
+  const dok = await prisma.mietparteiDokument.findUnique({ where: { id: dokumentId } });
+  if (!dok || dok.mietparteiId !== mietparteiId) return { error: "Dokument nicht gefunden." };
+
+  await loescheDokument(dokumentId);
+  revalidatePath(`/admin/mietparteien/${mietparteiId}`);
+  return { success: "Dokument gelöscht." };
 }

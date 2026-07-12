@@ -362,6 +362,11 @@ table.data-table th .unit {
   color: #475569;
 }
 
+.status-badge.interessent {
+  background: #fdf6e3;
+  color: #92600a;
+}
+
 table.data-table th.group-row {
   text-align: left;
   background: var(--color-primary-tint);

@@ -150,8 +150,23 @@ model Steuersatz {
 // ---------------------------------------------------------------------------
 
 enum MietverhaeltnisStatus {
+  // Interessent: Onboarding laeuft (Vertrag/Anschreiben/SEPA erzeugt, ggf.
+  // Ruecklaeufer noch offen). Zaehlt bewusst NICHT als effektiv aktiv
+  // (kein Login, keine Abrechnung, kein Polling) - siehe
+  // isMietparteiEffectivelyAktiv.
+  INTERESSENT
   AKTIV
   INAKTIV
+}
+
+// Art eines hinterlegten Mietpartei-Dokuments (gescannte Ruecklaeufer aus dem
+// Onboarding). Dateien liegen im data-Volume (nicht public), Download nur
+// authentifiziert.
+enum DokumentTyp {
+  VERTRAG
+  SEPA
+  ANSCHREIBEN
+  SONSTIGES
 }
 
 // Anrede der Mietpartei. FIRMA kennzeichnet eine juristische Person (dann ist
@@ -196,6 +211,15 @@ model Mietpartei {
   grundpreisNetto          Float?
   grundpreisSteuersatzId   String?
 
+  // Grundversorger-Vergleich (fuer das Onboarding-Anschreiben, manuell erfasst).
+  // Preise BRUTTO (inkl. MwSt), so wie der Interessent sie auf seiner bisherigen
+  // Grundversorger-Rechnung liest. Der prozentuale Vorteil wird daraus berechnet
+  // (kein eigenes Feld noetig).
+  grundversorgerName              String?
+  grundversorgerTarif             String?
+  grundversorgerGrundpreisBrutto  Float? // €/Monat brutto
+  grundversorgerArbeitspreisBrutto Float? // €/kWh brutto
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -205,6 +229,7 @@ model Mietpartei {
 
   abschlaege Abschlag[]
   rechnungen Rechnung[]
+  dokumente  MietparteiDokument[]
   // 1:1 - Nutzer.mietparteiId ist @unique, daher hier Einzelobjekt statt Array.
   nutzer     Nutzer?
 
@@ -226,6 +251,26 @@ model Abschlag {
   steuersatz Steuersatz @relation(fields: [steuersatzId], references: [id])
 
   @@index([mietparteiId, gueltigAb])
+}
+
+// Gescanntes Dokument einer Mietpartei (z.B. unterschriebener Vertrag oder
+// SEPA-Mandat aus dem Onboarding). Die Datei selbst liegt im data-Volume
+// (data/mietparteien/<mietparteiId>/<pfad>), NICHT unter public/ - Zugriff nur
+// authentifiziert ueber einen Route-Handler. "pfad" ist ausschliesslich der
+// serverseitig vergebene Dateiname (kein Pfadbestandteil), "dateiname" der
+// urspruengliche Anzeigename des Uploads.
+model MietparteiDokument {
+  id           String      @id @default(cuid())
+  mietparteiId String
+  typ          DokumentTyp
+  dateiname    String
+  pfad         String
+  groesseBytes Int         @default(0)
+  hochgeladenAm DateTime   @default(now())
+
+  mietpartei Mietpartei @relation(fields: [mietparteiId], references: [id], onDelete: Cascade)
+
+  @@index([mietparteiId])
 }
 
 // ---------------------------------------------------------------------------

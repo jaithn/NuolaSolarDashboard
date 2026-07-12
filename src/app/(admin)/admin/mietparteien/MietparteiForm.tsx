@@ -31,11 +31,15 @@ interface MietparteiFormProps {
     telefon: string | null;
     einzugsdatum: Date;
     auszugsdatum: Date | null;
-    status: "AKTIV" | "INAKTIV";
+    status: "INTERESSENT" | "AKTIV" | "INAKTIV";
     arbeitspreisNetto: number;
     arbeitspreisSteuersatzId: string;
     grundpreisNetto: number | null;
     grundpreisSteuersatzId: string | null;
+    grundversorgerName: string | null;
+    grundversorgerTarif: string | null;
+    grundversorgerGrundpreisBrutto: number | null;
+    grundversorgerArbeitspreisBrutto: number | null;
   };
 }
 
@@ -203,8 +207,9 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
             id="status"
             name="status"
             className="select-inline"
-            defaultValue={val("status", mietpartei?.status ?? "AKTIV")}
+            defaultValue={val("status", mietpartei?.status ?? (mode === "create" ? "INTERESSENT" : "AKTIV"))}
           >
+            <option value="INTERESSENT">Interessent</option>
             <option value="AKTIV">Aktiv</option>
             <option value="INAKTIV">Inaktiv</option>
           </select>
@@ -247,6 +252,66 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
           steuersaetze={steuersaetze}
         />
       )}
+
+      <div className="section" style={{ marginTop: "1rem" }}>
+        <h3 style={{ marginTop: 0 }}>Grundversorger-Vergleich (für das Anschreiben)</h3>
+        <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", marginTop: 0 }}>
+          Optional. Preise <strong>brutto</strong> (inkl. MwSt.), so wie sie auf der Grundversorger-Rechnung
+          stehen. Der prozentuale Vorteil wird im Anschreiben automatisch berechnet.
+        </p>
+        <div className="form-grid">
+          <div className="field">
+            <label htmlFor="grundversorgerName">Grundversorger</label>
+            <input
+              id="grundversorgerName"
+              name="grundversorgerName"
+              type="text"
+              defaultValue={val("grundversorgerName", mietpartei?.grundversorgerName ?? "")}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="grundversorgerTarif">Tarifname</label>
+            <input
+              id="grundversorgerTarif"
+              name="grundversorgerTarif"
+              type="text"
+              defaultValue={val("grundversorgerTarif", mietpartei?.grundversorgerTarif ?? "")}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="grundversorgerGrundpreisBrutto">Grundpreis Grundversorger (€/Monat, brutto)</label>
+            <input
+              id="grundversorgerGrundpreisBrutto"
+              name="grundversorgerGrundpreisBrutto"
+              type="number"
+              step="0.01"
+              min="0"
+              defaultValue={val(
+                "grundversorgerGrundpreisBrutto",
+                mietpartei?.grundversorgerGrundpreisBrutto != null
+                  ? String(mietpartei.grundversorgerGrundpreisBrutto)
+                  : "",
+              )}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="grundversorgerArbeitspreisBrutto">Arbeitspreis Grundversorger (€/kWh, brutto)</label>
+            <input
+              id="grundversorgerArbeitspreisBrutto"
+              name="grundversorgerArbeitspreisBrutto"
+              type="number"
+              step="0.0001"
+              min="0"
+              defaultValue={val(
+                "grundversorgerArbeitspreisBrutto",
+                mietpartei?.grundversorgerArbeitspreisBrutto != null
+                  ? String(mietpartei.grundversorgerArbeitspreisBrutto)
+                  : "",
+              )}
+            />
+          </div>
+        </div>
+      </div>
 
       {mode === "create" && (
         <div className="section" style={{ marginTop: "1rem", background: "var(--color-primary-tint)" }}>

@@ -33,6 +33,14 @@ export default async function MietparteienPage() {
           <tbody>
             {mietparteien.map((m) => {
               const aktiv = isMietparteiEffectivelyAktiv(m);
+              // Interessenten sind (noch) nicht effektiv aktiv, aber als eigener
+              // Status kenntlich zu machen; sonst greift aktiv/inaktiv.
+              const badge =
+                m.status === "INTERESSENT"
+                  ? { klasse: "interessent", text: "Interessent" }
+                  : aktiv
+                    ? { klasse: "aktiv", text: "aktiv" }
+                    : { klasse: "inaktiv", text: "inaktiv" };
               return (
                 <tr key={m.id}>
                   <td>
@@ -44,9 +52,7 @@ export default async function MietparteienPage() {
                   <td>{m.einzugsdatum.toLocaleDateString("de-DE")}</td>
                   <td>{m.auszugsdatum ? m.auszugsdatum.toLocaleDateString("de-DE") : "–"}</td>
                   <td>
-                    <span className={`status-badge ${aktiv ? "aktiv" : "inaktiv"}`}>
-                      {aktiv ? "aktiv" : "inaktiv"}
-                    </span>
+                    <span className={`status-badge ${badge.klasse}`}>{badge.text}</span>
                   </td>
                 </tr>
               );
@@ -61,7 +67,7 @@ export default async function MietparteienPage() {
       </div>
 
       <div className="section">
-        <h2>Neue Mietpartei anlegen</h2>
+        <h2>Neue Mietpartei / Interessent anlegen</h2>
         {einheitOptions.length === 0 ? (
           <p>Bitte zuerst ein Objekt mit Einheit anlegen.</p>
         ) : steuersaetze.length === 0 ? (

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { MietparteiForm } from "../MietparteiForm";
 import { NewAbschlagForm } from "../NewAbschlagForm";
 import { ZugangPanel } from "./ZugangPanel";
+import { OnboardingPanel } from "./OnboardingPanel";
 import { mietparteiAnzeigeName } from "@/lib/mietpartei";
 
 export default async function MietparteiDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -21,6 +22,11 @@ export default async function MietparteiDetailPage({ params }: { params: Promise
     where: { mietparteiId: id },
     orderBy: { gueltigAb: "desc" },
     include: { steuersatz: true },
+  });
+
+  const dokumente = await prisma.mietparteiDokument.findMany({
+    where: { mietparteiId: id },
+    orderBy: { hochgeladenAm: "desc" },
   });
 
   // Historie der Jahresverbraeuche: nur FREIGEGEBENE/VERSENDETE (also
@@ -126,6 +132,21 @@ export default async function MietparteiDetailPage({ params }: { params: Promise
         <div style={{ marginTop: "1rem" }}>
           <NewAbschlagForm mietparteiId={mietpartei.id} steuersaetze={steuersaetze} />
         </div>
+      </div>
+
+      <div className="section">
+        <h2>Onboarding</h2>
+        <OnboardingPanel
+          mietparteiId={mietpartei.id}
+          status={mietpartei.status}
+          dokumente={dokumente.map((d) => ({
+            id: d.id,
+            typ: d.typ,
+            dateiname: d.dateiname,
+            groesseBytes: d.groesseBytes,
+            hochgeladenAm: d.hochgeladenAm.toISOString(),
+          }))}
+        />
       </div>
 
       <div className="section">

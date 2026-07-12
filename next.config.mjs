@@ -56,6 +56,10 @@ const nextConfig = {
   output: "standalone",
   serverExternalPackages: ["@react-pdf/renderer", "@prisma/client"],
   poweredByHeader: false,
+  // Gescannte Onboarding-Ruecklaeufer (Vertrag/SEPA) werden per Server Action
+  // hochgeladen; der Default (1 MB) reicht fuer PDF-/Bild-Scans nicht. Muss zum
+  // Limit in src/lib/dokumente.ts (MAX_DOKUMENT_BYTES) passen.
+  experimental: { serverActions: { bodySizeLimit: "25mb" } },
   // In den Client inlinen, damit die Version im Admin ohne Laufzeit-Git angezeigt
   // werden kann (Standalone-/Docker-Build).
   env: { NEXT_PUBLIC_APP_VERSION: APP_VERSION },

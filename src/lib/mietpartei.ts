@@ -59,7 +59,7 @@ export function anredeSatz(m: { anrede?: Anrede; vorname?: string | null; name?:
 }
 
 interface MietparteiStatusInput {
-  status: "AKTIV" | "INAKTIV";
+  status: "INTERESSENT" | "AKTIV" | "INAKTIV";
   einzugsdatum: Date;
   auszugsdatum: Date | null;
 }
@@ -68,7 +68,9 @@ interface MietparteiStatusInput {
  * Effektiver Aktiv-Status: kombiniert den manuell gepflegten Status mit
  * Ein-/Auszugsdatum. Ein Mietverhältnis gilt automatisch als inaktiv vor dem
  * Einzugs- bzw. nach dem Auszugsdatum, unabhängig vom gespeicherten Status
- * (der Admin kann zusätzlich manuell vorzeitig auf INAKTIV setzen).
+ * (der Admin kann zusätzlich manuell vorzeitig auf INAKTIV setzen). Ein
+ * Interessent (Status INTERESSENT) ist nie effektiv aktiv – kein Login, keine
+ * Abrechnung, kein Polling.
  */
 export function isMietparteiEffectivelyAktiv(mietpartei: MietparteiStatusInput, now: Date = new Date()): boolean {
   if (mietpartei.status !== "AKTIV") return false;
