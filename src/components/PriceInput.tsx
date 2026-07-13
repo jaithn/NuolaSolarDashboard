@@ -34,7 +34,11 @@ export function PriceInput({
   required,
 }: PriceInputProps) {
   const [netto, setNetto] = useState(defaultNetto ?? 0);
-  const [steuersatzId, setSteuersatzId] = useState(defaultSteuersatzId ?? steuersaetze[0]?.id ?? "");
+  // Bewusst `||` statt `??`: Im Anlege-Modus kommt defaultSteuersatzId als leerer
+  // String (nicht null/undefined) herein - der soll ebenfalls auf den ersten
+  // (aktuellsten) Steuersatz zurueckfallen, sonst bliebe kein Satz gewaehlt und
+  // die MwSt.-Berechnung ergaebe faelschlich 0.
+  const [steuersatzId, setSteuersatzId] = useState(defaultSteuersatzId || steuersaetze[0]?.id || "");
 
   const prozentsatz = steuersaetze.find((s) => s.id === steuersatzId)?.prozentsatz ?? 0;
   const { steuerBetrag, bruttoBetrag } = berechneBrutto(Number.isFinite(netto) ? netto : 0, prozentsatz);
