@@ -15,7 +15,9 @@ Version" in die Image-Beschreibung (`org.opencontainers.image.description`) übe
   mehr.
 - **Stromliefervertrag** neu aufgebaut (klar und verständlich): eigene Abschnitte zu
   Preisanpassung sowie Laufzeit/Lieferantenwechsel/Kündigung; die Konditionsbox heißt
-  jetzt „Anfängliche Konditionen".
+  jetzt „Anfängliche Konditionen". Enthält weiterhin die Pflichthinweise für
+  Haushaltskund:innen: Messung/Ablesung nach MsbG, Unterbrechung nach StromGVV/NAV
+  sowie Streitschlichtung (Schlichtungsstelle Energie) und Bundesnetzagentur.
 - **Unterschriften:** beide Vertragsparteien tragen Ort und Datum ein; der Ort ist mit
   dem hinterlegten Ort der jeweiligen Partei vorbelegt.
 - **Anschreiben:** Vergleich mit „dem örtlichen Grundversorger"; geplanter Liefertermin

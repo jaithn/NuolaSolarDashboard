@@ -11,11 +11,11 @@ Das Mietobjekt wird über eine Gebäudestromanlage im Sinne des § 42b Energiewi
 
 Der Strom wird ohne Durchleitung durch ein öffentliches Netz an die Verbrauchsstelle des Mieters geliefert.
 
-## § 2 Verbrauchserfassung
+## § 2 Verbrauchserfassung, Messung und Ablesung
 
-Der Stromverbrauch wird über einen geeichten, dem Mietobjekt eindeutig zugeordneten Stromzähler erfasst.
+Der Stromverbrauch wird über einen geeichten, dem Mietobjekt eindeutig zugeordneten Stromzähler erfasst. Maßgeblich für die Abrechnung sind ausschließlich die durch den Stromzähler erfassten Verbrauchswerte.
 
-Maßgeblich für die Abrechnung sind ausschließlich die durch den Stromzähler erfassten Verbrauchswerte.
+Die Messung erfolgt durch Messeinrichtungen im Sinne des § 3 des Messstellenbetriebsgesetzes (MsbG). Installation, Betrieb und Ablesung erfolgen durch die Nuola Solar GbR bzw. durch einen von ihr beauftragten Messstellenbetreiber oder fachkundigen Dritten gemäß §§ 5 und 6 MsbG; die hierfür anfallenden Kosten sind mit dem Stromentgelt abgegolten.
 
 Der Mieter verpflichtet sich, den Zugang zum Stromzähler nach vorheriger angemessener Ankündigung zum Zwecke der Ablesung, Wartung, Prüfung oder des Austauschs zu ermöglichen.
 
@@ -55,7 +55,15 @@ Die Grundlagen der Schätzung werden dem Mieter auf Verlangen erläutert.
 
 Nach Vorliegen der tatsächlichen Verbrauchsdaten erfolgt erforderlichenfalls eine Korrektur der Abrechnung.
 
-## § 7 Laufzeit, Lieferantenwechsel und Kündigung
+## § 7 Gewährleistung und Unterbrechung der Stromlieferung
+
+Die Nuola Solar GbR ist verpflichtet, dem Mieter für die Dauer des Vertrages im vertraglich vorgesehenen Umfang Strom zur Verfügung zu stellen.
+
+Dies gilt jedoch nicht, soweit und solange der Netzbetreiber den Netzanschluss und die Anschlussnutzung nach § 17 bzw. § 24 der Niederspannungsanschlussverordnung (NAV) unterbrochen hat und die Belieferung aus der Gebäudestromanlage nicht gedeckt werden kann, oder soweit und solange die Nuola Solar GbR an der Erzeugung, dem Bezug oder der vertragsgemäßen Lieferung durch höhere Gewalt oder sonstige Umstände, deren Beseitigung ihr nicht möglich oder wirtschaftlich nicht zumutbar ist, gehindert ist.
+
+Die Nuola Solar GbR ist berechtigt, die Stromversorgung des Mieters unter den Voraussetzungen des § 19 der Stromgrundversorgungsverordnung (StromGVV) zu unterbrechen, und ist in entsprechendem Umfang von der Leistungspflicht befreit, wenn der Mieter diesen Vertrag verletzt.
+
+## § 8 Laufzeit, Lieferantenwechsel und Kündigung
 
 Der Mieter bezieht den für das Mietobjekt benötigten Strom ausschließlich über die Gebäudestromanlage der Nuola Solar GbR. Die Belieferung erfolgt ausschließlich für die Dauer des Mietverhältnisses.
 
@@ -66,3 +74,11 @@ Solange der Mieter das Mietobjekt bewohnt und die Versorgung über die Gebäudes
 Das Recht beider Parteien zur Kündigung aus wichtigem Grund bleibt unberührt.
 
 Bei Beendigung des Vertrages erfolgt eine Schlussablesung des Stromzählers; auf deren Grundlage wird eine Schlussabrechnung erstellt.
+
+## § 9 Streitschlichtung und Verbraucherinformation für Haushaltskund:innen
+
+Ist der Mieter Haushaltskund:in nach § 3 Nr. 22 EnWG, können Beschwerden, die den Vertragsabschluss, die Auslegung des Vertrages, seine Kündigung oder die Qualität der Leistung betreffen, direkt an die Nuola Solar GbR gerichtet werden.
+
+Hilft die Nuola Solar GbR der Beschwerde nicht binnen vier Wochen ab, kann der Mieter ein Schlichtungsverfahren nach § 111b EnWG beantragen bei: Schlichtungsstelle Energie e. V., Friedrichstraße 133, 10117 Berlin, Telefon 030 / 27 57 240 – 0, E-Mail info@schlichtungsstelle-energie.de, www.schlichtungsstelle-energie.de. Das Recht, die Gerichte anzurufen, bleibt unberührt.
+
+Allgemeine Informationen zu Verbraucherrechten im Zusammenhang mit der Energielieferung sind erhältlich über den Verbraucherservice der Bundesnetzagentur (Postfach 8001, 53105 Bonn, Telefon 0228 14 15 16, verbraucherservice-energie@bnetza.de).
