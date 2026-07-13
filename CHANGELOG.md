@@ -7,6 +7,29 @@ gebaut; gepinnte Releases über Git-Tags `vX.Y.Z` (siehe CLAUDE.md → „Versio
 Die jeweils oberste Sektion dieser Datei wird beim Image-Build als „Neu in dieser
 Version" in die Image-Beschreibung (`org.opencontainers.image.description`) übernommen.
 
+## Überarbeitete Briefe, Kundennummer, SEPA & Vertrags­texte
+
+- **Einheitliche Briefvorlage (alle Briefe):** dreizeilige Fußzeile (Adresse · Kontakt ·
+  Steuer/Bank), Absenderzeile im Sichtfenster, Empfänger-Anrede nur noch bei Familien,
+  rechtsbündige Ort-/Datumszeile, Datum durchgängig TT.MM.JJJJ, Bearbeiter:in und
+  Kundennummer im Briefkopf.
+- **Kundennummer & SEPA:** je Mietpartei wird beim Aktivstellen eine fortlaufende
+  Kundennummer vergeben; SEPA-Gläubiger-ID in den Firmenstammdaten, Mandatsreferenz
+  automatisch je Mietpartei – beides wird auf dem SEPA-Mandat eingedruckt.
+- **Anschreiben** erweitert: Solaranlage-/Vermieter-Passus, geplanter Liefertermin,
+  Hinweis zu Abmeldung des Altzählers und Kündigung des Altvertrags, Abschlags-Erläuterung
+  (angenommener Jahresverbrauch) und freundliche Rücksende-Bitte (5 Werktage).
+- **Verträge v1.1:** Stromliefervertrag gegendert, Ergänzung zum Mietvertrag auf
+  SEPA-Lastschrifteinzug umgestellt; v1.0 bleibt als Historie gültig.
+- **DIN A4:** SEPA-Mandat und Willkommensbrief passen jetzt auf eine Seite.
+- **Objekt:** Bearbeiter:in der Firma, geplanter Liefertermin, strukturierte
+  Vermieteranschrift (Straße/PLZ/Ort).
+- **Mietpartei:** editierbare Postanschrift (Standard = Objektadresse), angenommener
+  Jahresverbrauch, Anlegen per aufklappbarem Formular mit direktem Sprung zur
+  Vertragsunterlagen-Seite; Liste nach Objekt und Nachname sortiert; MwSt-Fehler beim
+  Anlegen behoben; Abschläge-Historie mit Bruttopreis.
+- **Einstellungen → Version:** Link zur Image-Version auf GitHub inkl. Image-Stand (Datum).
+
 ## Vermieter pro Objekt oder Wohneinheit
 
 - Beim Anlegen/Bearbeiten eines Objekts wählbar, ob der Vermieter für das ganze Objekt
