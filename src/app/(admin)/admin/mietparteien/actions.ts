@@ -1,6 +1,7 @@
 "use server";
 
 import { requireAdmin } from "@/lib/auth/guards";
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
@@ -270,7 +271,7 @@ export async function createMietparteiAction(
 
   // Nach dem Anlegen: automatisch einen Schlussrechnungs-Entwurf fuer den
   // Vormieter erzeugen (best-effort - schlaegt es fehl, z.B. weil bereits eine
-  // ueberschneidende Rechnung existiert, wird das nur als Hinweis gemeldet).
+  // ueberschneidende Rechnung existiert, wird das nur protokolliert).
   if (vorhandener && vormieterAuszug) {
     try {
       const { rechnungId } = await erstelleRechnungsentwurf({
@@ -280,18 +281,15 @@ export async function createMietparteiAction(
         bis: vormieterAuszug,
       });
       await generateAndStoreInvoicePdf(rechnungId).catch(() => {});
-      return {
-        success: `Neue Mietpartei angelegt, bisherige Mietpartei „${mietparteiAnzeigeName(vorhandener)}" abgemeldet und ein Schlussrechnungs-Entwurf erstellt.`,
-      };
-    } catch (err) {
-      const grund = err instanceof Error ? err.message : "Unbekannter Fehler.";
-      return {
-        success: `Neue Mietpartei angelegt und bisherige Mietpartei abgemeldet. Hinweis: Schlussrechnungs-Entwurf konnte nicht automatisch erstellt werden (${grund}). Bitte manuell im Bereich Rechnungen anlegen.`,
-      };
+    } catch {
+      // Nicht fatal: der Schlussrechnungs-Entwurf kann manuell nachgeholt werden.
     }
   }
 
-  return { success: "Mietpartei angelegt." };
+  revalidatePath(`/admin/mietparteien/${neueMietparteiId}`);
+  // Direkt zur Detail-/Vertragsunterlagen-Seite der neuen Mietpartei springen
+  // (redirect() wirft NEXT_REDIRECT - bewusst ausserhalb jedes try/catch).
+  redirect(`/admin/mietparteien/${neueMietparteiId}`);
 }
 
 export async function updateMietparteiAction(

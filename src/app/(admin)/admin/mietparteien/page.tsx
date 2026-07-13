@@ -1,12 +1,18 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { MietparteiForm } from "./MietparteiForm";
+import { MietparteiAnlegenPanel } from "./MietparteiAnlegenPanel";
 import { isMietparteiEffectivelyAktiv, mietparteiAnzeigeName } from "@/lib/mietpartei";
 
 export default async function MietparteienPage() {
   const [mietparteien, einheiten, steuersaetze] = await Promise.all([
     prisma.mietpartei.findMany({
-      orderBy: { createdAt: "desc" },
+      // Primaer nach Objektname, dann nach Nachname (Firmen nach firma-Feld).
+      orderBy: [
+        { einheit: { objekt: { name: "asc" } } },
+        { einheit: { bezeichnung: "asc" } },
+        { name: "asc" },
+        { firma: "asc" },
+      ],
       include: { einheit: { include: { objekt: true } } },
     }),
     prisma.einheit.findMany({ include: { objekt: true }, orderBy: { bezeichnung: "asc" } }),
@@ -73,7 +79,7 @@ export default async function MietparteienPage() {
         ) : steuersaetze.length === 0 ? (
           <p>Bitte zuerst einen Steuersatz anlegen.</p>
         ) : (
-          <MietparteiForm mode="create" einheiten={einheitOptions} steuersaetze={steuersaetze} />
+          <MietparteiAnlegenPanel einheiten={einheitOptions} steuersaetze={steuersaetze} />
         )}
       </div>
     </div>

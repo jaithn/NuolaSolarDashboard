@@ -6,6 +6,7 @@ import { NewAbschlagForm } from "../NewAbschlagForm";
 import { ZugangPanel } from "./ZugangPanel";
 import { OnboardingPanel } from "./OnboardingPanel";
 import { mietparteiAnzeigeName } from "@/lib/mietpartei";
+import { berechneBrutto } from "@/lib/steuer";
 
 export default async function MietparteiDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -113,6 +114,7 @@ export default async function MietparteiDetailPage({ params }: { params: Promise
             <tr>
               <th>Netto</th>
               <th>Steuersatz</th>
+              <th>Brutto</th>
               <th>Gültig ab</th>
               <th>Gültig bis</th>
             </tr>
@@ -122,13 +124,14 @@ export default async function MietparteiDetailPage({ params }: { params: Promise
               <tr key={a.id}>
                 <td>{a.nettoBetrag.toFixed(2)} €</td>
                 <td>{a.steuersatz.prozentsatz}%</td>
+                <td>{berechneBrutto(a.nettoBetrag, a.steuersatz.prozentsatz).bruttoBetrag.toFixed(2)} €</td>
                 <td>{a.gueltigAb.toLocaleDateString("de-DE")}</td>
                 <td>{a.gueltigBis ? a.gueltigBis.toLocaleDateString("de-DE") : "–"}</td>
               </tr>
             ))}
             {abschlaege.length === 0 && (
               <tr>
-                <td colSpan={4}>Noch kein Abschlag hinterlegt.</td>
+                <td colSpan={5}>Noch kein Abschlag hinterlegt.</td>
               </tr>
             )}
           </tbody>

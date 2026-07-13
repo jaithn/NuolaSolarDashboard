@@ -4,7 +4,13 @@ import { TestMailForm } from "./TestMailForm";
 import { ThemeToggle } from "./ThemeToggle";
 import { VertragstexteSync } from "./VertragstexteSync";
 import { VERTRAGSART_LABEL } from "@/lib/vertrag";
-import { APP_VERSION, APP_GIT_SHA } from "@/lib/version";
+import {
+  APP_VERSION,
+  APP_GIT_SHA,
+  GHCR_PACKAGE_URL,
+  commitUrl,
+  buildDatumFormatiert,
+} from "@/lib/version";
 
 export default async function EinstellungenPage() {
   const firma = await prisma.firmenStammdaten.upsert({
@@ -90,13 +96,33 @@ export default async function EinstellungenPage() {
         <h2>Version</h2>
         <p>
           Nuola Energy Dashboard{" "}
-          <strong>v{APP_VERSION}</strong>
+          <a href={GHCR_PACKAGE_URL} target="_blank" rel="noopener noreferrer">
+            <strong>v{APP_VERSION}</strong>
+          </a>
           {APP_GIT_SHA && (
             <>
               {" "}
-              (<code>{APP_GIT_SHA}</code>)
+              (
+              {commitUrl() ? (
+                <a href={commitUrl()} target="_blank" rel="noopener noreferrer">
+                  <code>{APP_GIT_SHA}</code>
+                </a>
+              ) : (
+                <code>{APP_GIT_SHA}</code>
+              )}
+              )
             </>
           )}
+        </p>
+        {buildDatumFormatiert() && (
+          <p style={{ color: "var(--color-muted)", fontSize: "0.9rem", marginTop: "0.25rem" }}>
+            Image-Stand: {buildDatumFormatiert()}
+          </p>
+        )}
+        <p style={{ fontSize: "0.9rem", marginTop: "0.25rem" }}>
+          <a href={GHCR_PACKAGE_URL} target="_blank" rel="noopener noreferrer">
+            Image-Version auf GitHub ansehen
+          </a>
         </p>
       </div>
     </div>
