@@ -251,7 +251,12 @@ model Mietpartei {
   emailVerifiziert Boolean            @default(true)
   emailPending  String?
   telefon       String?
+  // Postanschrift der Mietpartei (fuer Briefe). Default = Objektadresse, im
+  // Formular anpassbar (z.B. abweichende Rechnungsanschrift, Firmensitz).
+  // anschrift = Strasse & Hausnummer; PLZ/Ort separat. Leer -> Objektadresse.
   anschrift     String?
+  anschriftPlz  String   @default("")
+  anschriftOrt  String   @default("")
   einzugsdatum  DateTime
   auszugsdatum  DateTime?
   status        MietverhaeltnisStatus @default(AKTIV)

@@ -3,7 +3,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { prisma } from "@/lib/db";
 import { berechneBrutto } from "@/lib/steuer";
 import { getAppBaseUrl } from "@/lib/appBaseUrl";
-import { mietparteiAnzeigeName, anredeSatz, anredeKurz } from "@/lib/mietpartei";
+import { mietparteiAnzeigeName, anredeSatz, anredeKurz, mietparteiPostanschrift } from "@/lib/mietpartei";
 import { ladeBriefAbschnitte } from "@/lib/briefVorlagen";
 import { WelcomeLetterDocument } from "./welcomeLetterDocument";
 import type { FirmaBriefData } from "./letterLayout";
@@ -89,8 +89,7 @@ export async function renderWelcomeLetterPdf(params: {
       empfaenger={{
         anredeKurz: anredeKurz(mietpartei.anrede),
         name: displayName,
-        strasse: objekt.adresse || null,
-        plzOrt: `${objekt.plz} ${objekt.ort}`.trim() || null,
+        ...mietparteiPostanschrift(mietpartei, objekt),
       }}
       bearbeiterName={objekt.bearbeiterName}
       kundennummer={mietpartei.kundennummer}

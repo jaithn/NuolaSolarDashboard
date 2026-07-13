@@ -40,6 +40,9 @@ function collectValues(formData: FormData): Record<string, string> {
     "firma",
     "email",
     "telefon",
+    "anschrift",
+    "anschriftPlz",
+    "anschriftOrt",
     "einzugsdatum",
     "auszugsdatum",
     "status",
@@ -77,9 +80,10 @@ type ParsedMietpartei = {
   anrede: Anrede;
   email: string;
   telefon: string | null;
-  // anschrift entfaellt bewusst: die Anschrift einer Mietpartei entspricht der
-  // Objektadresse (siehe Objekt.adresse/plz/ort) und wird von dort abgeleitet.
-  anschrift: null;
+  // Postanschrift (Strasse) der Mietpartei; leer -> Objektadresse. PLZ/Ort separat.
+  anschrift: string | null;
+  anschriftPlz: string;
+  anschriftOrt: string;
   einzugsdatum: Date;
   auszugsdatum: Date | null;
   status: "INTERESSENT" | "AKTIV" | "INAKTIV";
@@ -104,6 +108,9 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
   const anredeRaw = String(formData.get("anrede") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
   const telefon = String(formData.get("telefon") ?? "").trim();
+  const anschrift = String(formData.get("anschrift") ?? "").trim();
+  const anschriftPlz = String(formData.get("anschriftPlz") ?? "").trim();
+  const anschriftOrt = String(formData.get("anschriftOrt") ?? "").trim();
   const einzugsdatumRaw = String(formData.get("einzugsdatum") ?? "");
   const auszugsdatumRaw = String(formData.get("auszugsdatum") ?? "");
   const statusRaw = String(formData.get("status") ?? "AKTIV");
@@ -164,7 +171,9 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
       anrede,
       email,
       telefon: telefon || null,
-      anschrift: null,
+      anschrift: anschrift || null,
+      anschriftPlz,
+      anschriftOrt,
       einzugsdatum: new Date(einzugsdatumRaw),
       auszugsdatum: auszugsdatumRaw ? new Date(auszugsdatumRaw) : null,
       status,

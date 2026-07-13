@@ -2,7 +2,7 @@ import path from "node:path";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { prisma } from "@/lib/db";
 import { berechneBrutto } from "@/lib/steuer";
-import { mietparteiAnzeigeName, anredeSatz, anredeKurz } from "@/lib/mietpartei";
+import { mietparteiAnzeigeName, anredeSatz, anredeKurz, mietparteiPostanschrift } from "@/lib/mietpartei";
 import { versionFuerMietpartei } from "@/lib/vertrag";
 import { ladeBriefAbschnitte } from "@/lib/briefVorlagen";
 import { mandatsreferenz } from "@/lib/sepa";
@@ -88,11 +88,12 @@ async function ladeBasis(mietparteiId: string) {
 
   const objekt = mietpartei.einheit.objekt;
   const displayName = mietparteiAnzeigeName(mietpartei);
+  const post = mietparteiPostanschrift(mietpartei, objekt);
   const empfaenger: EmpfaengerData = {
     anredeKurz: anredeKurz(mietpartei.anrede),
     name: displayName,
-    strasse: objekt.adresse || null,
-    plzOrt: `${objekt.plz} ${objekt.ort}`.trim() || null,
+    strasse: post.strasse,
+    plzOrt: post.plzOrt,
   };
 
   return {

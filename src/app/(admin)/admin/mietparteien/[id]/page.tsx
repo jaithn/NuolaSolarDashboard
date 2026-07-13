@@ -43,7 +43,13 @@ export default async function MietparteiDetailPage({ params }: { params: Promise
   const summeVerbrauchKwh = freigegebeneRechnungen.reduce((s, r) => s + r.gesamtVerbrauchKwh, 0);
   const summeVerrechnung = freigegebeneRechnungen.reduce((s, r) => s + r.verrechnungBetrag, 0);
 
-  const einheitOptions = einheiten.map((e) => ({ id: e.id, label: `${e.objekt.name} – ${e.bezeichnung}` }));
+  const einheitOptions = einheiten.map((e) => ({
+    id: e.id,
+    label: `${e.objekt.name} – ${e.bezeichnung}`,
+    adresse: e.objekt.adresse,
+    plz: e.objekt.plz,
+    ort: e.objekt.ort,
+  }));
 
   return (
     <div>

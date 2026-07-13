@@ -6,6 +6,21 @@ export type Anrede = "HERR" | "FRAU" | "FAMILIE" | "FIRMA" | null | undefined;
  * "Vorname Name". Bewusst zentral, weil "name" leer sein darf, wenn "firma"
  * gesetzt ist.
  */
+/**
+ * Postanschrift der Mietpartei für Briefe: nutzt die an der Mietpartei
+ * hinterlegte Anschrift (Straße/PLZ/Ort), fällt je Feld auf die Objektadresse
+ * zurück, wenn dort nichts erfasst ist.
+ */
+export function mietparteiPostanschrift(
+  m: { anschrift?: string | null; anschriftPlz?: string | null; anschriftOrt?: string | null },
+  objekt: { adresse: string; plz: string; ort: string },
+): { strasse: string | null; plzOrt: string | null } {
+  const strasse = (m.anschrift?.trim() || objekt.adresse || "").trim();
+  const plz = (m.anschriftPlz?.trim() || objekt.plz || "").trim();
+  const ort = (m.anschriftOrt?.trim() || objekt.ort || "").trim();
+  return { strasse: strasse || null, plzOrt: `${plz} ${ort}`.trim() || null };
+}
+
 export function mietparteiAnzeigeName(m: { vorname?: string | null; name?: string | null; firma?: string | null }): string {
   const firma = m.firma?.trim();
   const person = [m.vorname?.trim(), m.name?.trim()].filter(Boolean).join(" ");

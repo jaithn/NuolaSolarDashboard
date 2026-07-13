@@ -14,6 +14,10 @@ function toDateInputValue(d: Date | null | undefined): string {
 interface EinheitOption {
   id: string;
   label: string;
+  // Adresse des zugehörigen Objekts - Default der Mietpartei-Anschrift.
+  adresse: string;
+  plz: string;
+  ort: string;
 }
 
 interface MietparteiFormProps {
@@ -29,6 +33,9 @@ interface MietparteiFormProps {
     anrede: "HERR" | "FRAU" | "FAMILIE" | "FIRMA" | null;
     email: string;
     telefon: string | null;
+    anschrift: string | null;
+    anschriftPlz: string;
+    anschriftOrt: string;
     einzugsdatum: Date;
     auszugsdatum: Date | null;
     status: "INTERESSENT" | "AKTIV" | "INAKTIV";
@@ -64,6 +71,31 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
   // oder eine natuerliche Person handelt.
   const [anrede, setAnrede] = useState(val("anrede", mietpartei?.anrede ?? ""));
   const istFirma = anrede === "FIRMA";
+
+  // Einheit (kontrolliert), damit die Mietpartei-Anschrift der Objektadresse der
+  // gewählten Einheit folgen kann (Default, im Formular überschreibbar).
+  const initialEinheitId = val("einheitId", mietpartei?.einheitId ?? einheiten[0]?.id ?? "");
+  const adrDefault = (id: string) => {
+    const e = einheiten.find((x) => x.id === id);
+    return { strasse: e?.adresse ?? "", plz: e?.plz ?? "", ort: e?.ort ?? "" };
+  };
+  const [einheitId, setEinheitId] = useState(initialEinheitId);
+  const [anschrift, setAnschrift] = useState(
+    val("anschrift", mietpartei?.anschrift || adrDefault(initialEinheitId).strasse),
+  );
+  const [anschriftPlz, setAnschriftPlz] = useState(
+    val("anschriftPlz", mietpartei?.anschriftPlz || adrDefault(initialEinheitId).plz),
+  );
+  const [anschriftOrt, setAnschriftOrt] = useState(
+    val("anschriftOrt", mietpartei?.anschriftOrt || adrDefault(initialEinheitId).ort),
+  );
+  const beiEinheitWechsel = (id: string) => {
+    setEinheitId(id);
+    const a = adrDefault(id);
+    setAnschrift(a.strasse);
+    setAnschriftPlz(a.plz);
+    setAnschriftOrt(a.ort);
+  };
 
   // Grundpreis standardmaessig aktiviert (neue Mietparteien haben i.d.R. einen).
   const grundpreisInitial =
@@ -115,7 +147,8 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
             id="einheitId"
             name="einheitId"
             className="select-inline"
-            defaultValue={val("einheitId", mietpartei?.einheitId ?? einheiten[0]?.id ?? "")}
+            value={einheitId}
+            onChange={(e) => beiEinheitWechsel(e.target.value)}
             required
           >
             {einheiten.map((e) => (
@@ -231,8 +264,41 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
         </div>
       </div>
 
+      <div className="form-grid">
+        <div className="field">
+          <label htmlFor="anschrift">Anschrift (Straße &amp; Hausnr.)</label>
+          <input
+            id="anschrift"
+            name="anschrift"
+            type="text"
+            value={anschrift}
+            onChange={(e) => setAnschrift(e.target.value)}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="anschriftPlz">PLZ</label>
+          <input
+            id="anschriftPlz"
+            name="anschriftPlz"
+            type="text"
+            inputMode="numeric"
+            value={anschriftPlz}
+            onChange={(e) => setAnschriftPlz(e.target.value)}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="anschriftOrt">Ort</label>
+          <input
+            id="anschriftOrt"
+            name="anschriftOrt"
+            type="text"
+            value={anschriftOrt}
+            onChange={(e) => setAnschriftOrt(e.target.value)}
+          />
+        </div>
+      </div>
       <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", marginTop: 0 }}>
-        Die Anschrift entspricht der Adresse des Objekts und muss nicht separat erfasst werden.
+        Vorbelegt mit der Objektadresse – bei Bedarf anpassen (z. B. abweichende Rechnungsanschrift).
       </p>
 
       <PriceInput

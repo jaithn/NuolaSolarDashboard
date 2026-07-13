@@ -19,7 +19,13 @@ export default async function MietparteienPage() {
     prisma.steuersatz.findMany({ orderBy: { gueltigAb: "desc" } }),
   ]);
 
-  const einheitOptions = einheiten.map((e) => ({ id: e.id, label: `${e.objekt.name} – ${e.bezeichnung}` }));
+  const einheitOptions = einheiten.map((e) => ({
+    id: e.id,
+    label: `${e.objekt.name} – ${e.bezeichnung}`,
+    adresse: e.objekt.adresse,
+    plz: e.objekt.plz,
+    ort: e.objekt.ort,
+  }));
 
   return (
     <div>

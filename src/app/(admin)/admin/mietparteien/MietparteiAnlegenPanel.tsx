@@ -7,6 +7,9 @@ import type { SteuersatzOption } from "@/components/PriceInput";
 interface EinheitOption {
   id: string;
   label: string;
+  adresse: string;
+  plz: string;
+  ort: string;
 }
 
 /**
