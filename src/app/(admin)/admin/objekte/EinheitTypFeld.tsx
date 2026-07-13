@@ -1,13 +1,8 @@
 "use client";
 
-export type EinheitTyp = "WOHNEINHEIT" | "ALLGEMEINSTROM" | "WAERMEPUMPE";
+import { type EinheitTyp } from "./einheitTyp";
 
-/** Beschriftung der Einheiten-Typen für die Anzeige (Badges, Selects). */
-export const EINHEIT_TYP_LABEL: Record<EinheitTyp, string> = {
-  WOHNEINHEIT: "Wohneinheit",
-  ALLGEMEINSTROM: "Allgemeinstrom",
-  WAERMEPUMPE: "Wärmepumpe",
-};
+export type { EinheitTyp };
 
 /**
  * Auswahl des Einheiten-Typs (Wohneinheit / Allgemeinstrom / Wärmepumpe).

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { StammdatenAnlegenPanel } from "./StammdatenAnlegenPanel";
 import { deleteObjektAction, deleteEinheitAction } from "./actions";
 import { deleteGeraetAction } from "../geraete/actions";
-import { EINHEIT_TYP_LABEL } from "./EinheitTypFeld";
+import { EINHEIT_TYP_LABEL } from "./einheitTyp";
 
 export default async function ObjektePage({
   searchParams,
