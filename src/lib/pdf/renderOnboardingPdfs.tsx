@@ -6,6 +6,7 @@ import { mietparteiAnzeigeName, anredeSatz, anredeKurz } from "@/lib/mietpartei"
 import { versionFuerMietpartei } from "@/lib/vertrag";
 import { ladeBriefAbschnitte } from "@/lib/briefVorlagen";
 import { mandatsreferenz } from "@/lib/sepa";
+import { fmtDate } from "./format";
 import type { FirmaBriefData, EmpfaengerData } from "./letterLayout";
 import { OnboardingLetterDocument, type OnboardingVergleich } from "./onboardingLetterDocument";
 import { ContractDocument, type ContractParty, type VertragVariant } from "./contractDocument";
@@ -32,7 +33,13 @@ async function ladeBasis(mietparteiId: string) {
     include: {
       arbeitspreisSteuersatz: true,
       grundpreisSteuersatz: true,
-      einheit: { include: { objekt: true } },
+      einheit: {
+        include: {
+          objekt: true,
+          // Zugeordnete Geräte (Zähler) für die Verbrauchsstellen-Zeile im Vertrag.
+          geraetZuordnungen: { include: { shellyGeraet: true } },
+        },
+      },
       abschlaege: { orderBy: { gueltigAb: "desc" }, take: 1, include: { steuersatz: true } },
     },
   });
@@ -142,6 +149,17 @@ export async function renderOnboardingPdf(
         kundennummer={kundennummer}
         anredeSatz={anredeSatz(mietpartei)}
         beginn={mietpartei.einzugsdatum}
+        lieferterminText={objekt.geplanterLiefertermin ? fmtDate(objekt.geplanterLiefertermin) : ""}
+        vermieterText={
+          (objekt.vermieterModus === "PRO_EINHEIT"
+            ? mietpartei.einheit.vermieterName
+            : objekt.vermieterName) || undefined
+        }
+        verbrauchText={
+          mietpartei.angenommenerJahresverbrauchKwh
+            ? `${mietpartei.angenommenerJahresverbrauchKwh.toLocaleString("de-DE")} kWh`
+            : undefined
+        }
         konditionen={{
           arbeitspreisBrutto: konditionen.arbeitspreisBrutto,
           grundpreisBrutto: konditionen.grundpreisBrutto,
@@ -216,6 +234,13 @@ export async function renderOnboardingPdf(
           strasse: objekt.adresse || null,
           plzOrt: `${objekt.plz} ${objekt.ort}`.trim() || null,
           einheit: mietpartei.einheit.bezeichnung,
+          // Namen der zugeordneten Geräte (Zähler) - nur ADDIEREN-Zuordnungen
+          // sind der eigentliche Bezugszähler der Einheit.
+          zaehler:
+            mietpartei.einheit.geraetZuordnungen
+              .filter((z) => z.modus === "ADDIEREN")
+              .map((z) => z.shellyGeraet.bezeichnung)
+              .join(", ") || null,
         }}
         beginn={mietpartei.einzugsdatum}
         konditionen={{

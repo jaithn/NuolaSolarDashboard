@@ -41,7 +41,7 @@ Preisänderungen werden dem Mieter mindestens einen Monat vor ihrem Inkrafttrete
 
 Der Vermieter ist berechtigt, angemessene monatliche Abschlagszahlungen auf die voraussichtlichen Stromkosten festzusetzen.
 
-Die Abschläge werden zusammen mit den Nebenkostenvorauszahlungen erhoben.
+Die monatlichen Abschläge werden per SEPA-Lastschriftverfahren vom Konto des Mieters eingezogen. Der Mieter erteilt hierzu ein SEPA-Lastschriftmandat.
 
 Ergibt sich aufgrund des tatsächlichen Verbrauchs eine wesentliche Änderung des voraussichtlichen Jahresverbrauchs, ist der Vermieter berechtigt, die Höhe der Abschlagszahlungen angemessen anzupassen.
 
@@ -53,7 +53,7 @@ Die Stromkosten werden jährlich nach dem tatsächlichen, über den geeichten St
 
 Die Stromabrechnung enthält insbesondere Anfangs- und Endzählerstand, den ermittelten Stromverbrauch in kWh, den angewendeten Arbeitspreis, die monatliche Grundgebühr, die Summe der geleisteten Abschlagszahlungen sowie den sich daraus ergebenden Nachzahlungs- oder Erstattungsbetrag.
 
-Die Stromabrechnung erfolgt gesondert innerhalb der jährlichen Betriebskostenabrechnung.
+Die Stromabrechnung erfolgt gesondert und unabhängig von der Betriebs-/Nebenkostenabrechnung unmittelbar durch die Nuola Solar GbR.
 
 ## § 7 Verbrauchsschätzung
 

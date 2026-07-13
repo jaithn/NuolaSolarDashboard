@@ -30,6 +30,13 @@ export interface OnboardingLetterData {
   kundennummer?: number | null;
   anredeSatz: string;
   beginn: Date;
+  // Geplanter Liefertermin (Objekt), bereits als DD.MM.YYYY formatiert - "" wenn
+  // nicht gesetzt.
+  lieferterminText?: string;
+  // Vermieter:in-Bezeichnung für den Solaranlagen-Passus (Name oder Fallback).
+  vermieterText?: string;
+  // Angenommener Jahresverbrauch als Text (z.B. "3.500 kWh") oder Fallback.
+  verbrauchText?: string;
   konditionen: {
     arbeitspreisBrutto: number; // €/kWh
     grundpreisBrutto: number | null; // €/Monat
@@ -60,6 +67,9 @@ export function OnboardingLetterDocument({
   kundennummer,
   anredeSatz,
   beginn,
+  lieferterminText,
+  vermieterText,
+  verbrauchText,
   konditionen,
   vergleich,
   kontaktTelefon,
@@ -68,8 +78,16 @@ export function OnboardingLetterDocument({
   const hatVergleich =
     vergleich && (vergleich.arbeitspreisBrutto != null || vergleich.grundpreisBrutto != null);
   const telefonZusatz = kontaktTelefon ? ` unter ${kontaktTelefon}` : "";
+  const vermieter = vermieterText || "Ihrer Vermieterin bzw. Ihrem Vermieter";
+  const verbrauch = verbrauchText || "einem üblichen Haushaltsverbrauch";
   const t = (key: string, standard: string) =>
-    abschnitt(abschnitte, key, standard, { firma: firma.name, telefon: telefonZusatz });
+    abschnitt(abschnitte, key, standard, {
+      firma: firma.name,
+      telefon: telefonZusatz,
+      vermieter,
+      liefertermin: lieferterminText || "",
+      verbrauch,
+    });
 
   return (
     <Document>
@@ -86,7 +104,7 @@ export function OnboardingLetterDocument({
           <Text>
             {t(
               "einleitung",
-              "wir freuen uns, Sie künftig mit Strom aus der Gebäudestromanlage Ihres Wohnhauses versorgen zu dürfen. Nachfolgend finden Sie Ihre persönlichen Konditionen sowie einen Vergleich mit Ihrem bisherigen Grundversorger.",
+              "in Absprache mit {vermieter} haben wir auf Ihrem Wohngebäude eine Solaranlage installiert und freuen uns, Sie nun mit umweltfreundlichem Strom aus der Gebäudestromanlage versorgen zu können. Nachfolgend finden Sie Ihre persönlichen Konditionen sowie einen Vergleich mit Ihrem bisherigen Grundversorger.",
             )}
           </Text>
         </View>
@@ -97,6 +115,12 @@ export function OnboardingLetterDocument({
             <Text style={letterStyles.label}>Beginn der Stromlieferung</Text>
             <Text style={letterStyles.value}>{fmtDate(beginn)}</Text>
           </View>
+          {lieferterminText ? (
+            <View style={letterStyles.row}>
+              <Text style={letterStyles.label}>Geplanter Liefertermin</Text>
+              <Text style={letterStyles.value}>{lieferterminText}</Text>
+            </View>
+          ) : null}
           <View style={letterStyles.row}>
             <Text style={letterStyles.label}>Arbeitspreis (brutto)</Text>
             <Text style={letterStyles.value}>{fmtPreisKwh(konditionen.arbeitspreisBrutto)} €/kWh</Text>
@@ -133,8 +157,8 @@ export function OnboardingLetterDocument({
             {vergleich.arbeitspreisBrutto != null && (
               <View style={s.vergleichRow}>
                 <Text style={s.colLabel}>Arbeitspreis (€/kWh)</Text>
-                <Text style={s.colVal}>{fmtPreisKwh(vergleich.arbeitspreisBrutto)}</Text>
-                <Text style={s.colVal}>{fmtPreisKwh(konditionen.arbeitspreisBrutto)}</Text>
+                <Text style={s.colVal}>{fmtPreisKwh(vergleich.arbeitspreisBrutto)} €</Text>
+                <Text style={s.colVal}>{fmtPreisKwh(konditionen.arbeitspreisBrutto)} €</Text>
                 <Text style={[s.colVal, s.vorteil]}>
                   {vergleich.vorteilArbeitspreisProzent != null
                     ? `${fmtProzent(vergleich.vorteilArbeitspreisProzent)} %`
@@ -145,9 +169,9 @@ export function OnboardingLetterDocument({
             {vergleich.grundpreisBrutto != null && (
               <View style={s.vergleichRow}>
                 <Text style={s.colLabel}>Grundpreis (€/Monat)</Text>
-                <Text style={s.colVal}>{fmtEuro(vergleich.grundpreisBrutto)}</Text>
+                <Text style={s.colVal}>{fmtEuro(vergleich.grundpreisBrutto)} €</Text>
                 <Text style={s.colVal}>
-                  {konditionen.grundpreisBrutto != null ? fmtEuro(konditionen.grundpreisBrutto) : "—"}
+                  {konditionen.grundpreisBrutto != null ? `${fmtEuro(konditionen.grundpreisBrutto)} €` : "—"}
                 </Text>
                 <Text style={[s.colVal, s.vorteil]}>
                   {vergleich.vorteilGrundpreisProzent != null
@@ -171,6 +195,35 @@ export function OnboardingLetterDocument({
             {t(
               "gebaeude-text",
               `Das Mietobjekt wird über eine Gebäudestromanlage im Sinne des § 42b Energiewirtschaftsgesetz (EnWG) mit elektrischer Energie versorgt. Betreiberin der Gebäudestromanlage und Stromlieferantin ist die ${firma.name}. Der Strom wird ohne Durchleitung durch ein öffentliches Netz an Ihre Verbrauchsstelle geliefert. Die Belieferung erfolgt für die Dauer des Mietverhältnisses; der Stromverbrauch wird über einen geeichten, Ihrem Mietobjekt eindeutig zugeordneten Stromzähler erfasst.`,
+            )}
+          </Text>
+        </View>
+
+        <View style={letterStyles.section}>
+          <Text style={letterStyles.boxTitle}>{t("abschlag-titel", "Ihr monatlicher Abschlag")}</Text>
+          <Text style={s.passus}>
+            {t(
+              "abschlag-text",
+              "Ihr monatlicher Abschlag basiert auf einem angenommenen Jahresverbrauch von {verbrauch}. Weicht Ihr tatsächlicher Verbrauch hiervon ab, teilen Sie uns Ihren letzten Jahresverbrauch gerne schriftlich mit – wir passen Ihren Abschlag dann entsprechend an.",
+            )}
+          </Text>
+        </View>
+
+        <View style={letterStyles.section}>
+          <Text style={letterStyles.boxTitle}>{t("wechsel-titel", "Der Wechsel – ganz ohne Aufwand für Sie")}</Text>
+          <Text style={s.passus}>
+            {t(
+              "wechsel-text",
+              "Um Ihnen den Wechsel so einfach wie möglich zu machen, übernehmen wir die Abmeldung Ihres bisherigen Stromzählers und die Kündigung Ihres bestehenden Stromliefervertrags. Für Sie entstehen dadurch keine finanziellen Nachteile. Etwaige Gasverträge bleiben hiervon unberührt.",
+            )}
+          </Text>
+        </View>
+
+        <View style={letterStyles.section}>
+          <Text style={s.passus}>
+            {t(
+              "rueckgabe-text",
+              "Bitte senden Sie uns die beigefügten, von Ihnen unterschriebenen Unterlagen möglichst innerhalb von fünf Werktagen per Post oder E-Mail zurück, damit wir Ihre Belieferung rechtzeitig einrichten können. Herzlichen Dank für Ihr Vertrauen!",
             )}
           </Text>
         </View>

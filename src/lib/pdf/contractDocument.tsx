@@ -43,6 +43,8 @@ export interface ContractData {
     strasse: string | null;
     plzOrt: string | null;
     einheit: string;
+    // Name(n) des zugeordneten Zählers (Shelly-Gerät). Null, wenn keiner zugeordnet.
+    zaehler?: string | null;
   };
   beginn: Date;
   konditionen: {
@@ -193,6 +195,7 @@ export function ContractDocument(data: ContractData) {
           <Text style={s.parteiZeile}>
             Verbrauchsstelle: {[verbrauchsstelle.strasse, verbrauchsstelle.plzOrt].filter(Boolean).join(", ")}
             {verbrauchsstelle.einheit ? ` – ${verbrauchsstelle.einheit}` : ""}
+            {verbrauchsstelle.zaehler ? ` – Zähler: ${verbrauchsstelle.zaehler}` : ""}
           </Text>
           <Text style={s.parteiZeile}>Lieferbeginn: {fmtDate(beginn)}</Text>
         </View>
