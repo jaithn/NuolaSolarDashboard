@@ -160,12 +160,17 @@ export async function renderOnboardingPdf(
       name: displayName,
       zeilen: [objekt.adresse || "", `${objekt.plz} ${objekt.ort}`.trim()],
     };
+    // Vermieter: bei PRO_EINHEIT aus der Wohneinheit, sonst objektweit.
+    const vermieter =
+      objekt.vermieterModus === "PRO_EINHEIT"
+        ? { name: mietpartei.einheit.vermieterName, anschrift: mietpartei.einheit.vermieterAnschrift }
+        : { name: objekt.vermieterName, anschrift: objekt.vermieterAnschrift };
     const gegenpartei: ContractParty =
       variant === "ergaenzung"
         ? {
             rolle: "Vermieter",
-            name: objekt.vermieterName || "—",
-            zeilen: [objekt.vermieterAnschrift || ""],
+            name: vermieter.name || "—",
+            zeilen: [vermieter.anschrift || ""],
           }
         : {
             rolle: "Lieferant",

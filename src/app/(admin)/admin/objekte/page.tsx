@@ -24,7 +24,11 @@ export default async function ObjektePage({
     },
   });
 
-  const objektOptions = objekte.map((o) => ({ id: o.id, name: o.name }));
+  const objektOptions = objekte.map((o) => ({
+    id: o.id,
+    name: o.name,
+    vermieterProEinheit: o.vermieterModus === "PRO_EINHEIT",
+  }));
 
   return (
     <div>

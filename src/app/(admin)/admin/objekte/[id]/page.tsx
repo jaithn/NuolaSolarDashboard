@@ -39,6 +39,7 @@ export default async function ObjektDetailPage({
           adresse={objekt.adresse}
           plz={objekt.plz}
           ort={objekt.ort}
+          vermieterModus={objekt.vermieterModus}
           vermieterName={objekt.vermieterName}
           vermieterAnschrift={objekt.vermieterAnschrift}
         />
@@ -85,7 +86,7 @@ export default async function ObjektDetailPage({
 
       <div className="section">
         <h2>Neue Einheit anlegen</h2>
-        <NewEinheitForm objektId={objekt.id} />
+        <NewEinheitForm objektId={objekt.id} vermieterProEinheit={objekt.vermieterModus === "PRO_EINHEIT"} />
       </div>
     </div>
   );

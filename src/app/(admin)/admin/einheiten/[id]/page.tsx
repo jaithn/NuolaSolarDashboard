@@ -32,7 +32,13 @@ export default async function EinheitDetailPage({ params }: { params: Promise<{ 
 
       <div className="section">
         <h2>Stammdaten</h2>
-        <EditEinheitForm id={einheit.id} bezeichnung={einheit.bezeichnung} />
+        <EditEinheitForm
+          id={einheit.id}
+          bezeichnung={einheit.bezeichnung}
+          vermieterProEinheit={einheit.objekt.vermieterModus === "PRO_EINHEIT"}
+          vermieterName={einheit.vermieterName}
+          vermieterAnschrift={einheit.vermieterAnschrift}
+        />
       </div>
 
       <div className="section">

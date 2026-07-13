@@ -8,6 +8,7 @@ import { createEinheitAction, type ObjektFormState } from "./actions";
 interface ObjektOption {
   id: string;
   name: string;
+  vermieterProEinheit: boolean;
 }
 
 const initialState: ObjektFormState = {};
@@ -79,6 +80,9 @@ export function StammdatenAnlegenPanel({ objekte }: { objekte: ObjektOption[] })
 
 function NewEinheitMitAuswahl({ objekte }: { objekte: ObjektOption[] }) {
   const [state, formAction, pending] = useActionState(createEinheitAction, initialState);
+  const [objektId, setObjektId] = useState(objekte[0]?.id ?? "");
+  // Vermieter-Felder nur zeigen, wenn das gewählte Objekt „pro Wohneinheit" ist.
+  const vermieterProEinheit = objekte.find((o) => o.id === objektId)?.vermieterProEinheit ?? false;
 
   return (
     <form action={formAction}>
@@ -86,7 +90,14 @@ function NewEinheitMitAuswahl({ objekte }: { objekte: ObjektOption[] }) {
       <div className="form-grid">
         <div className="field">
           <label htmlFor="einheit-objektId">Objekt</label>
-          <select id="einheit-objektId" name="objektId" className="select-inline" defaultValue={objekte[0]?.id} required>
+          <select
+            id="einheit-objektId"
+            name="objektId"
+            className="select-inline"
+            value={objektId}
+            onChange={(e) => setObjektId(e.target.value)}
+            required
+          >
             {objekte.map((o) => (
               <option key={o.id} value={o.id}>
                 {o.name}
@@ -98,6 +109,18 @@ function NewEinheitMitAuswahl({ objekte }: { objekte: ObjektOption[] }) {
           <label htmlFor="einheit-bezeichnung">Bezeichnung</label>
           <input id="einheit-bezeichnung" name="bezeichnung" type="text" required placeholder="Wohnung 1.OG links" />
         </div>
+        {vermieterProEinheit && (
+          <>
+            <div className="field">
+              <label htmlFor="einheit-vermieterName">Vermieter (Name)</label>
+              <input id="einheit-vermieterName" name="vermieterName" type="text" />
+            </div>
+            <div className="field">
+              <label htmlFor="einheit-vermieterAnschrift">Vermieter (Anschrift)</label>
+              <input id="einheit-vermieterAnschrift" name="vermieterAnschrift" type="text" />
+            </div>
+          </>
+        )}
       </div>
       <button className="btn" type="submit" disabled={pending} style={{ maxWidth: "16rem" }}>
         {pending ? "Wird gespeichert…" : "Einheit anlegen"}

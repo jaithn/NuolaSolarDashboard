@@ -5,7 +5,19 @@ import { updateEinheitAction, type ObjektFormState } from "../../objekte/actions
 
 const initialState: ObjektFormState = {};
 
-export function EditEinheitForm({ id, bezeichnung }: { id: string; bezeichnung: string }) {
+export function EditEinheitForm({
+  id,
+  bezeichnung,
+  vermieterProEinheit,
+  vermieterName,
+  vermieterAnschrift,
+}: {
+  id: string;
+  bezeichnung: string;
+  vermieterProEinheit: boolean;
+  vermieterName: string | null;
+  vermieterAnschrift: string | null;
+}) {
   const [state, formAction, pending] = useActionState(updateEinheitAction, initialState);
 
   return (
@@ -17,7 +29,29 @@ export function EditEinheitForm({ id, bezeichnung }: { id: string; bezeichnung: 
           <label htmlFor="bezeichnung">Bezeichnung der Einheit</label>
           <input id="bezeichnung" name="bezeichnung" type="text" required defaultValue={bezeichnung} />
         </div>
+        {vermieterProEinheit && (
+          <>
+            <div className="field">
+              <label htmlFor="vermieterName">Vermieter (Name)</label>
+              <input id="vermieterName" name="vermieterName" type="text" defaultValue={vermieterName ?? ""} />
+            </div>
+            <div className="field">
+              <label htmlFor="vermieterAnschrift">Vermieter (Anschrift)</label>
+              <input
+                id="vermieterAnschrift"
+                name="vermieterAnschrift"
+                type="text"
+                defaultValue={vermieterAnschrift ?? ""}
+              />
+            </div>
+          </>
+        )}
       </div>
+      {vermieterProEinheit && (
+        <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", marginTop: 0 }}>
+          Vermieter dieser Wohneinheit (für die Ergänzung zum Mietvertrag).
+        </p>
+      )}
       <button className="btn" type="submit" disabled={pending} style={{ maxWidth: "16rem" }}>
         {pending ? "Wird gespeichert…" : "Speichern"}
       </button>

@@ -20,10 +20,14 @@ model Objekt {
   adresse   String
   plz       String   @default("")
   ort       String   @default("")
-  // Vermieter (Gebaeudeeigentuemer) - nur fuer die "Ergaenzung zum Mietvertrag"
-  // relevant (dort ist der Vermieter Vertragspartner, NICHT die Nuola Solar GbR).
-  // Beim eigenstaendigen Vertrag ist die Gegenpartei stets die Firma aus den
-  // Stammdaten. Optional, weil nicht jedes Objekt die Ergaenzung nutzt.
+  // Wie ist der Vermieter organisiert? PRO_OBJEKT: ein Vermieter fuer das ganze
+  // Objekt (Felder unten). PRO_EINHEIT: jede Wohneinheit hat einen eigenen
+  // Vermieter (siehe Einheit.vermieter*) - z.B. Objekt aus mehreren
+  // Eigentumswohnungen. Nur relevant fuer die "Ergaenzung zum Mietvertrag".
+  vermieterModus VermieterModus @default(PRO_OBJEKT)
+  // Vermieter (Gebaeudeeigentuemer) - nur bei vermieterModus = PRO_OBJEKT
+  // gefuellt/verwendet. Beim eigenstaendigen Vertrag ist die Gegenpartei stets
+  // die Firma aus den Stammdaten.
   vermieterName      String?
   vermieterAnschrift String?
   createdAt DateTime @default(now())
@@ -33,10 +37,20 @@ model Objekt {
   shellyGeraete ShellyGeraet[]
 }
 
+// Organisation des Vermieters eines Objekts (fuer die Ergaenzung zum Mietvertrag).
+enum VermieterModus {
+  PRO_OBJEKT
+  PRO_EINHEIT
+}
+
 model Einheit {
   id        String   @id @default(cuid())
   objektId  String
   bezeichnung String
+  // Vermieter dieser Wohneinheit - nur verwendet, wenn das Objekt
+  // vermieterModus = PRO_EINHEIT hat (Objekt aus mehreren Eigentumswohnungen).
+  vermieterName      String?
+  vermieterAnschrift String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

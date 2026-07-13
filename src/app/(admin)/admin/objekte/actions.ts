@@ -19,15 +19,31 @@ export async function createObjektAction(
   const adresse = String(formData.get("adresse") ?? "").trim();
   const plz = String(formData.get("plz") ?? "").trim();
   const ort = String(formData.get("ort") ?? "").trim();
-  const vermieterName = String(formData.get("vermieterName") ?? "").trim();
-  const vermieterAnschrift = String(formData.get("vermieterAnschrift") ?? "").trim();
+  const { vermieterModus, vermieterName, vermieterAnschrift } = parseVermieter(formData);
   if (!name || !adresse || !plz || !ort) return { error: "Bitte Name, Adresse, PLZ und Ort angeben." };
 
   await prisma.objekt.create({
-    data: { name, adresse, plz, ort, vermieterName: vermieterName || null, vermieterAnschrift: vermieterAnschrift || null },
+    data: { name, adresse, plz, ort, vermieterModus, vermieterName, vermieterAnschrift },
   });
   revalidatePath("/admin/objekte");
   return {};
+}
+
+// Vermieter-Angaben eines Objekts aus dem Formular lesen. Bei PRO_EINHEIT wird
+// der objektweite Vermieter bewusst geleert (er wird dann je Einheit gepflegt).
+function parseVermieter(formData: FormData): {
+  vermieterModus: "PRO_OBJEKT" | "PRO_EINHEIT";
+  vermieterName: string | null;
+  vermieterAnschrift: string | null;
+} {
+  const modusRaw = String(formData.get("vermieterModus") ?? "PRO_OBJEKT");
+  const vermieterModus = modusRaw === "PRO_EINHEIT" ? "PRO_EINHEIT" : "PRO_OBJEKT";
+  if (vermieterModus === "PRO_EINHEIT") {
+    return { vermieterModus, vermieterName: null, vermieterAnschrift: null };
+  }
+  const vermieterName = String(formData.get("vermieterName") ?? "").trim();
+  const vermieterAnschrift = String(formData.get("vermieterAnschrift") ?? "").trim();
+  return { vermieterModus, vermieterName: vermieterName || null, vermieterAnschrift: vermieterAnschrift || null };
 }
 
 export async function updateObjektAction(
@@ -41,13 +57,12 @@ export async function updateObjektAction(
   const adresse = String(formData.get("adresse") ?? "").trim();
   const plz = String(formData.get("plz") ?? "").trim();
   const ort = String(formData.get("ort") ?? "").trim();
-  const vermieterName = String(formData.get("vermieterName") ?? "").trim();
-  const vermieterAnschrift = String(formData.get("vermieterAnschrift") ?? "").trim();
+  const { vermieterModus, vermieterName, vermieterAnschrift } = parseVermieter(formData);
   if (!name || !adresse || !plz || !ort) return { error: "Bitte Name, Adresse, PLZ und Ort angeben." };
 
   await prisma.objekt.update({
     where: { id },
-    data: { name, adresse, plz, ort, vermieterName: vermieterName || null, vermieterAnschrift: vermieterAnschrift || null },
+    data: { name, adresse, plz, ort, vermieterModus, vermieterName, vermieterAnschrift },
   });
   revalidatePath("/admin/objekte");
   revalidatePath(`/admin/objekte/${id}`);
@@ -80,10 +95,14 @@ export async function createEinheitAction(
 
   const objektId = String(formData.get("objektId") ?? "");
   const bezeichnung = String(formData.get("bezeichnung") ?? "").trim();
+  const vermieterName = String(formData.get("vermieterName") ?? "").trim();
+  const vermieterAnschrift = String(formData.get("vermieterAnschrift") ?? "").trim();
   if (!bezeichnung) return { error: "Bitte eine Bezeichnung angeben." };
 
   if (!objektId) return { error: "Bitte ein Objekt wählen." };
-  await prisma.einheit.create({ data: { objektId, bezeichnung } });
+  await prisma.einheit.create({
+    data: { objektId, bezeichnung, vermieterName: vermieterName || null, vermieterAnschrift: vermieterAnschrift || null },
+  });
   revalidatePath(`/admin/objekte/${objektId}`);
   revalidatePath("/admin/objekte");
   return {};
@@ -97,9 +116,14 @@ export async function updateEinheitAction(
 
   const id = String(formData.get("id") ?? "");
   const bezeichnung = String(formData.get("bezeichnung") ?? "").trim();
+  const vermieterName = String(formData.get("vermieterName") ?? "").trim();
+  const vermieterAnschrift = String(formData.get("vermieterAnschrift") ?? "").trim();
   if (!bezeichnung) return { error: "Bitte eine Bezeichnung angeben." };
 
-  const einheit = await prisma.einheit.update({ where: { id }, data: { bezeichnung } });
+  const einheit = await prisma.einheit.update({
+    where: { id },
+    data: { bezeichnung, vermieterName: vermieterName || null, vermieterAnschrift: vermieterAnschrift || null },
+  });
   revalidatePath(`/admin/einheiten/${id}`);
   revalidatePath(`/admin/objekte/${einheit.objektId}`);
   revalidatePath("/admin/objekte");

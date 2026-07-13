@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { updateObjektAction, type ObjektFormState } from "../actions";
 
 const initialState: ObjektFormState = {};
@@ -11,6 +11,7 @@ export function EditObjektForm({
   adresse,
   plz,
   ort,
+  vermieterModus,
   vermieterName,
   vermieterAnschrift,
 }: {
@@ -19,10 +20,12 @@ export function EditObjektForm({
   adresse: string;
   plz: string;
   ort: string;
+  vermieterModus: "PRO_OBJEKT" | "PRO_EINHEIT";
   vermieterName: string | null;
   vermieterAnschrift: string | null;
 }) {
   const [state, formAction, pending] = useActionState(updateObjektAction, initialState);
+  const [modus, setModus] = useState<"PRO_OBJEKT" | "PRO_EINHEIT">(vermieterModus);
 
   return (
     <form action={formAction}>
@@ -45,23 +48,44 @@ export function EditObjektForm({
           <label htmlFor="ort">Ort</label>
           <input id="ort" name="ort" type="text" defaultValue={ort} required />
         </div>
-        <div className="field">
-          <label htmlFor="vermieterName">Vermieter (Name)</label>
-          <input id="vermieterName" name="vermieterName" type="text" defaultValue={vermieterName ?? ""} />
-        </div>
-        <div className="field">
-          <label htmlFor="vermieterAnschrift">Vermieter (Anschrift)</label>
-          <input
-            id="vermieterAnschrift"
-            name="vermieterAnschrift"
-            type="text"
-            defaultValue={vermieterAnschrift ?? ""}
-          />
-        </div>
       </div>
-      <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", marginTop: 0 }}>
-        Der Vermieter wird nur für die „Ergänzung zum Mietvertrag" benötigt (dort ist er Vertragspartner).
-      </p>
+
+      <div className="field">
+        <label htmlFor="vermieterModus">Vermieter (für die Ergänzung zum Mietvertrag)</label>
+        <select
+          id="vermieterModus"
+          name="vermieterModus"
+          className="select-inline"
+          value={modus}
+          onChange={(e) => setModus(e.target.value as "PRO_OBJEKT" | "PRO_EINHEIT")}
+        >
+          <option value="PRO_OBJEKT">Ein Vermieter für das ganze Objekt</option>
+          <option value="PRO_EINHEIT">Pro Wohneinheit ein eigener Vermieter</option>
+        </select>
+      </div>
+
+      {modus === "PRO_OBJEKT" ? (
+        <div className="form-grid">
+          <div className="field">
+            <label htmlFor="vermieterName">Vermieter (Name)</label>
+            <input id="vermieterName" name="vermieterName" type="text" defaultValue={vermieterName ?? ""} />
+          </div>
+          <div className="field">
+            <label htmlFor="vermieterAnschrift">Vermieter (Anschrift)</label>
+            <input
+              id="vermieterAnschrift"
+              name="vermieterAnschrift"
+              type="text"
+              defaultValue={vermieterAnschrift ?? ""}
+            />
+          </div>
+        </div>
+      ) : (
+        <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", marginTop: 0 }}>
+          Der Vermieter wird je Wohneinheit erfasst (siehe die jeweilige Einheit).
+        </p>
+      )}
+
       <button className="btn" type="submit" disabled={pending} style={{ maxWidth: "16rem" }}>
         {pending ? "Wird gespeichert…" : "Speichern"}
       </button>
