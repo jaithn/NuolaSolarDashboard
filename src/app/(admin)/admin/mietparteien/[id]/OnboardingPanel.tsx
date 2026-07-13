@@ -5,7 +5,6 @@ import {
   setMietparteiStatusAction,
   uploadDokumentAction,
   deleteDokumentAction,
-  setSignierteVersionAction,
   type OnboardingState,
 } from "../actions";
 
@@ -80,11 +79,11 @@ export function OnboardingPanel({
   const [statusState, statusAction, statusPending] = useActionState(setMietparteiStatusAction, initialState);
   const [uploadState, uploadAction, uploadPending] = useActionState(uploadDokumentAction, initialState);
   const [deleteState, deleteAction, deletePending] = useActionState(deleteDokumentAction, initialState);
-  const [versionState, versionAction, versionPending] = useActionState(setSignierteVersionAction, initialState);
 
+  const istAktiv = status === "AKTIV";
   const andereStatus = (["INTERESSENT", "AKTIV", "INAKTIV"] as Status[]).filter((s) => s !== status);
 
-  // Versionen der gewählten Vertragsart (für die Auswahl der unterschriebenen Version).
+  // Versionen der gewählten Vertragsart (für die Anzeige der aktuell gültigen Version).
   const versionenDerArt = vertragsart ? vertragVersionen.filter((v) => v.art === vertragsart) : [];
   const aktiveVersion = versionenDerArt.find((v) => v.gueltigBis === null) ?? null;
   const signierteVersion = vertragVersionen.find((v) => v.id === signierteVersionId) ?? null;
@@ -106,40 +105,10 @@ export function OnboardingPanel({
               " · keine gültige Version vorhanden (bitte Texte synchronisieren)"
             )}
           </p>
-          <p style={{ marginTop: 0 }}>
-            Unterschriebene Version:{" "}
-            <strong>{signierteVersion ? signierteVersion.version : "— noch nicht dokumentiert —"}</strong>
-            {signierteVersion ? "" : aktiveVersion ? " (PDF nutzt die aktuell gültige Version)" : ""}
+          <p style={{ marginTop: 0, fontSize: "0.85rem", color: "var(--color-muted)" }}>
+            Der Vertrag wird in der Version{" "}
+            <strong>{(signierteVersion ?? aktiveVersion)?.version ?? "—"}</strong> erzeugt.
           </p>
-          {versionState.error && <div className="form-error">{versionState.error}</div>}
-          {versionState.success && (
-            <div className="form-notice" role="status">
-              {versionState.success}
-            </div>
-          )}
-          <form action={versionAction} style={{ display: "flex", gap: "0.6rem", alignItems: "flex-end", flexWrap: "wrap" }}>
-            <input type="hidden" name="mietparteiId" value={mietparteiId} />
-            <div className="field" style={{ margin: 0 }}>
-              <label htmlFor="vertragVersionId">Unterschriebene Version dokumentieren</label>
-              <select
-                id="vertragVersionId"
-                name="vertragVersionId"
-                className="select-inline"
-                defaultValue={signierteVersionId ?? ""}
-              >
-                <option value="">— keine —</option>
-                {versionenDerArt.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    Version {v.version}
-                    {v.gueltigBis === null ? " (aktuell)" : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <button className="btn-small" type="submit" disabled={versionPending}>
-              {versionPending ? "…" : "Speichern"}
-            </button>
-          </form>
         </>
       ) : (
         <p style={{ marginTop: 0, color: "var(--color-muted)" }}>
@@ -167,25 +136,30 @@ export function OnboardingPanel({
         ))}
       </div>
 
-      {/* 2) Status wechseln */}
-      <h3 style={{ marginTop: "1.5rem" }}>Status</h3>
-      <p style={{ marginTop: 0 }}>
-        Aktueller Status: <strong>{STATUS_LABEL[status]}</strong>
-      </p>
-      {statusState.error && <div className="form-error">{statusState.error}</div>}
-      {statusState.success && (
-        <div className="form-notice" role="status">
-          {statusState.success}
-        </div>
+      {/* 2) Status wechseln - bei aktiven Kunden entfällt der Block (Status wird
+         in den Stammdaten oben angezeigt/geändert). */}
+      {!istAktiv && (
+        <>
+          <h3 style={{ marginTop: "1.5rem" }}>Status</h3>
+          <p style={{ marginTop: 0 }}>
+            Aktueller Status: <strong>{STATUS_LABEL[status]}</strong>
+          </p>
+          {statusState.error && <div className="form-error">{statusState.error}</div>}
+          {statusState.success && (
+            <div className="form-notice" role="status">
+              {statusState.success}
+            </div>
+          )}
+          <form action={statusAction} style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+            <input type="hidden" name="mietparteiId" value={mietparteiId} />
+            {andereStatus.map((s) => (
+              <button key={s} className="btn-small" type="submit" name="status" value={s} disabled={statusPending}>
+                {statusPending ? "…" : `In „${STATUS_LABEL[s]}“ überführen`}
+              </button>
+            ))}
+          </form>
+        </>
       )}
-      <form action={statusAction} style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
-        <input type="hidden" name="mietparteiId" value={mietparteiId} />
-        {andereStatus.map((s) => (
-          <button key={s} className="btn-small" type="submit" name="status" value={s} disabled={statusPending}>
-            {statusPending ? "…" : `In „${STATUS_LABEL[s]}" überführen`}
-          </button>
-        ))}
-      </form>
 
       {/* 3) Gescannte Rückläufer */}
       <h3 style={{ marginTop: "1.5rem" }}>Gescannte Rückläufer</h3>

@@ -148,7 +148,7 @@ export default async function MietparteiDetailPage({ params }: { params: Promise
       </div>
 
       <div className="section">
-        <h2>Onboarding</h2>
+        <h2>{mietpartei.status === "AKTIV" ? "Vertragsunterlagen" : "Onboarding"}</h2>
         <OnboardingPanel
           mietparteiId={mietpartei.id}
           status={mietpartei.status}
