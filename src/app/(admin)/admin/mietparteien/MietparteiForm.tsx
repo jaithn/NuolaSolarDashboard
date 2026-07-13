@@ -40,6 +40,7 @@ interface MietparteiFormProps {
     grundversorgerTarif: string | null;
     grundversorgerGrundpreisBrutto: number | null;
     grundversorgerArbeitspreisBrutto: number | null;
+    angenommenerJahresverbrauchKwh: number | null;
     vertragsart: "EIGENSTAENDIG" | "ERGAENZUNG" | null;
   };
 }
@@ -324,7 +325,28 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
               )}
             />
           </div>
+          <div className="field">
+            <label htmlFor="angenommenerJahresverbrauchKwh">Angenommener Jahresverbrauch (kWh)</label>
+            <input
+              id="angenommenerJahresverbrauchKwh"
+              name="angenommenerJahresverbrauchKwh"
+              type="number"
+              step="1"
+              min="0"
+              defaultValue={val(
+                "angenommenerJahresverbrauchKwh",
+                mietpartei?.angenommenerJahresverbrauchKwh != null
+                  ? String(mietpartei.angenommenerJahresverbrauchKwh)
+                  : "",
+              )}
+              aria-describedby="angenommenerVerbrauch-hinweis"
+            />
+          </div>
         </div>
+        <p id="angenommenerVerbrauch-hinweis" style={{ fontSize: "0.8rem", color: "var(--color-muted)", margin: 0 }}>
+          Grundlage der Abschlagskalkulation. Wird im Anschreiben genannt; die Mietpartei kann ihren tatsächlichen
+          Vorjahresverbrauch nachreichen.
+        </p>
       </div>
 
       {mode === "create" && (

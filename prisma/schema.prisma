@@ -270,6 +270,11 @@ model Mietpartei {
   grundversorgerGrundpreisBrutto  Float? // €/Monat brutto
   grundversorgerArbeitspreisBrutto Float? // €/kWh brutto
 
+  // Angenommener Jahresverbrauch (kWh) fuer die Abschlagskalkulation. Wird im
+  // Onboarding-Anschreiben genannt; die Mietpartei kann ihren tatsaechlichen
+  // Vorjahresverbrauch nachreichen, woraufhin der Abschlag angepasst wird.
+  angenommenerJahresverbrauchKwh  Float?
+
   // Vertragsart dieser Mietpartei (welche Vertrags-PDF erzeugt wird). Null =
   // noch nicht festgelegt.
   vertragsart      VertragArt?

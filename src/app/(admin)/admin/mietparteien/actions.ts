@@ -55,6 +55,7 @@ function collectValues(formData: FormData): Record<string, string> {
     "grundversorgerTarif",
     "grundversorgerGrundpreisBrutto",
     "grundversorgerArbeitspreisBrutto",
+    "angenommenerJahresverbrauchKwh",
     "vertragsart",
   ];
   const out: Record<string, string> = {};
@@ -90,6 +91,7 @@ type ParsedMietpartei = {
   grundversorgerTarif: string | null;
   grundversorgerGrundpreisBrutto: number | null;
   grundversorgerArbeitspreisBrutto: number | null;
+  angenommenerJahresverbrauchKwh: number | null;
   vertragsart: VertragArt | null;
 };
 
@@ -119,6 +121,7 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
   const grundversorgerTarif = String(formData.get("grundversorgerTarif") ?? "").trim();
   const gvGrund = Number(formData.get("grundversorgerGrundpreisBrutto"));
   const gvArbeit = Number(formData.get("grundversorgerArbeitspreisBrutto"));
+  const angenommenerVerbrauch = Number(formData.get("angenommenerJahresverbrauchKwh"));
   const vertragsartRaw = String(formData.get("vertragsart") ?? "");
   const vertragsart = (["EIGENSTAENDIG", "ERGAENZUNG"].includes(vertragsartRaw)
     ? vertragsartRaw
@@ -172,6 +175,8 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
       grundversorgerTarif: grundversorgerTarif || null,
       grundversorgerGrundpreisBrutto: Number.isFinite(gvGrund) && gvGrund > 0 ? gvGrund : null,
       grundversorgerArbeitspreisBrutto: Number.isFinite(gvArbeit) && gvArbeit > 0 ? gvArbeit : null,
+      angenommenerJahresverbrauchKwh:
+        Number.isFinite(angenommenerVerbrauch) && angenommenerVerbrauch > 0 ? angenommenerVerbrauch : null,
       vertragsart,
     },
   };
