@@ -29,16 +29,17 @@ export interface SepaMandateData {
   abschnitte: Map<string, string>;
 }
 
+// Kompaktes Spacing, damit das Mandat sicher auf eine DIN-A4-Seite passt.
 const s = StyleSheet.create({
-  intro: { fontSize: 9.5, color: "#334155", marginBottom: 12, lineHeight: 1.5 },
-  glaeubigerBox: { borderWidth: 1, borderColor: "#d9c9a4", borderRadius: 4, padding: 10, marginBottom: 14 },
-  feldLabel: { fontSize: 8.5, color: "#64748b", marginBottom: 2 },
-  feldLine: { borderBottomWidth: 1, borderBottomColor: INK, minHeight: 16, marginBottom: 12 },
-  feldWert: { fontSize: 10, paddingBottom: 2 },
-  mandatText: { fontSize: 9, color: "#222", lineHeight: 1.5, marginBottom: 6, textAlign: "justify" },
-  sigRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 34 },
+  intro: { fontSize: 9, color: "#334155", marginBottom: 8, lineHeight: 1.45 },
+  glaeubigerBox: { borderWidth: 1, borderColor: "#d9c9a4", borderRadius: 4, padding: 8, marginBottom: 10 },
+  feldLabel: { fontSize: 8.5, color: "#64748b", marginBottom: 1 },
+  feldLine: { borderBottomWidth: 1, borderBottomColor: INK, minHeight: 13, marginBottom: 8 },
+  feldWert: { fontSize: 10, paddingBottom: 1 },
+  mandatText: { fontSize: 8.5, color: "#222", lineHeight: 1.4, marginBottom: 5, textAlign: "justify" },
+  sigRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 18 },
   sigCol: { width: "45%" },
-  sigLine: { borderTopWidth: 1, borderTopColor: INK, marginTop: 24, paddingTop: 4 },
+  sigLine: { borderTopWidth: 1, borderTopColor: INK, marginTop: 18, paddingTop: 4 },
   sigCaption: { fontSize: 9, color: "#334155" },
 });
 

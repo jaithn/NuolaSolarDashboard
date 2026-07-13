@@ -53,15 +53,17 @@ export function WelcomeLetterDocument({
   const t = (key: string, standard: string) => abschnitt(abschnitte, key, standard, { firma: firma.name });
   return (
     <Document>
-      <Page size="A4" style={letterStyles.page}>
+      <Page size="A4" style={[letterStyles.page, { paddingTop: 34, lineHeight: 1.4 }]}>
         <Falzmarken />
         <LetterHeader logoPfad={logoPfad} firma={firma} zusatz={{ bearbeiterName, kundennummer }} />
         <EmpfaengerAdresse empfaenger={empfaenger} firma={firma} />
 
-        <Text style={letterStyles.title}>{t("titel", "Willkommen im Nuola Energy Dashboard")}</Text>
+        <Text style={[letterStyles.title, { marginBottom: 6 }]}>
+          {t("titel", "Willkommen im Nuola Energy Dashboard")}
+        </Text>
         <OrtDatumZeile ort={firma.ort} datum={new Date()} />
 
-        <View style={letterStyles.section}>
+        <View style={[letterStyles.section, { marginBottom: 8 }]}>
           <Text>{anredeSatz},</Text>
           <Text>
             {t(
@@ -71,7 +73,7 @@ export function WelcomeLetterDocument({
           </Text>
         </View>
 
-        <View style={letterStyles.goldFillBox}>
+        <View style={[letterStyles.goldFillBox, { padding: 9, marginBottom: 9 }]}>
           <Text style={letterStyles.boxTitle}>{t("konditionen-titel", "Ihre Konditionen")}</Text>
           <View style={letterStyles.row}>
             <Text style={letterStyles.label}>Beginn der Stromlieferung</Text>
@@ -95,7 +97,7 @@ export function WelcomeLetterDocument({
           )}
         </View>
 
-        <View style={letterStyles.goldBox}>
+        <View style={[letterStyles.goldBox, { padding: 9, marginBottom: 9 }]}>
           <Text style={letterStyles.boxTitle}>{t("zugang-titel", "Ihre Zugangsdaten")}</Text>
           <View style={letterStyles.row}>
             <Text style={letterStyles.label}>Internetadresse</Text>
@@ -114,7 +116,7 @@ export function WelcomeLetterDocument({
           </Text>
         </View>
 
-        <View style={letterStyles.section}>
+        <View style={[letterStyles.section, { marginBottom: 8 }]}>
           <Text style={letterStyles.boxTitle}>{t("portal-titel", "Was Sie im Portal tun können")}</Text>
           {abschnittZeilen(abschnitte, "portal-punkte", [
             "Ihren monatlichen Stromverbrauch (kWh) einsehen und mit Vormonaten und Vorjahresmonaten vergleichen",
@@ -122,21 +124,21 @@ export function WelcomeLetterDocument({
             "Ihre freigegebenen Jahresabrechnungen als PDF herunterladen",
             "Ihr Passwort selbst ändern und bei Bedarf zurücksetzen",
           ]).map((punkt, i) => (
-            <View style={{ flexDirection: "row", marginBottom: 3 }} key={i}>
+            <View style={{ flexDirection: "row", marginBottom: 2 }} key={i}>
               <Text style={{ width: 12 }}>•</Text>
               <Text style={{ flex: 1 }}>{punkt}</Text>
             </View>
           ))}
         </View>
 
-        <View style={letterStyles.section}>
+        <View style={[letterStyles.section, { marginBottom: 6 }]}>
           <Text>
             {t(
               "schluss",
               "Bei Fragen wenden Sie sich gerne an uns. Wir wünschen Ihnen einen guten Überblick über Ihren Stromverbrauch.",
             )}
           </Text>
-          <Text style={{ marginTop: 10 }}>Mit freundlichen Grüßen</Text>
+          <Text style={{ marginTop: 6 }}>Mit freundlichen Grüßen</Text>
           <Text>{firma.name}</Text>
         </View>
 
