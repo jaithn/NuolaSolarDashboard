@@ -149,7 +149,6 @@ export async function renderOnboardingPdf(
         bearbeiterName={bearbeiterName}
         kundennummer={kundennummer}
         anredeSatz={anredeSatz(mietpartei)}
-        beginn={mietpartei.einzugsdatum}
         lieferterminText={objekt.geplanterLiefertermin ? fmtDate(objekt.geplanterLiefertermin) : ""}
         vermieterText={
           (objekt.vermieterModus === "PRO_EINHEIT"
@@ -194,11 +193,13 @@ export async function renderOnboardingPdf(
         ? {
             name: mietpartei.einheit.vermieterName,
             strasse: mietpartei.einheit.vermieterAnschrift,
+            ort: mietpartei.einheit.vermieterOrt,
             plzOrt: `${mietpartei.einheit.vermieterPlz} ${mietpartei.einheit.vermieterOrt}`.trim(),
           }
         : {
             name: objekt.vermieterName,
             strasse: objekt.vermieterAnschrift,
+            ort: objekt.vermieterOrt,
             plzOrt: `${objekt.vermieterPlz} ${objekt.vermieterOrt}`.trim(),
           };
     const gegenpartei: ContractParty =
@@ -251,7 +252,8 @@ export async function renderOnboardingPdf(
           arbeitspreisBrutto: konditionen.arbeitspreisBrutto,
           abschlagBrutto: konditionen.abschlagBrutto,
         }}
-        unterschriftsort={firma.ort || ""}
+        strombezieherOrt={mietpartei.anschriftOrt?.trim() || objekt.ort || ""}
+        gegenparteiOrt={(variant === "ergaenzung" ? vermieter.ort : firma.ort) || ""}
       />,
     );
   }

@@ -48,8 +48,8 @@ export const letterStyles = StyleSheet.create({
   // im Sichtfenster eines Fensterumschlags erscheint (~45 mm von oben).
   empfaengerZone: { marginTop: 18, marginBottom: 28, minHeight: 70 },
   // Kleine Absenderzeile direkt ueber der Empfaengeranschrift - sichtbar im
-  // Fensterumschlag, damit der Absender erkennbar ist.
-  absenderMini: { fontSize: 7, color: "#64748b", marginBottom: 4, borderBottomWidth: 0.5, borderBottomColor: "#94a3b8", paddingBottom: 2 },
+  // Fensterumschlag, damit der Absender erkennbar ist (ohne Trennlinie).
+  absenderMini: { fontSize: 7, color: "#64748b", marginBottom: 6 },
   // Ort + Datum unter dem Betreff, rechtsbuendig (DIN 5008).
   ortDatum: { fontSize: 10.5, textAlign: "right", marginBottom: 12 },
   title: { fontSize: 15, marginBottom: 10, color: GOLD, fontFamily: "Helvetica-Bold" },

@@ -15,7 +15,11 @@ Ihr Strom aus der Gebäudestromanlage
 
 ## einleitung
 
-in Absprache mit {vermieter} haben wir auf Ihrem Wohngebäude eine Solaranlage installiert und freuen uns, Sie nun mit umweltfreundlichem Strom aus der Gebäudestromanlage versorgen zu können. Nachfolgend finden Sie Ihre persönlichen Konditionen sowie einen Vergleich mit Ihrem bisherigen Grundversorger.
+in Absprache mit {vermieter} haben wir auf Ihrem Wohngebäude eine Solaranlage installiert und freuen uns, Sie nun mit umweltfreundlichem Strom aus der Gebäudestromanlage versorgen zu können. Nachfolgend finden Sie Ihre persönlichen Konditionen sowie einen Vergleich mit dem örtlichen Grundversorger.
+
+## liefertermin-hinweis
+
+Die Umstellung auf die Versorgung über die Gebäudestromanlage ist zum {liefertermin} geplant.
 
 ## konditionen-titel
 

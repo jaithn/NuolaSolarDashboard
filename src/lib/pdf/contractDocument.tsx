@@ -54,7 +54,9 @@ export interface ContractData {
     arbeitspreisBrutto: number;
     abschlagBrutto: number | null;
   };
-  unterschriftsort: string;
+  // Vorbelegter Ort je Unterschrift (Ort des Mieters bzw. der Gegenpartei).
+  strombezieherOrt: string;
+  gegenparteiOrt: string;
 }
 
 const s = StyleSheet.create({
@@ -105,10 +107,10 @@ function Partei({ partei }: { partei: ContractParty }) {
   );
 }
 
-function Konditionen({ konditionen, plain }: { konditionen: ContractData["konditionen"]; plain: boolean }) {
+function Konditionen({ konditionen }: { konditionen: ContractData["konditionen"] }) {
   return (
-    <View style={plain ? s.konditionBoxPlain : letterStyles.goldFillBox}>
-      <Text style={letterStyles.boxTitle}>Konditionen</Text>
+    <View style={letterStyles.goldFillBox}>
+      <Text style={letterStyles.boxTitle}>Anfängliche Konditionen</Text>
       <View style={s.konditionRow}>
         <Text style={s.konditionLabel}>Grundpreis pro Monat</Text>
         <Text style={s.konditionValue}>
@@ -137,26 +139,36 @@ function Konditionen({ konditionen, plain }: { konditionen: ContractData["kondit
   );
 }
 
+/** Ort-/Datum-Zeile je Partei - beide Parteien tragen Ort und Datum selbst ein
+ *  (Ort ist mit dem hinterlegten Ort der jeweiligen Partei vorbelegt). */
+function OrtDatum({ ort }: { ort: string }) {
+  const ortText = ort?.trim() || "Ort";
+  return <Text style={s.sigCaption}>{`${ortText}, den ……………………………`}</Text>;
+}
+
 function Unterschriften({
-  ort,
   links,
   rechts,
+  linksOrt,
+  rechtsOrt,
 }: {
-  ort: string;
   links: ContractParty;
   rechts: ContractParty;
+  linksOrt: string;
+  rechtsOrt: string;
 }) {
   return (
     <View style={s.sigBlock} wrap={false}>
-      <Text style={s.sigCaption}>{ort ? `${ort}, den ……………………………` : "Ort, den ……………………………"}</Text>
       <View style={s.sigRow}>
         <View style={s.sigCol}>
+          <OrtDatum ort={linksOrt} />
           <View style={s.sigLine}>
             <Text style={s.sigCaption}>Unterschrift {links.rolle}</Text>
             <Text style={{ fontSize: 8.5, color: "#64748b" }}>{links.name}</Text>
           </View>
         </View>
         <View style={s.sigCol}>
+          <OrtDatum ort={rechtsOrt} />
           <View style={s.sigLine}>
             <Text style={s.sigCaption}>Unterschrift {rechts.rolle}</Text>
             <Text style={{ fontSize: 8.5, color: "#64748b" }}>{rechts.name}</Text>
@@ -180,7 +192,8 @@ export function ContractDocument(data: ContractData) {
     verbrauchsstelle,
     beginn,
     konditionen,
-    unterschriftsort,
+    strombezieherOrt,
+    gegenparteiOrt,
     bearbeiterName,
     kundennummer,
   } = data;
@@ -206,10 +219,17 @@ export function ContractDocument(data: ContractData) {
   const koerper = (
     <>
       {parteienBlock}
-      <Konditionen konditionen={konditionen} plain={plain} />
+      {/* Konditionen-Box nur im eigenständigen Stromliefervertrag; die
+          Mietvertrags-Ergänzung verweist stattdessen auf den Stromliefervertrag. */}
+      {plain ? null : <Konditionen konditionen={konditionen} />}
       <Text style={s.bedingungenTitel}>Vertragsbedingungen</Text>
       <MarkdownBlocks md={inhaltMd} styles={mdStyles} />
-      <Unterschriften ort={unterschriftsort} links={strombezieher} rechts={gegenpartei} />
+      <Unterschriften
+        links={strombezieher}
+        rechts={gegenpartei}
+        linksOrt={strombezieherOrt}
+        rechtsOrt={gegenparteiOrt}
+      />
     </>
   );
 

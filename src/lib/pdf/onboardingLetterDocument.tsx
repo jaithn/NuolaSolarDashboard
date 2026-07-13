@@ -10,7 +10,7 @@ import {
   type FirmaBriefData,
   type EmpfaengerData,
 } from "./letterLayout";
-import { fmtEuro, fmtPreisKwh, fmtDate, fmtProzent } from "./format";
+import { fmtEuro, fmtPreisKwh, fmtProzent } from "./format";
 import { abschnitt } from "@/lib/dokumenteVorlagen";
 
 export interface OnboardingVergleich {
@@ -29,7 +29,6 @@ export interface OnboardingLetterData {
   bearbeiterName?: string | null;
   kundennummer?: number | null;
   anredeSatz: string;
-  beginn: Date;
   // Geplanter Liefertermin (Objekt), bereits als DD.MM.YYYY formatiert - "" wenn
   // nicht gesetzt.
   lieferterminText?: string;
@@ -56,7 +55,9 @@ const s = StyleSheet.create({
   colVal: { flex: 1, textAlign: "right" },
   colHead: { fontFamily: "Helvetica-Bold", fontSize: 9.5 },
   vorteil: { color: "#1a7f37", fontFamily: "Helvetica-Bold" },
-  passus: { fontSize: 9, color: "#334155", lineHeight: 1.5 },
+  // Fliesstext der Abschnitte - bewusst in der Grundschriftgroesse des Briefs
+  // (letterStyles.page), damit alle Absaetze einheitlich wirken.
+  passus: { lineHeight: 1.5 },
 });
 
 export function OnboardingLetterDocument({
@@ -66,7 +67,6 @@ export function OnboardingLetterDocument({
   bearbeiterName,
   kundennummer,
   anredeSatz,
-  beginn,
   lieferterminText,
   vermieterText,
   verbrauchText,
@@ -104,23 +104,25 @@ export function OnboardingLetterDocument({
           <Text>
             {t(
               "einleitung",
-              "in Absprache mit {vermieter} haben wir auf Ihrem Wohngebäude eine Solaranlage installiert und freuen uns, Sie nun mit umweltfreundlichem Strom aus der Gebäudestromanlage versorgen zu können. Nachfolgend finden Sie Ihre persönlichen Konditionen sowie einen Vergleich mit Ihrem bisherigen Grundversorger.",
+              "in Absprache mit {vermieter} haben wir auf Ihrem Wohngebäude eine Solaranlage installiert und freuen uns, Sie nun mit umweltfreundlichem Strom aus der Gebäudestromanlage versorgen zu können. Nachfolgend finden Sie Ihre persönlichen Konditionen sowie einen Vergleich mit dem örtlichen Grundversorger.",
             )}
           </Text>
+          {lieferterminText ? (
+            <Text style={{ marginTop: 8 }}>
+              {t(
+                "liefertermin-hinweis",
+                "Die Umstellung auf die Versorgung über die Gebäudestromanlage ist zum {liefertermin} geplant.",
+              )}
+            </Text>
+          ) : null}
         </View>
 
         <View style={letterStyles.goldFillBox}>
           <Text style={letterStyles.boxTitle}>{t("konditionen-titel", "Ihre Konditionen bei Nuola Solar")}</Text>
           <View style={letterStyles.row}>
             <Text style={letterStyles.label}>Beginn der Stromlieferung</Text>
-            <Text style={letterStyles.value}>{fmtDate(beginn)}</Text>
+            <Text style={letterStyles.value}>wird Ihnen rechtzeitig mitgeteilt</Text>
           </View>
-          {lieferterminText ? (
-            <View style={letterStyles.row}>
-              <Text style={letterStyles.label}>Geplanter Liefertermin</Text>
-              <Text style={letterStyles.value}>{lieferterminText}</Text>
-            </View>
-          ) : null}
           <View style={letterStyles.row}>
             <Text style={letterStyles.label}>Arbeitspreis (brutto)</Text>
             <Text style={letterStyles.value}>{fmtPreisKwh(konditionen.arbeitspreisBrutto)} €/kWh</Text>

@@ -7,6 +7,22 @@ gebaut; gepinnte Releases über Git-Tags `vX.Y.Z` (siehe CLAUDE.md → „Versio
 Die jeweils oberste Sektion dieser Datei wird beim Image-Build als „Neu in dieser
 Version" in die Image-Beschreibung (`org.opencontainers.image.description`) übernommen.
 
+## Verträge & Onboarding aufeinander abgestimmt
+
+- **Ergänzung zum Mietvertrag** verschlankt: nur noch Stromversorgung, Strompreis und
+  Beendigung; die Konditionsübersicht entfällt. Ein neuer Abschnitt verweist auf den
+  Stromliefervertrag mit der Nuola Solar GbR – beide Dokumente widersprechen sich nicht
+  mehr.
+- **Stromliefervertrag** neu aufgebaut (klar und verständlich): eigene Abschnitte zu
+  Preisanpassung sowie Laufzeit/Lieferantenwechsel/Kündigung; die Konditionsbox heißt
+  jetzt „Anfängliche Konditionen".
+- **Unterschriften:** beide Vertragsparteien tragen Ort und Datum ein; der Ort ist mit
+  dem hinterlegten Ort der jeweiligen Partei vorbelegt.
+- **Anschreiben:** Vergleich mit „dem örtlichen Grundversorger"; geplanter Liefertermin
+  im Fließtext statt in der Box; Beginn der Stromlieferung als Hinweis („wird rechtzeitig
+  mitgeteilt"); einheitliche Schriftgröße im Fließtext.
+- **Briefe:** Trennlinie unter der Absenderzeile im Sichtfenster entfernt.
+
 ## Überarbeitete Briefe, Kundennummer, SEPA & Vertrags­texte
 
 - **Einheitliche Briefvorlage (alle Briefe):** dreizeilige Fußzeile (Adresse · Kontakt ·
