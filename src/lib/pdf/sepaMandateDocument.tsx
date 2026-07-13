@@ -9,6 +9,7 @@ import {
   type FirmaBriefData,
   type EmpfaengerData,
 } from "./letterLayout";
+import { abschnitt } from "@/lib/dokumenteVorlagen";
 
 export interface SepaMandateData {
   firma: FirmaBriefData;
@@ -16,6 +17,8 @@ export interface SepaMandateData {
   empfaenger: EmpfaengerData;
   // Name des Zahlungspflichtigen (Mietende) für den Mandatstext.
   zahlungspflichtiger: string;
+  // Editierbare Textabschnitte aus der Brief-Vorlage (leer -> Standardtexte).
+  abschnitte: Map<string, string>;
 }
 
 const s = StyleSheet.create({
@@ -41,8 +44,15 @@ function Feld({ label, wert }: { label: string; wert?: string }) {
   );
 }
 
-export function SepaMandateDocument({ firma, logoPfad, empfaenger, zahlungspflichtiger }: SepaMandateData) {
+export function SepaMandateDocument({
+  firma,
+  logoPfad,
+  empfaenger,
+  zahlungspflichtiger,
+  abschnitte,
+}: SepaMandateData) {
   const glaeubiger = [firma.name, firma.anschrift, `${firma.plz} ${firma.ort}`.trim()].filter(Boolean).join(", ");
+  const t = (key: string, standard: string) => abschnitt(abschnitte, key, standard, { firma: firma.name });
 
   return (
     <Document>
@@ -51,12 +61,12 @@ export function SepaMandateDocument({ firma, logoPfad, empfaenger, zahlungspflic
         <LetterHeader logoPfad={logoPfad} firma={firma} />
         <EmpfaengerAdresse empfaenger={empfaenger} />
 
-        <Text style={letterStyles.title}>SEPA-Lastschriftmandat</Text>
+        <Text style={letterStyles.title}>{t("titel", "SEPA-Lastschriftmandat")}</Text>
         <Text style={s.intro}>
-          Mit diesem Mandat ermächtigen Sie die {firma.name}, die fälligen Beträge (monatliche
-          Abschlagszahlungen sowie Nachzahlungen aus der Jahresabrechnung) bequem per SEPA-Basislastschrift
-          von Ihrem Konto einzuziehen. Bitte tragen Sie Ihre Kontoverbindung ein und senden Sie das
-          unterschriebene Formular an uns zurück.
+          {t(
+            "einleitung",
+            `Mit diesem Mandat ermächtigen Sie die ${firma.name}, die fälligen Beträge (monatliche Abschlagszahlungen sowie Nachzahlungen aus der Jahresabrechnung) bequem per SEPA-Basislastschrift von Ihrem Konto einzuziehen. Bitte tragen Sie Ihre Kontoverbindung ein und senden Sie das unterschriebene Formular an uns zurück.`,
+          )}
         </Text>
 
         <View style={s.glaeubigerBox}>
@@ -78,21 +88,25 @@ export function SepaMandateDocument({ firma, logoPfad, empfaenger, zahlungspflic
           </Text>
         </View>
 
-        <Text style={{ ...letterStyles.boxTitle, marginBottom: 8 }}>Ihre Kontoverbindung</Text>
+        <Text style={{ ...letterStyles.boxTitle, marginBottom: 8 }}>
+          {t("kontoverbindung-titel", "Ihre Kontoverbindung")}
+        </Text>
         <Feld label="Kontoinhaber (Vor- und Nachname)" wert={zahlungspflichtiger} />
         <Feld label="Name des Kreditinstituts" />
         <Feld label="IBAN" />
         <Feld label="BIC" />
 
         <Text style={s.mandatText}>
-          Ich ermächtige die {firma.name}, Zahlungen von meinem Konto mittels Lastschrift einzuziehen.
-          Zugleich weise ich mein Kreditinstitut an, die von der {firma.name} auf mein Konto gezogenen
-          Lastschriften einzulösen.
+          {t(
+            "mandat-absatz-1",
+            `Ich ermächtige die ${firma.name}, Zahlungen von meinem Konto mittels Lastschrift einzuziehen. Zugleich weise ich mein Kreditinstitut an, die von der ${firma.name} auf mein Konto gezogenen Lastschriften einzulösen.`,
+          )}
         </Text>
         <Text style={s.mandatText}>
-          Hinweis: Ich kann innerhalb von acht Wochen, beginnend mit dem Belastungsdatum, die Erstattung des
-          belasteten Betrages verlangen. Es gelten dabei die mit meinem Kreditinstitut vereinbarten
-          Bedingungen.
+          {t(
+            "mandat-absatz-2",
+            "Hinweis: Ich kann innerhalb von acht Wochen, beginnend mit dem Belastungsdatum, die Erstattung des belasteten Betrages verlangen. Es gelten dabei die mit meinem Kreditinstitut vereinbarten Bedingungen.",
+          )}
         </Text>
 
         <View style={s.sigRow} wrap={false}>

@@ -10,6 +10,7 @@ import {
   type EmpfaengerData,
 } from "./letterLayout";
 import { fmtEuro, fmtPreisKwh, fmtDate, fmtProzent } from "./format";
+import { abschnitt } from "@/lib/dokumenteVorlagen";
 
 export interface OnboardingVergleich {
   name: string;
@@ -34,6 +35,8 @@ export interface OnboardingLetterData {
   // Grundversorger-Vergleich (null, wenn keine Vergleichsdaten erfasst wurden).
   vergleich: OnboardingVergleich | null;
   kontaktTelefon: string | null;
+  // Editierbare Textabschnitte aus der Brief-Vorlage (leer -> Standardtexte).
+  abschnitte: Map<string, string>;
 }
 
 const s = StyleSheet.create({
@@ -55,9 +58,13 @@ export function OnboardingLetterDocument({
   konditionen,
   vergleich,
   kontaktTelefon,
+  abschnitte,
 }: OnboardingLetterData) {
   const hatVergleich =
     vergleich && (vergleich.arbeitspreisBrutto != null || vergleich.grundpreisBrutto != null);
+  const telefonZusatz = kontaktTelefon ? ` unter ${kontaktTelefon}` : "";
+  const t = (key: string, standard: string) =>
+    abschnitt(abschnitte, key, standard, { firma: firma.name, telefon: telefonZusatz });
 
   return (
     <Document>
@@ -66,19 +73,20 @@ export function OnboardingLetterDocument({
         <LetterHeader logoPfad={logoPfad} firma={firma} />
         <EmpfaengerAdresse empfaenger={empfaenger} />
 
-        <Text style={letterStyles.title}>Ihr Strom aus der Gebäudestromanlage</Text>
+        <Text style={letterStyles.title}>{t("titel", "Ihr Strom aus der Gebäudestromanlage")}</Text>
 
         <View style={letterStyles.section}>
           <Text>{anredeSatz},</Text>
           <Text>
-            wir freuen uns, Sie künftig mit Strom aus der Gebäudestromanlage Ihres Wohnhauses versorgen zu
-            dürfen. Nachfolgend finden Sie Ihre persönlichen Konditionen sowie einen Vergleich mit Ihrem
-            bisherigen Grundversorger.
+            {t(
+              "einleitung",
+              "wir freuen uns, Sie künftig mit Strom aus der Gebäudestromanlage Ihres Wohnhauses versorgen zu dürfen. Nachfolgend finden Sie Ihre persönlichen Konditionen sowie einen Vergleich mit Ihrem bisherigen Grundversorger.",
+            )}
           </Text>
         </View>
 
         <View style={letterStyles.goldFillBox}>
-          <Text style={letterStyles.boxTitle}>Ihre Konditionen bei der {firma.name}</Text>
+          <Text style={letterStyles.boxTitle}>{t("konditionen-titel", `Ihre Konditionen bei der ${firma.name}`)}</Text>
           <View style={letterStyles.row}>
             <Text style={letterStyles.label}>Beginn der Stromlieferung</Text>
             <Text style={letterStyles.value}>{fmtDate(beginn)}</Text>
@@ -104,7 +112,7 @@ export function OnboardingLetterDocument({
         {hatVergleich && vergleich && (
           <View style={letterStyles.goldBox}>
             <Text style={letterStyles.boxTitle}>
-              Ihr Preisvorteil gegenüber dem Grundversorger
+              {t("vergleich-titel", "Ihr Preisvorteil gegenüber dem Grundversorger")}
             </Text>
             <Text style={{ fontSize: 9, color: "#334155", marginBottom: 8 }}>
               Grundversorger: {vergleich.name}
@@ -143,36 +151,30 @@ export function OnboardingLetterDocument({
               </View>
             )}
             <Text style={{ fontSize: 8.5, color: "#64748b", marginTop: 6 }}>
-              Positive Werte in der Spalte „Ihr Vorteil" bedeuten, dass unser Preis unter dem des
-              Grundversorgers liegt.
+              {t(
+                "vergleich-hinweis",
+                "Positive Werte in der Spalte „Ihr Vorteil\" bedeuten, dass unser Preis unter dem des Grundversorgers liegt.",
+              )}
             </Text>
           </View>
         )}
 
         <View style={letterStyles.section}>
-          <Text style={letterStyles.boxTitle}>Versorgung über die Gebäudestromanlage</Text>
+          <Text style={letterStyles.boxTitle}>{t("gebaeude-titel", "Versorgung über die Gebäudestromanlage")}</Text>
           <Text style={s.passus}>
-            Das Mietobjekt wird über eine Gebäudestromanlage im Sinne des § 42b Energiewirtschaftsgesetz
-            (EnWG) mit elektrischer Energie versorgt. Betreiberin der Gebäudestromanlage und Stromlieferantin
-            ist die {firma.name}. Der Strom wird ohne Durchleitung durch ein öffentliches Netz an Ihre
-            Verbrauchsstelle geliefert. Die Belieferung erfolgt für die Dauer des Mietverhältnisses; der
-            Stromverbrauch wird über einen geeichten, Ihrem Mietobjekt eindeutig zugeordneten Stromzähler
-            erfasst.
+            {t(
+              "gebaeude-text",
+              `Das Mietobjekt wird über eine Gebäudestromanlage im Sinne des § 42b Energiewirtschaftsgesetz (EnWG) mit elektrischer Energie versorgt. Betreiberin der Gebäudestromanlage und Stromlieferantin ist die ${firma.name}. Der Strom wird ohne Durchleitung durch ein öffentliches Netz an Ihre Verbrauchsstelle geliefert. Die Belieferung erfolgt für die Dauer des Mietverhältnisses; der Stromverbrauch wird über einen geeichten, Ihrem Mietobjekt eindeutig zugeordneten Stromzähler erfasst.`,
+            )}
           </Text>
         </View>
 
         <View style={letterStyles.section}>
           <Text>
-            Haben Sie Fragen oder Unklarheiten zu Ihrem Angebot? Rufen Sie uns gerne an
-            {kontaktTelefon ? (
-              <Text>
-                {" "}
-                unter <Text style={letterStyles.value}>{kontaktTelefon}</Text>
-              </Text>
-            ) : (
-              ""
+            {t(
+              "schluss",
+              `Haben Sie Fragen oder Unklarheiten zu Ihrem Angebot? Rufen Sie uns gerne an${telefonZusatz}. Wir beraten Sie persönlich und beantworten Ihre Fragen rund um Ihre Stromversorgung.`,
             )}
-            . Wir beraten Sie persönlich und beantworten Ihre Fragen rund um Ihre Stromversorgung.
           </Text>
           <Text style={{ marginTop: 10 }}>Mit freundlichen Grüßen</Text>
           <Text>{firma.name}</Text>

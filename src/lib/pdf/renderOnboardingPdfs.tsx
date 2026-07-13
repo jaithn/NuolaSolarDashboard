@@ -3,16 +3,18 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { prisma } from "@/lib/db";
 import { berechneBrutto } from "@/lib/steuer";
 import { mietparteiAnzeigeName, anredeSatz, anredeKurz } from "@/lib/mietpartei";
+import { versionFuerMietpartei } from "@/lib/vertrag";
+import { ladeBriefAbschnitte } from "@/lib/briefVorlagen";
 import type { FirmaBriefData, EmpfaengerData } from "./letterLayout";
 import { OnboardingLetterDocument, type OnboardingVergleich } from "./onboardingLetterDocument";
-import { ContractDocument } from "./contractDocument";
+import { ContractDocument, type ContractParty, type VertragVariant } from "./contractDocument";
 import { SepaMandateDocument } from "./sepaMandateDocument";
 
 export type OnboardingDokumentTyp = "anschreiben" | "vertrag" | "sepa";
 
 export const ONBOARDING_DOKUMENT_TITEL: Record<OnboardingDokumentTyp, string> = {
   anschreiben: "Anschreiben",
-  vertrag: "Stromliefervertrag",
+  vertrag: "Vertrag",
   sepa: "SEPA-Lastschriftmandat",
 };
 
@@ -111,6 +113,7 @@ export async function renderOnboardingPdf(
   const { firma, logoAbsolutePath, empfaenger, mietpartei, konditionen, objekt, displayName } = basis;
 
   if (dok === "anschreiben") {
+    const abschnitte = await ladeBriefAbschnitte("anschreiben");
     const gvArbeit = mietpartei.grundversorgerArbeitspreisBrutto;
     const gvGrund = mietpartei.grundversorgerGrundpreisBrutto;
     const vergleich: OnboardingVergleich | null = mietpartei.grundversorgerName
@@ -138,16 +141,53 @@ export async function renderOnboardingPdf(
         }}
         vergleich={vergleich}
         kontaktTelefon={firma.kontaktTelefon}
+        abschnitte={abschnitte}
       />,
     );
   }
 
   if (dok === "vertrag") {
+    const version = await versionFuerMietpartei(mietpartei);
+    if (!version) {
+      throw new Error(
+        "Keine Vertragsversion vorhanden. Bitte im Admin unter Einstellungen die Vertragstexte einlesen (Sync).",
+      );
+    }
+    const variant: VertragVariant = version.art === "ERGAENZUNG" ? "ergaenzung" : "eigenstaendig";
+
+    const strombezieher: ContractParty = {
+      rolle: variant === "ergaenzung" ? "Mieter" : "Strombezieher",
+      name: displayName,
+      zeilen: [objekt.adresse || "", `${objekt.plz} ${objekt.ort}`.trim()],
+    };
+    const gegenpartei: ContractParty =
+      variant === "ergaenzung"
+        ? {
+            rolle: "Vermieter",
+            name: objekt.vermieterName || "—",
+            zeilen: [objekt.vermieterAnschrift || ""],
+          }
+        : {
+            rolle: "Lieferant",
+            name: firma.name,
+            zeilen: [
+              firma.anschrift,
+              `${firma.plz} ${firma.ort}`.trim(),
+              firma.kontaktTelefon ? `Tel. ${firma.kontaktTelefon}` : "",
+              firma.kontaktEmail ?? "",
+            ],
+          };
+
     return renderToBuffer(
       <ContractDocument
+        variant={variant}
         firma={firma}
         logoPfad={logoAbsolutePath}
-        strombezieher={{ name: displayName, zusatz: null }}
+        titel={version.titel}
+        versionLabel={`Version ${version.version}`}
+        inhaltMd={version.inhaltMd}
+        strombezieher={strombezieher}
+        gegenpartei={gegenpartei}
         verbrauchsstelle={{
           strasse: objekt.adresse || null,
           plzOrt: `${objekt.plz} ${objekt.ort}`.trim() || null,
@@ -166,12 +206,14 @@ export async function renderOnboardingPdf(
     );
   }
 
+  const abschnitte = await ladeBriefAbschnitte("sepa");
   return renderToBuffer(
     <SepaMandateDocument
       firma={firma}
       logoPfad={logoAbsolutePath}
       empfaenger={empfaenger}
       zahlungspflichtiger={displayName}
+      abschnitte={abschnitte}
     />,
   );
 }

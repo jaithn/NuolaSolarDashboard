@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import crypto from "node:crypto";
+import { syncDokumenteVorlagen } from "@/lib/dokumenteSync";
 
 const prisma = new PrismaClient();
 
@@ -53,6 +54,15 @@ async function main() {
     console.log("Bitte nach dem ersten Login sofort ändern.");
   } else {
     console.log("Admin-Nutzer existiert bereits, überspringe Anlage.");
+  }
+
+  // Vertrags- und Brieftexte aus dem "Dokumente"-Ordner einlesen (idempotent).
+  try {
+    const r = await syncDokumenteVorlagen();
+    console.log(`Vorlagen-Sync: ${r.vertragsversionen} Vertragsversionen, ${r.briefvorlagen} Briefvorlagen.`);
+    for (const w of r.warnungen) console.warn(`  WARN: ${w}`);
+  } catch (err) {
+    console.warn("Vorlagen-Sync übersprungen:", err instanceof Error ? err.message : err);
   }
 }
 

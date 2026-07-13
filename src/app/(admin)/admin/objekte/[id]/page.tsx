@@ -39,6 +39,8 @@ export default async function ObjektDetailPage({
           adresse={objekt.adresse}
           plz={objekt.plz}
           ort={objekt.ort}
+          vermieterName={objekt.vermieterName}
+          vermieterAnschrift={objekt.vermieterAnschrift}
         />
       </div>
 

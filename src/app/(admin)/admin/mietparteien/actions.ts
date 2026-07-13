@@ -9,7 +9,7 @@ import { erstelleRechnungsentwurf } from "@/lib/billing/generateInvoice";
 import { generateAndStoreInvoicePdf } from "@/lib/pdf/renderInvoicePdf";
 import { mietparteiAnzeigeName } from "@/lib/mietpartei";
 import { speichereDokument, loescheDokument } from "@/lib/dokumente";
-import type { DokumentTyp } from "@prisma/client";
+import type { DokumentTyp, VertragArt } from "@prisma/client";
 
 export interface MietparteiFormState {
   error?: string;
@@ -54,6 +54,7 @@ function collectValues(formData: FormData): Record<string, string> {
     "grundversorgerTarif",
     "grundversorgerGrundpreisBrutto",
     "grundversorgerArbeitspreisBrutto",
+    "vertragsart",
   ];
   const out: Record<string, string> = {};
   for (const k of keys) out[k] = String(formData.get(k) ?? "");
@@ -88,6 +89,7 @@ type ParsedMietpartei = {
   grundversorgerTarif: string | null;
   grundversorgerGrundpreisBrutto: number | null;
   grundversorgerArbeitspreisBrutto: number | null;
+  vertragsart: VertragArt | null;
 };
 
 function parseMietparteiInput(formData: FormData): { error: string } | { data: ParsedMietpartei } {
@@ -116,6 +118,10 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
   const grundversorgerTarif = String(formData.get("grundversorgerTarif") ?? "").trim();
   const gvGrund = Number(formData.get("grundversorgerGrundpreisBrutto"));
   const gvArbeit = Number(formData.get("grundversorgerArbeitspreisBrutto"));
+  const vertragsartRaw = String(formData.get("vertragsart") ?? "");
+  const vertragsart = (["EIGENSTAENDIG", "ERGAENZUNG"].includes(vertragsartRaw)
+    ? vertragsartRaw
+    : null) as VertragArt | null;
 
   if (!einheitId || !email || !einzugsdatumRaw || !arbeitspreisSteuersatzId) {
     return { error: "Bitte alle Pflichtfelder ausfüllen." };
@@ -165,6 +171,7 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
       grundversorgerTarif: grundversorgerTarif || null,
       grundversorgerGrundpreisBrutto: Number.isFinite(gvGrund) && gvGrund > 0 ? gvGrund : null,
       grundversorgerArbeitspreisBrutto: Number.isFinite(gvArbeit) && gvArbeit > 0 ? gvArbeit : null,
+      vertragsart,
     },
   };
 }
@@ -466,6 +473,32 @@ export async function uploadDokumentAction(
 
   revalidatePath(`/admin/mietparteien/${mietparteiId}`);
   return { success: "Dokument hochgeladen." };
+}
+
+/**
+ * Dokumentiert, welche Vertragsversion eine Mietpartei unterschrieben hat. Diese
+ * bleibt fuer die Mietpartei gueltig, auch wenn spaeter eine neuere Version aktiv
+ * wird. Leerer Wert entfernt die Zuordnung (PDF nutzt dann die aktive Version).
+ */
+export async function setSignierteVersionAction(
+  _prevState: OnboardingState,
+  formData: FormData,
+): Promise<OnboardingState> {
+  await requireAdmin();
+
+  const mietparteiId = String(formData.get("mietparteiId") ?? "");
+  const versionId = String(formData.get("vertragVersionId") ?? "").trim();
+  if (!mietparteiId) return { error: "Mietpartei fehlt." };
+
+  const wert = versionId || null;
+  if (wert) {
+    const version = await prisma.vertragVersion.findUnique({ where: { id: wert } });
+    if (!version) return { error: "Vertragsversion nicht gefunden." };
+  }
+
+  await prisma.mietpartei.update({ where: { id: mietparteiId }, data: { vertragVersionId: wert } });
+  revalidatePath(`/admin/mietparteien/${mietparteiId}`);
+  return { success: wert ? "Unterschriebene Vertragsversion dokumentiert." : "Zuordnung entfernt." };
 }
 
 /** Löscht ein hinterlegtes Dokument (Datei + Datensatz). */

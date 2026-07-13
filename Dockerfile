@@ -47,6 +47,10 @@ COPY --from=builder /app/package.json ./package.json
 # die "@/*"-Pfad-Aliase benoetigt.
 COPY --from=builder /app/src ./src
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
+# Editierbare Vertrags-/Brieftexte + Sync-Skript: der Entrypoint liest sie beim
+# Start in die DB ein (Vertragsversionen/Briefvorlagen), analog zum Worker via tsx.
+COPY --from=builder /app/Dokumente ./Dokumente
+COPY --from=builder /app/scripts ./scripts
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 

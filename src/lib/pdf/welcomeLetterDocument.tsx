@@ -8,6 +8,7 @@ import {
   type FirmaBriefData,
   type EmpfaengerData,
 } from "./letterLayout";
+import { abschnitt, abschnittZeilen } from "@/lib/dokumenteVorlagen";
 
 export interface WelcomeLetterData {
   firma: FirmaBriefData;
@@ -28,6 +29,8 @@ export interface WelcomeLetterData {
     benutzername: string;
     passwort: string;
   };
+  // Editierbare Textabschnitte aus der Brief-Vorlage (leer -> Standardtexte).
+  abschnitte: Map<string, string>;
 }
 
 function fmtEuro(n: number): string {
@@ -45,7 +48,9 @@ export function WelcomeLetterDocument({
   mietpartei,
   konditionen,
   zugang,
+  abschnitte,
 }: WelcomeLetterData) {
+  const t = (key: string, standard: string) => abschnitt(abschnitte, key, standard, { firma: firma.name });
   return (
     <Document>
       <Page size="A4" style={letterStyles.page}>
@@ -53,19 +58,20 @@ export function WelcomeLetterDocument({
         <LetterHeader logoPfad={logoPfad} firma={firma} />
         <EmpfaengerAdresse empfaenger={empfaenger} />
 
-        <Text style={letterStyles.title}>Willkommen im Nuola Energy Dashboard</Text>
+        <Text style={letterStyles.title}>{t("titel", "Willkommen im Nuola Energy Dashboard")}</Text>
 
         <View style={letterStyles.section}>
           <Text>{anredeSatz},</Text>
           <Text>
-            für Ihre Wohnung wurde ein persönlicher Zugang zu unserem Strom-Portal eingerichtet. Dort
-            sehen Sie jederzeit Ihren monatlichen Stromverbrauch und Ihre Jahresabrechnungen. Nachfolgend
-            finden Sie Ihre Konditionen und Zugangsdaten.
+            {t(
+              "einleitung",
+              "für Ihre Wohnung wurde ein persönlicher Zugang zu unserem Strom-Portal eingerichtet. Dort sehen Sie jederzeit Ihren monatlichen Stromverbrauch und Ihre Jahresabrechnungen. Nachfolgend finden Sie Ihre Konditionen und Zugangsdaten.",
+            )}
           </Text>
         </View>
 
         <View style={letterStyles.goldFillBox}>
-          <Text style={letterStyles.boxTitle}>Ihre Konditionen</Text>
+          <Text style={letterStyles.boxTitle}>{t("konditionen-titel", "Ihre Konditionen")}</Text>
           <View style={letterStyles.row}>
             <Text style={letterStyles.label}>Beginn der Stromlieferung</Text>
             <Text style={letterStyles.value}>{fmtDate(mietpartei.einzugsdatum)}</Text>
@@ -89,7 +95,7 @@ export function WelcomeLetterDocument({
         </View>
 
         <View style={letterStyles.goldBox}>
-          <Text style={letterStyles.boxTitle}>Ihre Zugangsdaten</Text>
+          <Text style={letterStyles.boxTitle}>{t("zugang-titel", "Ihre Zugangsdaten")}</Text>
           <View style={letterStyles.row}>
             <Text style={letterStyles.label}>Internetadresse</Text>
             <Text style={letterStyles.value}>{zugang.loginUrl}</Text>
@@ -103,29 +109,31 @@ export function WelcomeLetterDocument({
             <Text style={letterStyles.value}>{zugang.passwort}</Text>
           </View>
           <Text style={{ fontSize: 9, color: "#334155", marginTop: 6 }}>
-            Bitte ändern Sie das Passwort bei der ersten Anmeldung.
+            {t("zugang-hinweis", "Bitte ändern Sie das Passwort bei der ersten Anmeldung.")}
           </Text>
         </View>
 
         <View style={letterStyles.section}>
-          <Text style={letterStyles.boxTitle}>Was Sie im Portal tun können</Text>
-          {[
+          <Text style={letterStyles.boxTitle}>{t("portal-titel", "Was Sie im Portal tun können")}</Text>
+          {abschnittZeilen(abschnitte, "portal-punkte", [
             "Ihren monatlichen Stromverbrauch (kWh) einsehen und mit Vormonaten und Vorjahresmonaten vergleichen",
             "den Verlauf der letzten 12 Monate einsehen",
             "Ihre freigegebenen Jahresabrechnungen als PDF herunterladen",
             "Ihr Passwort selbst ändern und bei Bedarf zurücksetzen",
-          ].map((t, i) => (
+          ]).map((punkt, i) => (
             <View style={{ flexDirection: "row", marginBottom: 3 }} key={i}>
               <Text style={{ width: 12 }}>•</Text>
-              <Text style={{ flex: 1 }}>{t}</Text>
+              <Text style={{ flex: 1 }}>{punkt}</Text>
             </View>
           ))}
         </View>
 
         <View style={letterStyles.section}>
           <Text>
-            Bei Fragen wenden Sie sich gerne an uns. Wir wünschen Ihnen einen guten Überblick über Ihren
-            Stromverbrauch.
+            {t(
+              "schluss",
+              "Bei Fragen wenden Sie sich gerne an uns. Wir wünschen Ihnen einen guten Überblick über Ihren Stromverbrauch.",
+            )}
           </Text>
           <Text style={{ marginTop: 10 }}>Mit freundlichen Grüßen</Text>
           <Text>{firma.name}</Text>

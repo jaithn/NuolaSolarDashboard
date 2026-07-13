@@ -19,9 +19,13 @@ export async function createObjektAction(
   const adresse = String(formData.get("adresse") ?? "").trim();
   const plz = String(formData.get("plz") ?? "").trim();
   const ort = String(formData.get("ort") ?? "").trim();
+  const vermieterName = String(formData.get("vermieterName") ?? "").trim();
+  const vermieterAnschrift = String(formData.get("vermieterAnschrift") ?? "").trim();
   if (!name || !adresse || !plz || !ort) return { error: "Bitte Name, Adresse, PLZ und Ort angeben." };
 
-  await prisma.objekt.create({ data: { name, adresse, plz, ort } });
+  await prisma.objekt.create({
+    data: { name, adresse, plz, ort, vermieterName: vermieterName || null, vermieterAnschrift: vermieterAnschrift || null },
+  });
   revalidatePath("/admin/objekte");
   return {};
 }
@@ -37,9 +41,14 @@ export async function updateObjektAction(
   const adresse = String(formData.get("adresse") ?? "").trim();
   const plz = String(formData.get("plz") ?? "").trim();
   const ort = String(formData.get("ort") ?? "").trim();
+  const vermieterName = String(formData.get("vermieterName") ?? "").trim();
+  const vermieterAnschrift = String(formData.get("vermieterAnschrift") ?? "").trim();
   if (!name || !adresse || !plz || !ort) return { error: "Bitte Name, Adresse, PLZ und Ort angeben." };
 
-  await prisma.objekt.update({ where: { id }, data: { name, adresse, plz, ort } });
+  await prisma.objekt.update({
+    where: { id },
+    data: { name, adresse, plz, ort, vermieterName: vermieterName || null, vermieterAnschrift: vermieterAnschrift || null },
+  });
   revalidatePath("/admin/objekte");
   revalidatePath(`/admin/objekte/${id}`);
   return {};

@@ -6,10 +6,29 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { sendTestMail } from "@/lib/mail/mailer";
 import { starteEmailVerifizierung } from "@/lib/auth/emailVerification";
+import { syncDokumenteVorlagen } from "@/lib/dokumenteSync";
 
 export interface SettingsFormState {
   error?: string;
   success?: string;
+}
+
+/** Liest die Vertrags-/Brieftexte aus dem "Dokumente"-Ordner neu in die DB ein. */
+export async function syncVertragstexteAction(
+  _prevState: SettingsFormState,
+  _formData: FormData,
+): Promise<SettingsFormState> {
+  await requireAdmin();
+  try {
+    const r = await syncDokumenteVorlagen();
+    revalidatePath("/admin/einstellungen");
+    const hinweis = r.warnungen.length > 0 ? ` Hinweise: ${r.warnungen.join(" ")}` : "";
+    return {
+      success: `Übernommen: ${r.vertragsversionen} Vertragsversion(en), ${r.briefvorlagen} Briefvorlage(n).${hinweis}`,
+    };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Sync fehlgeschlagen." };
+  }
 }
 
 export interface TestMailState {

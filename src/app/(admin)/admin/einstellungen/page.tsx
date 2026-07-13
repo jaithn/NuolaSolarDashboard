@@ -2,6 +2,8 @@ import { prisma } from "@/lib/db";
 import { FirmenStammdatenForm } from "./FirmenStammdatenForm";
 import { TestMailForm } from "./TestMailForm";
 import { ThemeToggle } from "./ThemeToggle";
+import { VertragstexteSync } from "./VertragstexteSync";
+import { VERTRAGSART_LABEL } from "@/lib/vertrag";
 import { APP_VERSION, APP_GIT_SHA } from "@/lib/version";
 
 export default async function EinstellungenPage() {
@@ -9,6 +11,10 @@ export default async function EinstellungenPage() {
     where: { id: "singleton" },
     update: {},
     create: { id: "singleton", name: "Nuola Solar GbR", anschrift: "" },
+  });
+
+  const vertragVersionen = await prisma.vertragVersion.findMany({
+    orderBy: [{ art: "asc" }, { gueltigAb: "desc" }],
   });
 
   return (
@@ -35,6 +41,49 @@ export default async function EinstellungenPage() {
           können.
         </p>
         <TestMailForm />
+      </div>
+
+      <div className="section">
+        <h2>Vertragstexte</h2>
+        <p>
+          Die Vertrags- und Brieftexte werden im Ordner <code>Dokumente/</code> als Markdown gepflegt.
+          Nach dem Bearbeiten hier neu einlesen. Eine neue Vertragsversion (z.&nbsp;B.{" "}
+          <code>…-v1.1.md</code>) beendet automatisch die vorherige; die Historie bleibt erhalten.
+        </p>
+        <table className="data-table" style={{ marginBottom: "1rem" }}>
+          <thead>
+            <tr>
+              <th>Vertragsart</th>
+              <th>Version</th>
+              <th>Gültig ab</th>
+              <th>Gültig bis</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {vertragVersionen.map((v) => (
+              <tr key={v.id}>
+                <td>{VERTRAGSART_LABEL[v.art]}</td>
+                <td>{v.version}</td>
+                <td>{v.gueltigAb.toLocaleDateString("de-DE")}</td>
+                <td>{v.gueltigBis ? v.gueltigBis.toLocaleDateString("de-DE") : "–"}</td>
+                <td>
+                  {v.gueltigBis === null ? (
+                    <span className="status-badge aktiv">aktuell</span>
+                  ) : (
+                    <span className="status-badge inaktiv">Historie</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {vertragVersionen.length === 0 && (
+              <tr>
+                <td colSpan={5}>Noch keine Vertragsversionen – bitte einlesen.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+        <VertragstexteSync />
       </div>
 
       <div className="section">

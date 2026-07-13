@@ -20,6 +20,12 @@ model Objekt {
   adresse   String
   plz       String   @default("")
   ort       String   @default("")
+  // Vermieter (Gebaeudeeigentuemer) - nur fuer die "Ergaenzung zum Mietvertrag"
+  // relevant (dort ist der Vermieter Vertragspartner, NICHT die Nuola Solar GbR).
+  // Beim eigenstaendigen Vertrag ist die Gegenpartei stets die Firma aus den
+  // Stammdaten. Optional, weil nicht jedes Objekt die Ergaenzung nutzt.
+  vermieterName      String?
+  vermieterAnschrift String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -179,6 +185,16 @@ enum Anrede {
   FIRMA
 }
 
+// Art des Stromliefervertrags einer Mietpartei:
+// - EIGENSTAENDIG: eigener Stromliefervertrag im Nuola-Layout; Gegenpartei ist
+//   die Firma aus den Stammdaten (Nuola Solar GbR).
+// - ERGAENZUNG: Ergaenzung zum Mietvertrag im schlichten Layout ohne Nuola-
+//   Branding; Gegenpartei ist der Vermieter (Objekt.vermieterName).
+enum VertragArt {
+  EIGENSTAENDIG
+  ERGAENZUNG
+}
+
 model Mietpartei {
   id            String                @id @default(cuid())
   einheitId     String
@@ -220,12 +236,22 @@ model Mietpartei {
   grundversorgerGrundpreisBrutto  Float? // €/Monat brutto
   grundversorgerArbeitspreisBrutto Float? // €/kWh brutto
 
+  // Vertragsart dieser Mietpartei (welche Vertrags-PDF erzeugt wird). Null =
+  // noch nicht festgelegt.
+  vertragsart      VertragArt?
+  // Konkret unterschriebene Vertragsversion. Bleibt fuer diese Mietpartei
+  // gueltig, auch wenn spaeter eine neuere Version aktiv wird. Null = noch keine
+  // Version unterschrieben/dokumentiert -> PDF nutzt die aktuell gueltige
+  // Version der gewaehlten Vertragsart.
+  vertragVersionId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   einheit             Einheit     @relation(fields: [einheitId], references: [id], onDelete: Cascade)
   arbeitspreisSteuersatz Steuersatz @relation("ArbeitspreisSteuersatz", fields: [arbeitspreisSteuersatzId], references: [id])
   grundpreisSteuersatz   Steuersatz? @relation("GrundpreisSteuersatz", fields: [grundpreisSteuersatzId], references: [id])
+  vertragVersion         VertragVersion? @relation(fields: [vertragVersionId], references: [id])
 
   abschlaege Abschlag[]
   rechnungen Rechnung[]
@@ -234,6 +260,39 @@ model Mietpartei {
   nutzer     Nutzer?
 
   @@index([einheitId])
+}
+
+// Versionierte Vertragsvorlage (Text). Je Vertragsart existiert genau eine
+// aktuell gueltige Version (gueltigBis = null); aeltere Versionen bleiben als
+// Historie erhalten. Beim Anlegen einer neuen Version wird die bisherige am Tag
+// vor deren Gueltigkeitsbeginn beendet (analog Steuersatz/Abschlag). Der Text
+// liegt als Markdown vor und wird aus den .md-Dateien in "Dokumente/" per Sync
+// befuellt (siehe src/lib/dokumenteSync.ts).
+model VertragVersion {
+  id         String     @id @default(cuid())
+  art        VertragArt
+  version    String     // z.B. "1.0"
+  titel      String
+  inhaltMd   String     // Vertragstext (Markdown)
+  gueltigAb  DateTime
+  gueltigBis DateTime?
+  createdAt  DateTime   @default(now())
+
+  mietparteien Mietpartei[]
+
+  @@unique([art, version])
+  @@index([art, gueltigAb])
+}
+
+// Editierbare Brief-Textvorlage (Anschreiben, SEPA-Mandat, Willkommensbrief).
+// Der Text liegt als Markdown mit benannten Abschnitten (## schluessel) vor und
+// wird aus "Dokumente/brief-*.md" per Sync befuellt. Die PDF-Komponenten lesen
+// einzelne Abschnitte hieraus (mit Platzhalter-Ersetzung); fehlt ein Abschnitt,
+// greift ein im Code hinterlegter Standardtext.
+model BriefVorlage {
+  schluessel String   @id // z.B. "anschreiben" | "sepa" | "willkommen"
+  inhaltMd   String
+  updatedAt  DateTime @updatedAt
 }
 
 // Monatlicher Abschlag mit Gueltigkeitszeitraum (Historie, da sich der

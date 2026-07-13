@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { berechneBrutto } from "@/lib/steuer";
 import { getAppBaseUrl } from "@/lib/appBaseUrl";
 import { mietparteiAnzeigeName, anredeSatz, anredeKurz } from "@/lib/mietpartei";
+import { ladeBriefAbschnitte } from "@/lib/briefVorlagen";
 import { WelcomeLetterDocument } from "./welcomeLetterDocument";
 import type { FirmaBriefData } from "./letterLayout";
 
@@ -79,6 +80,7 @@ export async function renderWelcomeLetterPdf(params: {
   const anrede = anredeSatz(mietpartei);
 
   const loginUrl = `${await getAppBaseUrl()}/login`;
+  const abschnitte = await ladeBriefAbschnitte("willkommen");
 
   return renderToBuffer(
     <WelcomeLetterDocument
@@ -94,6 +96,7 @@ export async function renderWelcomeLetterPdf(params: {
       mietpartei={{ einzugsdatum: mietpartei.einzugsdatum }}
       konditionen={{ arbeitspreisBrutto, grundpreisBrutto, abschlagBrutto }}
       zugang={{ loginUrl, benutzername: params.benutzername, passwort: params.passwort }}
+      abschnitte={abschnitte}
     />,
   );
 }

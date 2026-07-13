@@ -5,6 +5,7 @@ import {
   setMietparteiStatusAction,
   uploadDokumentAction,
   deleteDokumentAction,
+  setSignierteVersionAction,
   type OnboardingState,
 } from "../actions";
 
@@ -12,6 +13,21 @@ const initialState: OnboardingState = {};
 
 type Status = "INTERESSENT" | "AKTIV" | "INAKTIV";
 type DokTyp = "VERTRAG" | "SEPA" | "ANSCHREIBEN" | "SONSTIGES";
+type VertragArt = "EIGENSTAENDIG" | "ERGAENZUNG";
+
+interface VertragVersion {
+  id: string;
+  art: VertragArt;
+  version: string;
+  titel: string;
+  gueltigAb: string; // ISO
+  gueltigBis: string | null; // ISO
+}
+
+const VERTRAGSART_LABEL: Record<VertragArt, string> = {
+  EIGENSTAENDIG: "Eigenständiger Vertrag",
+  ERGAENZUNG: "Ergänzung zum Mietvertrag",
+};
 
 interface Dokument {
   id: string;
@@ -49,22 +65,91 @@ function fmtGroesse(bytes: number): string {
 export function OnboardingPanel({
   mietparteiId,
   status,
+  vertragsart,
+  signierteVersionId,
+  vertragVersionen,
   dokumente,
 }: {
   mietparteiId: string;
   status: Status;
+  vertragsart: VertragArt | null;
+  signierteVersionId: string | null;
+  vertragVersionen: VertragVersion[];
   dokumente: Dokument[];
 }) {
   const [statusState, statusAction, statusPending] = useActionState(setMietparteiStatusAction, initialState);
   const [uploadState, uploadAction, uploadPending] = useActionState(uploadDokumentAction, initialState);
   const [deleteState, deleteAction, deletePending] = useActionState(deleteDokumentAction, initialState);
+  const [versionState, versionAction, versionPending] = useActionState(setSignierteVersionAction, initialState);
 
   const andereStatus = (["INTERESSENT", "AKTIV", "INAKTIV"] as Status[]).filter((s) => s !== status);
 
+  // Versionen der gewählten Vertragsart (für die Auswahl der unterschriebenen Version).
+  const versionenDerArt = vertragsart ? vertragVersionen.filter((v) => v.art === vertragsart) : [];
+  const aktiveVersion = versionenDerArt.find((v) => v.gueltigBis === null) ?? null;
+  const signierteVersion = vertragVersionen.find((v) => v.id === signierteVersionId) ?? null;
+
   return (
     <div>
+      {/* 0) Vertrag: Art + Version */}
+      <h3 style={{ marginTop: 0 }}>Vertrag</h3>
+      {vertragsart ? (
+        <>
+          <p style={{ marginTop: 0 }}>
+            Vertragsart: <strong>{VERTRAGSART_LABEL[vertragsart]}</strong>
+            {aktiveVersion ? (
+              <>
+                {" "}
+                · aktuell gültige Version: <strong>{aktiveVersion.version}</strong>
+              </>
+            ) : (
+              " · keine gültige Version vorhanden (bitte Texte synchronisieren)"
+            )}
+          </p>
+          <p style={{ marginTop: 0 }}>
+            Unterschriebene Version:{" "}
+            <strong>{signierteVersion ? signierteVersion.version : "— noch nicht dokumentiert —"}</strong>
+            {signierteVersion ? "" : aktiveVersion ? " (PDF nutzt die aktuell gültige Version)" : ""}
+          </p>
+          {versionState.error && <div className="form-error">{versionState.error}</div>}
+          {versionState.success && (
+            <div className="form-notice" role="status">
+              {versionState.success}
+            </div>
+          )}
+          <form action={versionAction} style={{ display: "flex", gap: "0.6rem", alignItems: "flex-end", flexWrap: "wrap" }}>
+            <input type="hidden" name="mietparteiId" value={mietparteiId} />
+            <div className="field" style={{ margin: 0 }}>
+              <label htmlFor="vertragVersionId">Unterschriebene Version dokumentieren</label>
+              <select
+                id="vertragVersionId"
+                name="vertragVersionId"
+                className="select-inline"
+                defaultValue={signierteVersionId ?? ""}
+              >
+                <option value="">— keine —</option>
+                {versionenDerArt.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    Version {v.version}
+                    {v.gueltigBis === null ? " (aktuell)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button className="btn-small" type="submit" disabled={versionPending}>
+              {versionPending ? "…" : "Speichern"}
+            </button>
+          </form>
+        </>
+      ) : (
+        <p style={{ marginTop: 0, color: "var(--color-muted)" }}>
+          Noch keine Vertragsart gewählt. Bitte oben in den Stammdaten festlegen (eigenständiger Vertrag oder
+          Ergänzung zum Mietvertrag).
+        </p>
+      )}
+
       {/* 1) PDF-Briefe erzeugen */}
-      <h3 style={{ marginTop: 0 }}>Onboarding-Unterlagen (PDF)</h3>
+      <h3 style={{ marginTop: "1.5rem" }}>Onboarding-Unterlagen (PDF)</h3>
       <p style={{ fontSize: "0.85rem", color: "var(--color-muted)", marginTop: 0 }}>
         Werden bei jedem Abruf frisch aus den aktuellen Stammdaten erzeugt.
       </p>

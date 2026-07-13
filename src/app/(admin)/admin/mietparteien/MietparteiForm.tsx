@@ -40,6 +40,7 @@ interface MietparteiFormProps {
     grundversorgerTarif: string | null;
     grundversorgerGrundpreisBrutto: number | null;
     grundversorgerArbeitspreisBrutto: number | null;
+    vertragsart: "EIGENSTAENDIG" | "ERGAENZUNG" | null;
   };
 }
 
@@ -212,6 +213,19 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
             <option value="INTERESSENT">Interessent</option>
             <option value="AKTIV">Aktiv</option>
             <option value="INAKTIV">Inaktiv</option>
+          </select>
+        </div>
+        <div className="field">
+          <label htmlFor="vertragsart">Vertragsart</label>
+          <select
+            id="vertragsart"
+            name="vertragsart"
+            className="select-inline"
+            defaultValue={val("vertragsart", mietpartei?.vertragsart ?? "")}
+          >
+            <option value="">— noch offen —</option>
+            <option value="EIGENSTAENDIG">Eigenständiger Vertrag</option>
+            <option value="ERGAENZUNG">Ergänzung zum Mietvertrag</option>
           </select>
         </div>
       </div>

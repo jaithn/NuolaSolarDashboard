@@ -28,6 +28,10 @@ export HOME=/tmp
 # --accept-data-loss; bricht bei potenziell destruktiven Aenderungen ab).
 ./node_modules/.bin/prisma db push --skip-generate
 
+# Vertrags-/Brieftexte aus dem "Dokumente"-Ordner in die DB einlesen (idempotent).
+# Schlaegt der Sync fehl, soll der Container trotzdem starten (|| true).
+./node_modules/.bin/tsx scripts/sync-dokumente.ts || true
+
 # Ein Image, ein Container: Web-Server und Shelly-Polling-Worker laufen
 # gemeinsam. Stirbt einer der beiden Prozesse, beendet sich der Container
 # (restart: unless-stopped startet dann beide neu). POSIX-sh-kompatibel.

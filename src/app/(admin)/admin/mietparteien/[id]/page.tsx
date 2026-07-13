@@ -29,6 +29,10 @@ export default async function MietparteiDetailPage({ params }: { params: Promise
     orderBy: { hochgeladenAm: "desc" },
   });
 
+  const vertragVersionen = await prisma.vertragVersion.findMany({
+    orderBy: [{ art: "asc" }, { gueltigAb: "desc" }],
+  });
+
   // Historie der Jahresverbraeuche: nur FREIGEGEBENE/VERSENDETE (also
   // freigegebene) Rechnungen - Entwuerfe und Stornos bleiben aussen vor.
   const freigegebeneRechnungen = await prisma.rechnung.findMany({
@@ -139,6 +143,16 @@ export default async function MietparteiDetailPage({ params }: { params: Promise
         <OnboardingPanel
           mietparteiId={mietpartei.id}
           status={mietpartei.status}
+          vertragsart={mietpartei.vertragsart}
+          signierteVersionId={mietpartei.vertragVersionId}
+          vertragVersionen={vertragVersionen.map((v) => ({
+            id: v.id,
+            art: v.art,
+            version: v.version,
+            titel: v.titel,
+            gueltigAb: v.gueltigAb.toISOString(),
+            gueltigBis: v.gueltigBis ? v.gueltigBis.toISOString() : null,
+          }))}
           dokumente={dokumente.map((d) => ({
             id: d.id,
             typ: d.typ,
