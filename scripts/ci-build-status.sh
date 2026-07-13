@@ -42,7 +42,8 @@ fi
 AUTH=()
 TOKEN="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
 [ -n "$TOKEN" ] && AUTH=(-H "Authorization: Bearer $TOKEN")
-api() { curl -sSL -H "Accept: application/vnd.github+json" "${AUTH[@]}" "$@"; }
+# ${AUTH[@]+"${AUTH[@]}"}: leeres Array unter `set -u` (macOS bash 3.2) sicher expandieren.
+api() { curl -sSL -H "Accept: application/vnd.github+json" ${AUTH[@]+"${AUTH[@]}"} "$@"; }
 
 # "id status conclusion" des neuesten Laufs für diesen Commit (leer, falls keiner)
 run_line() {
