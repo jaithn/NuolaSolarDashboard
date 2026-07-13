@@ -18,6 +18,7 @@ export function EditObjektForm({
   vermieterOrt,
   bearbeiterName,
   geplanterLiefertermin,
+  hatWaermepumpe,
 }: {
   id: string;
   name: string;
@@ -31,6 +32,7 @@ export function EditObjektForm({
   vermieterOrt: string;
   bearbeiterName: string | null;
   geplanterLiefertermin: string; // YYYY-MM-DD oder ""
+  hatWaermepumpe: boolean;
 }) {
   const [state, formAction, pending] = useActionState(updateObjektAction, initialState);
   const [modus, setModus] = useState<"PRO_OBJEKT" | "PRO_EINHEIT">(vermieterModus);
@@ -64,6 +66,13 @@ export function EditObjektForm({
           <label htmlFor="geplanterLiefertermin">Geplanter Liefertermin</label>
           <input id="geplanterLiefertermin" name="geplanterLiefertermin" type="date" defaultValue={geplanterLiefertermin} />
         </div>
+      </div>
+
+      <div className="field">
+        <label>
+          <input type="checkbox" name="hatWaermepumpe" defaultChecked={hatWaermepumpe} /> Im Haus wird eine Wärmepumpe
+          genutzt
+        </label>
       </div>
 
       <div className="field">

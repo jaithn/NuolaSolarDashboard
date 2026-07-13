@@ -46,6 +46,7 @@ export default async function ObjektDetailPage({
           vermieterOrt={objekt.vermieterOrt}
           bearbeiterName={objekt.bearbeiterName}
           geplanterLiefertermin={objekt.geplanterLiefertermin ? objekt.geplanterLiefertermin.toISOString().slice(0, 10) : ""}
+          hatWaermepumpe={objekt.hatWaermepumpe}
         />
       </div>
 

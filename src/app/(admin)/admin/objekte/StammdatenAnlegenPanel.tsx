@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { NewObjektForm } from "./NewObjektForm";
 import { GeraetForm } from "../geraete/GeraetForm";
+import { EinheitTypFeld, type EinheitTyp } from "./EinheitTypFeld";
 import { createEinheitAction, type ObjektFormState } from "./actions";
 
 interface ObjektOption {
@@ -81,8 +82,10 @@ export function StammdatenAnlegenPanel({ objekte }: { objekte: ObjektOption[] })
 function NewEinheitMitAuswahl({ objekte }: { objekte: ObjektOption[] }) {
   const [state, formAction, pending] = useActionState(createEinheitAction, initialState);
   const [objektId, setObjektId] = useState(objekte[0]?.id ?? "");
-  // Vermieter-Felder nur zeigen, wenn das gewählte Objekt „pro Wohneinheit" ist.
+  const [typ, setTyp] = useState<EinheitTyp>("WOHNEINHEIT");
+  // Vermieter-Felder nur bei echten Wohneinheiten in „pro Wohneinheit"-Objekten.
   const vermieterProEinheit = objekte.find((o) => o.id === objektId)?.vermieterProEinheit ?? false;
+  const zeigeVermieter = vermieterProEinheit && typ === "WOHNEINHEIT";
 
   return (
     <form action={formAction}>
@@ -109,7 +112,8 @@ function NewEinheitMitAuswahl({ objekte }: { objekte: ObjektOption[] }) {
           <label htmlFor="einheit-bezeichnung">Bezeichnung</label>
           <input id="einheit-bezeichnung" name="bezeichnung" type="text" required placeholder="Wohnung 1.OG links" />
         </div>
-        {vermieterProEinheit && (
+        <EinheitTypFeld typ={typ} onChange={setTyp} idPrefix="einheit-" />
+        {zeigeVermieter && (
           <>
             <div className="field">
               <label htmlFor="einheit-vermieterName">Vermieter:in (Name)</label>

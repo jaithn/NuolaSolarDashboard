@@ -1,13 +1,15 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { updateEinheitAction, type ObjektFormState } from "../../objekte/actions";
+import { EinheitTypFeld, type EinheitTyp } from "../../objekte/EinheitTypFeld";
 
 const initialState: ObjektFormState = {};
 
 export function EditEinheitForm({
   id,
   bezeichnung,
+  typ: typInitial,
   vermieterProEinheit,
   vermieterName,
   vermieterAnschrift,
@@ -16,6 +18,7 @@ export function EditEinheitForm({
 }: {
   id: string;
   bezeichnung: string;
+  typ: EinheitTyp;
   vermieterProEinheit: boolean;
   vermieterName: string | null;
   vermieterAnschrift: string | null;
@@ -23,6 +26,8 @@ export function EditEinheitForm({
   vermieterOrt: string;
 }) {
   const [state, formAction, pending] = useActionState(updateEinheitAction, initialState);
+  const [typ, setTyp] = useState<EinheitTyp>(typInitial);
+  const zeigeVermieter = vermieterProEinheit && typ === "WOHNEINHEIT";
 
   return (
     <form action={formAction}>
@@ -33,7 +38,8 @@ export function EditEinheitForm({
           <label htmlFor="bezeichnung">Bezeichnung der Einheit</label>
           <input id="bezeichnung" name="bezeichnung" type="text" required defaultValue={bezeichnung} />
         </div>
-        {vermieterProEinheit && (
+        <EinheitTypFeld typ={typ} onChange={setTyp} />
+        {zeigeVermieter && (
           <>
             <div className="field">
               <label htmlFor="vermieterName">Vermieter:in (Name)</label>
@@ -59,7 +65,7 @@ export function EditEinheitForm({
           </>
         )}
       </div>
-      {vermieterProEinheit && (
+      {zeigeVermieter && (
         <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", marginTop: 0 }}>
           Vermieter:in dieser Wohneinheit (für die Ergänzung zum Mietvertrag).
         </p>

@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { createEinheitAction } from "../actions";
 import type { ObjektFormState } from "../actions";
+import { EinheitTypFeld } from "../EinheitTypFeld";
 
 const initialState: ObjektFormState = {};
 
@@ -14,6 +15,8 @@ export function NewEinheitForm({
   vermieterProEinheit: boolean;
 }) {
   const [state, formAction, pending] = useActionState(createEinheitAction, initialState);
+  const [typ, setTyp] = useState<"WOHNEINHEIT" | "ALLGEMEINSTROM" | "WAERMEPUMPE">("WOHNEINHEIT");
+  const zeigeVermieter = vermieterProEinheit && typ === "WOHNEINHEIT";
 
   return (
     <form action={formAction}>
@@ -24,7 +27,8 @@ export function NewEinheitForm({
           <label htmlFor="bezeichnung">Bezeichnung</label>
           <input id="bezeichnung" name="bezeichnung" type="text" required placeholder="Wohnung 1.OG links" />
         </div>
-        {vermieterProEinheit && (
+        <EinheitTypFeld typ={typ} onChange={setTyp} />
+        {zeigeVermieter && (
           <>
             <div className="field">
               <label htmlFor="vermieterName">Vermieter:in (Name)</label>

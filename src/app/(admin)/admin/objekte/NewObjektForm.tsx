@@ -40,6 +40,16 @@ export function NewObjektForm() {
       </div>
 
       <div className="field">
+        <label>
+          <input type="checkbox" name="hatWaermepumpe" /> Im Haus wird eine Wärmepumpe genutzt
+        </label>
+        <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", margin: "0.25rem 0 0" }}>
+          Falls ja, später eine Einheit vom Typ „Wärmepumpe" anlegen – ihr Verbrauch wird in der
+          Jahresrechnung getrennt vom Allgemeinstrom ausgewiesen.
+        </p>
+      </div>
+
+      <div className="field">
         <label htmlFor="vermieterModus">Vermieter:in (für die Ergänzung zum Mietvertrag)</label>
         <select
           id="vermieterModus"

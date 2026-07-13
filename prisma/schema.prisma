@@ -40,6 +40,10 @@ model Objekt {
   // Geplanter Beginn der Stromlieferung fuer dieses Objekt (wird im Onboarding-
   // Anschreiben als geplanter Liefertermin genannt).
   geplanterLiefertermin DateTime?
+  // Wird im Haus eine Waermepumpe genutzt? (Beim Anlegen abgefragt.) Wenn ja,
+  // sollte eine Einheit vom Typ WAERMEPUMPE angelegt werden, damit deren
+  // Verbrauch in der Jahresrechnung getrennt vom Allgemeinstrom ausgewiesen wird.
+  hatWaermepumpe Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -53,10 +57,22 @@ enum VermieterModus {
   PRO_EINHEIT
 }
 
+// Art einer "Einheit". Neben echten Wohneinheiten gibt es Sonder-Einheiten fuer
+// den Allgemeinstrom (Gemeinschaftsstrom, Partei i.d.R. der Vermieter) und die
+// Waermepumpe. Sonder-Einheiten werden keiner Wohnung zugeordnet, haben keine
+// Ergaenzung zum Mietvertrag und ihr Verbrauch wird in der Jahresrechnung
+// getrennt ausgewiesen (Allgemeinstrom vs. Waermepumpe).
+enum EinheitTyp {
+  WOHNEINHEIT
+  ALLGEMEINSTROM
+  WAERMEPUMPE
+}
+
 model Einheit {
   id        String   @id @default(cuid())
   objektId  String
   bezeichnung String
+  typ         EinheitTyp @default(WOHNEINHEIT)
   // Vermieter dieser Wohneinheit - nur verwendet, wenn das Objekt
   // vermieterModus = PRO_EINHEIT hat (Objekt aus mehreren Eigentumswohnungen).
   // vermieterAnschrift = Strasse & Hausnummer; PLZ/Ort separat.
