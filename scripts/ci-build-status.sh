@@ -12,7 +12,8 @@ set -euo pipefail
 
 REPO="jaithn/NuolaSolarDashboard"
 WORKFLOW="docker-publish.yml"
-SHA="${1:-$(git rev-parse HEAD)}"
+# Vollen Commit-SHA verwenden: der API-Filter head_sha akzeptiert keine Kurzform.
+SHA="$(git rev-parse "${1:-HEAD}" 2>/dev/null || echo "${1:-}")"
 TIMEOUT="${CI_TIMEOUT:-1500}" # max. Wartezeit in Sekunden
 API="https://api.github.com/repos/$REPO"
 RUN_URL_BASE="https://github.com/$REPO/actions/runs"
