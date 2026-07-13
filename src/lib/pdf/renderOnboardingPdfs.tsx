@@ -5,6 +5,7 @@ import { berechneBrutto } from "@/lib/steuer";
 import { mietparteiAnzeigeName, anredeSatz, anredeKurz } from "@/lib/mietpartei";
 import { versionFuerMietpartei } from "@/lib/vertrag";
 import { ladeBriefAbschnitte } from "@/lib/briefVorlagen";
+import { mandatsreferenz } from "@/lib/sepa";
 import type { FirmaBriefData, EmpfaengerData } from "./letterLayout";
 import { OnboardingLetterDocument, type OnboardingVergleich } from "./onboardingLetterDocument";
 import { ContractDocument, type ContractParty, type VertragVariant } from "./contractDocument";
@@ -94,6 +95,10 @@ async function ladeBasis(mietparteiId: string) {
     displayName,
     empfaenger,
     objekt,
+    // Briefkopf-Zusatz + SEPA-Angaben (für alle Onboarding-Dokumente).
+    bearbeiterName: objekt.bearbeiterName,
+    kundennummer: mietpartei.kundennummer,
+    glaeubigerId: firmaRaw.glaeubigerId,
     konditionen: {
       arbeitspreisNetto: mietpartei.arbeitspreisNetto,
       arbeitspreisBrutto,
@@ -110,7 +115,8 @@ export async function renderOnboardingPdf(
   dok: OnboardingDokumentTyp,
 ): Promise<Buffer> {
   const basis = await ladeBasis(mietparteiId);
-  const { firma, logoAbsolutePath, empfaenger, mietpartei, konditionen, objekt, displayName } = basis;
+  const { firma, logoAbsolutePath, empfaenger, mietpartei, konditionen, objekt, displayName, bearbeiterName, kundennummer, glaeubigerId } =
+    basis;
 
   if (dok === "anschreiben") {
     const abschnitte = await ladeBriefAbschnitte("anschreiben");
@@ -132,6 +138,8 @@ export async function renderOnboardingPdf(
         firma={firma}
         logoPfad={logoAbsolutePath}
         empfaenger={empfaenger}
+        bearbeiterName={bearbeiterName}
+        kundennummer={kundennummer}
         anredeSatz={anredeSatz(mietpartei)}
         beginn={mietpartei.einzugsdatum}
         konditionen={{
@@ -197,6 +205,8 @@ export async function renderOnboardingPdf(
         variant={variant}
         firma={firma}
         logoPfad={logoAbsolutePath}
+        bearbeiterName={bearbeiterName}
+        kundennummer={kundennummer}
         titel={version.titel}
         versionLabel={`Version ${version.version}`}
         inhaltMd={version.inhaltMd}
@@ -215,7 +225,7 @@ export async function renderOnboardingPdf(
           arbeitspreisBrutto: konditionen.arbeitspreisBrutto,
           abschlagBrutto: konditionen.abschlagBrutto,
         }}
-        unterschriftsort={objekt.ort || ""}
+        unterschriftsort={firma.ort || ""}
       />,
     );
   }
@@ -226,7 +236,11 @@ export async function renderOnboardingPdf(
       firma={firma}
       logoPfad={logoAbsolutePath}
       empfaenger={empfaenger}
+      bearbeiterName={bearbeiterName}
+      kundennummer={kundennummer}
       zahlungspflichtiger={displayName}
+      glaeubigerId={glaeubigerId}
+      mandatsreferenz={mandatsreferenz(kundennummer)}
       abschnitte={abschnitte}
     />,
   );

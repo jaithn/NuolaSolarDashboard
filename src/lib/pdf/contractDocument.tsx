@@ -31,6 +31,9 @@ export interface ContractData {
   variant: VertragVariant;
   firma: FirmaBriefData;
   logoPfad: string | null;
+  // Briefkopf-Zusatz (nur eigenständiger Vertrag mit Nuola-Layout).
+  bearbeiterName?: string | null;
+  kundennummer?: number | null;
   titel: string;
   versionLabel: string; // z.B. "Version 1.0"
   inhaltMd: string; // Vertragstext (Markdown)
@@ -176,6 +179,8 @@ export function ContractDocument(data: ContractData) {
     beginn,
     konditionen,
     unterschriftsort,
+    bearbeiterName,
+    kundennummer,
   } = data;
   const plain = variant === "ergaenzung";
 
@@ -226,7 +231,7 @@ export function ContractDocument(data: ContractData) {
     <Document>
       <Page size="A4" style={letterStyles.page}>
         <Falzmarken />
-        <LetterHeader logoPfad={logoPfad} firma={firma} />
+        <LetterHeader logoPfad={logoPfad} firma={firma} zusatz={{ bearbeiterName, kundennummer }} />
         <Text style={[s.docTitle, s.docTitleGold]}>{titel}</Text>
         <Text style={s.docSubtitle}>
           {versionLabel} · für die Vollversorgung im gebäudeeigenen Stromkonzept (PV-Strom im Hauskonzept)

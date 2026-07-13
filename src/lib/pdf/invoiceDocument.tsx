@@ -4,11 +4,13 @@ import {
   LetterHeader,
   EmpfaengerAdresse,
   LetterFooter,
+  OrtDatumZeile,
   Falzmarken,
   GOLD,
   type FirmaBriefData,
   type EmpfaengerData,
 } from "./letterLayout";
+import { fmtDate } from "./format";
 
 export interface InvoicePositionData {
   bezeichnung: string;
@@ -22,6 +24,8 @@ export interface InvoiceDocumentData {
   firma: FirmaBriefData;
   logoPfad: string | null;
   empfaenger: EmpfaengerData;
+  bearbeiterName?: string | null;
+  kundennummer?: number | null;
   anredeSatz: string;
   rechnung: {
     rechnungsnummer: string;
@@ -58,14 +62,17 @@ const styles = StyleSheet.create({
 function fmt(n: number): string {
   return n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-function fmtDate(d: Date): string {
-  return d.toLocaleDateString("de-DE");
-}
-function fmtDateTime(d: Date): string {
-  return d.toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
-}
 
-export function InvoiceDocument({ firma, logoPfad, empfaenger, anredeSatz, rechnung, positionen }: InvoiceDocumentData) {
+export function InvoiceDocument({
+  firma,
+  logoPfad,
+  empfaenger,
+  bearbeiterName,
+  kundennummer,
+  anredeSatz,
+  rechnung,
+  positionen,
+}: InvoiceDocumentData) {
   const steuerGruppen = new Map<number, { netto: number; steuer: number }>();
   for (const p of positionen) {
     const bucket = steuerGruppen.get(p.steuersatzProzent) ?? { netto: 0, steuer: 0 };
@@ -80,18 +87,16 @@ export function InvoiceDocument({ firma, logoPfad, empfaenger, anredeSatz, rechn
     <Document>
       <Page size="A4" style={letterStyles.page}>
         <Falzmarken />
-        <LetterHeader logoPfad={logoPfad} firma={firma} />
-        <EmpfaengerAdresse empfaenger={empfaenger} />
+        <LetterHeader logoPfad={logoPfad} firma={firma} zusatz={{ bearbeiterName, kundennummer }} />
+        <EmpfaengerAdresse empfaenger={empfaenger} firma={firma} />
 
         <Text style={letterStyles.title}>
           {typLabel} {rechnung.rechnungsnummer}
         </Text>
+        <OrtDatumZeile ort={firma.ort} datum={rechnung.ausstellungsdatum} />
 
         <View style={styles.metaRow}>
-          <Text>Ausstellungsdatum: {fmtDate(rechnung.ausstellungsdatum)}</Text>
-          <Text>
-            Leistungszeitraum: {fmtDate(rechnung.zeitraumVon)} – {fmtDate(rechnung.zeitraumBis)}
-          </Text>
+          <Text>Leistungszeitraum: {fmtDate(rechnung.zeitraumVon)} – {fmtDate(rechnung.zeitraumBis)}</Text>
         </View>
 
         <View style={letterStyles.section}>
@@ -106,11 +111,11 @@ export function InvoiceDocument({ firma, logoPfad, empfaenger, anredeSatz, rechn
         <View style={letterStyles.goldBox}>
           <Text style={letterStyles.boxTitle}>Zählerstände</Text>
           <View style={letterStyles.row}>
-            <Text style={letterStyles.label}>Anfangszählerstand ({fmtDateTime(rechnung.zeitraumVon)})</Text>
+            <Text style={letterStyles.label}>Anfangszählerstand ({fmtDate(rechnung.zeitraumVon)})</Text>
             <Text style={letterStyles.value}>{fmt(rechnung.anfangszaehlerstandKwh)} kWh</Text>
           </View>
           <View style={letterStyles.row}>
-            <Text style={letterStyles.label}>Endzählerstand ({fmtDateTime(rechnung.zeitraumBis)})</Text>
+            <Text style={letterStyles.label}>Endzählerstand ({fmtDate(rechnung.zeitraumBis)})</Text>
             <Text style={letterStyles.value}>{fmt(rechnung.endzaehlerstandKwh)} kWh</Text>
           </View>
           <View style={letterStyles.row}>

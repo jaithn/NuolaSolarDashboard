@@ -4,6 +4,7 @@ import {
   LetterHeader,
   EmpfaengerAdresse,
   LetterFooter,
+  OrtDatumZeile,
   Falzmarken,
   GOLD,
   type FirmaBriefData,
@@ -25,6 +26,8 @@ export interface OnboardingLetterData {
   firma: FirmaBriefData;
   logoPfad: string | null;
   empfaenger: EmpfaengerData;
+  bearbeiterName?: string | null;
+  kundennummer?: number | null;
   anredeSatz: string;
   beginn: Date;
   konditionen: {
@@ -53,6 +56,8 @@ export function OnboardingLetterDocument({
   firma,
   logoPfad,
   empfaenger,
+  bearbeiterName,
+  kundennummer,
   anredeSatz,
   beginn,
   konditionen,
@@ -70,10 +75,11 @@ export function OnboardingLetterDocument({
     <Document>
       <Page size="A4" style={letterStyles.page}>
         <Falzmarken />
-        <LetterHeader logoPfad={logoPfad} firma={firma} />
-        <EmpfaengerAdresse empfaenger={empfaenger} />
+        <LetterHeader logoPfad={logoPfad} firma={firma} zusatz={{ bearbeiterName, kundennummer }} />
+        <EmpfaengerAdresse empfaenger={empfaenger} firma={firma} />
 
         <Text style={letterStyles.title}>{t("titel", "Ihr Strom aus der Gebäudestromanlage")}</Text>
+        <OrtDatumZeile ort={firma.ort} datum={new Date()} />
 
         <View style={letterStyles.section}>
           <Text>{anredeSatz},</Text>
@@ -86,7 +92,7 @@ export function OnboardingLetterDocument({
         </View>
 
         <View style={letterStyles.goldFillBox}>
-          <Text style={letterStyles.boxTitle}>{t("konditionen-titel", `Ihre Konditionen bei der ${firma.name}`)}</Text>
+          <Text style={letterStyles.boxTitle}>{t("konditionen-titel", "Ihre Konditionen bei Nuola Solar")}</Text>
           <View style={letterStyles.row}>
             <Text style={letterStyles.label}>Beginn der Stromlieferung</Text>
             <Text style={letterStyles.value}>{fmtDate(beginn)}</Text>

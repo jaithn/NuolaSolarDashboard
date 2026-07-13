@@ -92,6 +92,8 @@ export async function renderWelcomeLetterPdf(params: {
         strasse: objekt.adresse || null,
         plzOrt: `${objekt.plz} ${objekt.ort}`.trim() || null,
       }}
+      bearbeiterName={objekt.bearbeiterName}
+      kundennummer={mietpartei.kundennummer}
       anredeSatz={anrede}
       mietpartei={{ einzugsdatum: mietpartei.einzugsdatum }}
       konditionen={{ arbeitspreisBrutto, grundpreisBrutto, abschlagBrutto }}

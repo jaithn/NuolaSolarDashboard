@@ -4,6 +4,7 @@ import {
   LetterHeader,
   EmpfaengerAdresse,
   LetterFooter,
+  OrtDatumZeile,
   Falzmarken,
   INK,
   type FirmaBriefData,
@@ -15,8 +16,15 @@ export interface SepaMandateData {
   firma: FirmaBriefData;
   logoPfad: string | null;
   empfaenger: EmpfaengerData;
+  bearbeiterName?: string | null;
+  kundennummer?: number | null;
   // Name des Zahlungspflichtigen (Mietende) für den Mandatstext.
   zahlungspflichtiger: string;
+  // SEPA-Gläubiger-ID (Firma) und Mandatsreferenz (aus Kundennummer). Wenn
+  // beide vorhanden, werden sie direkt eingedruckt und der Ergänzungshinweis
+  // entfällt; sonst bleibt eine Ausfülllinie stehen.
+  glaeubigerId?: string | null;
+  mandatsreferenz?: string | null;
   // Editierbare Textabschnitte aus der Brief-Vorlage (leer -> Standardtexte).
   abschnitte: Map<string, string>;
 }
@@ -48,20 +56,27 @@ export function SepaMandateDocument({
   firma,
   logoPfad,
   empfaenger,
+  bearbeiterName,
+  kundennummer,
   zahlungspflichtiger,
+  glaeubigerId,
+  mandatsreferenz,
   abschnitte,
 }: SepaMandateData) {
   const glaeubiger = [firma.name, firma.anschrift, `${firma.plz} ${firma.ort}`.trim()].filter(Boolean).join(", ");
   const t = (key: string, standard: string) => abschnitt(abschnitte, key, standard, { firma: firma.name });
+  const platzhalter = "…………………………………………";
+  const beideVorhanden = Boolean(glaeubigerId && mandatsreferenz);
 
   return (
     <Document>
       <Page size="A4" style={letterStyles.page}>
         <Falzmarken />
-        <LetterHeader logoPfad={logoPfad} firma={firma} />
-        <EmpfaengerAdresse empfaenger={empfaenger} />
+        <LetterHeader logoPfad={logoPfad} firma={firma} zusatz={{ bearbeiterName, kundennummer }} />
+        <EmpfaengerAdresse empfaenger={empfaenger} firma={firma} />
 
         <Text style={letterStyles.title}>{t("titel", "SEPA-Lastschriftmandat")}</Text>
+        <OrtDatumZeile ort={firma.ort} datum={new Date()} />
         <Text style={s.intro}>
           {t(
             "einleitung",
@@ -77,15 +92,17 @@ export function SepaMandateDocument({
           <Text style={{ fontSize: 9, color: "#334155", marginBottom: 6 }}>{glaeubiger}</Text>
           <View style={letterStyles.row}>
             <Text style={letterStyles.label}>Gläubiger-Identifikationsnummer</Text>
-            <Text style={letterStyles.value}>…………………………………………</Text>
+            <Text style={letterStyles.value}>{glaeubigerId || platzhalter}</Text>
           </View>
           <View style={letterStyles.row}>
             <Text style={letterStyles.label}>Mandatsreferenz</Text>
-            <Text style={letterStyles.value}>…………………………………………</Text>
+            <Text style={letterStyles.value}>{mandatsreferenz || platzhalter}</Text>
           </View>
-          <Text style={{ fontSize: 8, color: "#94a3b8", marginTop: 4 }}>
-            (Gläubiger-ID und Mandatsreferenz werden von der {firma.name} ergänzt.)
-          </Text>
+          {!beideVorhanden && (
+            <Text style={{ fontSize: 8, color: "#94a3b8", marginTop: 4 }}>
+              (Gläubiger-ID und Mandatsreferenz werden von der {firma.name} ergänzt.)
+            </Text>
+          )}
         </View>
 
         <Text style={{ ...letterStyles.boxTitle, marginBottom: 8 }}>

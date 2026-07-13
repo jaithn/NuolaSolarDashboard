@@ -12,9 +12,11 @@ export function fmtPreisKwh(n: number): string {
   return n.toLocaleString("de-DE", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
 }
 
-/** Datum im deutschen Format (TT.MM.JJJJ). */
+/** Datum strikt als TT.MM.JJJJ (zweistellig, mit fuehrenden Nullen). */
 export function fmtDate(d: Date): string {
-  return d.toLocaleDateString("de-DE");
+  const tag = String(d.getDate()).padStart(2, "0");
+  const monat = String(d.getMonth() + 1).padStart(2, "0");
+  return `${tag}.${monat}.${d.getFullYear()}`;
 }
 
 /** Prozentwert mit einer Nachkommastelle (z.B. "12,5"). */

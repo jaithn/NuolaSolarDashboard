@@ -4,16 +4,21 @@ import {
   LetterHeader,
   EmpfaengerAdresse,
   LetterFooter,
+  OrtDatumZeile,
   Falzmarken,
   type FirmaBriefData,
   type EmpfaengerData,
 } from "./letterLayout";
+import { fmtEuro, fmtDate } from "./format";
 import { abschnitt, abschnittZeilen } from "@/lib/dokumenteVorlagen";
 
 export interface WelcomeLetterData {
   firma: FirmaBriefData;
   logoPfad: string | null;
   empfaenger: EmpfaengerData;
+  // Briefkopf-Zusatz (rechts oben bei der Firmenanschrift).
+  bearbeiterName?: string | null;
+  kundennummer?: number | null;
   // Vollständige Briefanrede, z.B. "Sehr geehrte Familie Yilmaz" (mit Fallback).
   anredeSatz: string;
   mietpartei: {
@@ -33,17 +38,12 @@ export interface WelcomeLetterData {
   abschnitte: Map<string, string>;
 }
 
-function fmtEuro(n: number): string {
-  return n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-function fmtDate(d: Date): string {
-  return d.toLocaleDateString("de-DE");
-}
-
 export function WelcomeLetterDocument({
   firma,
   logoPfad,
   empfaenger,
+  bearbeiterName,
+  kundennummer,
   anredeSatz,
   mietpartei,
   konditionen,
@@ -55,10 +55,11 @@ export function WelcomeLetterDocument({
     <Document>
       <Page size="A4" style={letterStyles.page}>
         <Falzmarken />
-        <LetterHeader logoPfad={logoPfad} firma={firma} />
-        <EmpfaengerAdresse empfaenger={empfaenger} />
+        <LetterHeader logoPfad={logoPfad} firma={firma} zusatz={{ bearbeiterName, kundennummer }} />
+        <EmpfaengerAdresse empfaenger={empfaenger} firma={firma} />
 
         <Text style={letterStyles.title}>{t("titel", "Willkommen im Nuola Energy Dashboard")}</Text>
+        <OrtDatumZeile ort={firma.ort} datum={new Date()} />
 
         <View style={letterStyles.section}>
           <Text>{anredeSatz},</Text>

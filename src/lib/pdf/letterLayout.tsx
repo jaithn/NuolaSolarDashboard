@@ -1,4 +1,5 @@
 import { Text, View, StyleSheet, Image } from "@react-pdf/renderer";
+import { fmtDate } from "./format";
 
 // Gemeinsames Layout aller Nuola-Briefe (Willkommensbrief, Rechnung, künftige
 // Brief-Arten): Logo oben links, Absender oben rechts, Empfänger-Adressfeld im
@@ -30,6 +31,14 @@ export interface EmpfaengerData {
   plzOrt: string | null;
 }
 
+// Zusatzangaben der Firma im Briefkopf rechts oben (bei der Firmenanschrift):
+// Sachbearbeiter:in fuer das Objekt und Kundennummer der Mietpartei. Optional,
+// da nicht jeder Brief eine Mietpartei/ein Objekt hat.
+export interface BriefkopfZusatz {
+  bearbeiterName?: string | null;
+  kundennummer?: number | null;
+}
+
 export const letterStyles = StyleSheet.create({
   page: { paddingTop: 40, paddingBottom: 70, paddingHorizontal: 45, fontSize: 10.5, fontFamily: "Helvetica", color: INK, lineHeight: 1.5 },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", minHeight: 70 },
@@ -38,6 +47,11 @@ export const letterStyles = StyleSheet.create({
   // Empfänger-Adressfeld: so positioniert, dass es beim Falten (DIN A4, gedrittelt)
   // im Sichtfenster eines Fensterumschlags erscheint (~45 mm von oben).
   empfaengerZone: { marginTop: 18, marginBottom: 28, minHeight: 70 },
+  // Kleine Absenderzeile direkt ueber der Empfaengeranschrift - sichtbar im
+  // Fensterumschlag, damit der Absender erkennbar ist.
+  absenderMini: { fontSize: 7, color: "#64748b", marginBottom: 4, borderBottomWidth: 0.5, borderBottomColor: "#94a3b8", paddingBottom: 2 },
+  // Ort + Datum unter dem Betreff, rechtsbuendig (DIN 5008).
+  ortDatum: { fontSize: 10.5, textAlign: "right", marginBottom: 12 },
   title: { fontSize: 15, marginBottom: 10, color: GOLD, fontFamily: "Helvetica-Bold" },
   section: { marginBottom: 14 },
   goldBox: { padding: 12, borderWidth: 1, borderColor: GOLD, borderRadius: 4, marginBottom: 14 },
@@ -62,7 +76,15 @@ export function Falzmarken() {
   );
 }
 
-export function LetterHeader({ logoPfad, firma }: { logoPfad: string | null; firma: FirmaBriefData }) {
+export function LetterHeader({
+  logoPfad,
+  firma,
+  zusatz,
+}: {
+  logoPfad: string | null;
+  firma: FirmaBriefData;
+  zusatz?: BriefkopfZusatz;
+}) {
   return (
     <View style={letterStyles.headerRow}>
       {logoPfad ? <Image src={logoPfad} style={letterStyles.logo} /> : <Text>{firma.name}</Text>}
@@ -70,15 +92,26 @@ export function LetterHeader({ logoPfad, firma }: { logoPfad: string | null; fir
         <Text style={letterStyles.absender}>{firma.name}</Text>
         <Text style={letterStyles.absender}>{firma.anschrift}</Text>
         {(firma.plz || firma.ort) && <Text style={letterStyles.absender}>{`${firma.plz} ${firma.ort}`.trim()}</Text>}
+        {zusatz?.bearbeiterName ? (
+          <Text style={[letterStyles.absender, { marginTop: 4 }]}>Bearbeitung: {zusatz.bearbeiterName}</Text>
+        ) : null}
+        {zusatz?.kundennummer != null ? (
+          <Text style={letterStyles.absender}>Kundennummer: {zusatz.kundennummer}</Text>
+        ) : null}
       </View>
     </View>
   );
 }
 
-export function EmpfaengerAdresse({ empfaenger }: { empfaenger: EmpfaengerData }) {
-  const anredeName = [empfaenger.anredeKurz, empfaenger.name].filter(Boolean).join(" ");
+export function EmpfaengerAdresse({ empfaenger, firma }: { empfaenger: EmpfaengerData; firma: FirmaBriefData }) {
+  // Anrede in der Anschrift nur bei Familien ausweisen; bei Einzelpersonen und
+  // Firmen entfaellt sie (Wunsch: Anrede raus, ausser Familie).
+  const anredeInAnschrift = empfaenger.anredeKurz === "Familie" ? empfaenger.anredeKurz : "";
+  const anredeName = [anredeInAnschrift, empfaenger.name].filter(Boolean).join(" ");
+  const absenderMini = [firma.name, firma.anschrift, `${firma.plz} ${firma.ort}`.trim()].filter(Boolean).join(" · ");
   return (
     <View style={letterStyles.empfaengerZone}>
+      <Text style={letterStyles.absenderMini}>{absenderMini}</Text>
       <Text>{anredeName}</Text>
       {empfaenger.zusatz ? <Text>{empfaenger.zusatz}</Text> : null}
       {empfaenger.strasse ? <Text>{empfaenger.strasse}</Text> : null}
@@ -87,27 +120,41 @@ export function EmpfaengerAdresse({ empfaenger }: { empfaenger: EmpfaengerData }
   );
 }
 
-/** Einheitliche Fußzeile aller Briefe: Firma, Anschrift, Steuernummer, Bank, Telefon, E-Mail. */
+/** Ort der Firma + Datum, rechtsbuendig - unter dem Betreff einzusetzen. */
+export function OrtDatumZeile({ ort, datum }: { ort: string; datum: Date }) {
+  const text = ort ? `${ort}, den ${fmtDate(datum)}` : fmtDate(datum);
+  return <Text style={letterStyles.ortDatum}>{text}</Text>;
+}
+
+/**
+ * Einheitliche Fußzeile aller Briefe, drei Zeilen:
+ *  1) Firma · Straße · PLZ Ort (Trennung durchgehend mit „·", kein Komma)
+ *  2) Telefon · Webseite · E-Mail
+ *  3) Steuernummer · IBAN · Bankname (in dieser Reihenfolge; USt-IdNr. angehängt)
+ */
 export function LetterFooter({ firma }: { firma: FirmaBriefData }) {
-  const zeile1 = [firma.name, [firma.anschrift, `${firma.plz} ${firma.ort}`.trim()].filter(Boolean).join(", ")]
+  const zeile1 = [firma.name, firma.anschrift, `${firma.plz} ${firma.ort}`.trim()].filter(Boolean).join(" · ");
+  const zeile2 = [
+    firma.kontaktTelefon ? `Tel. ${firma.kontaktTelefon}` : null,
+    firma.webseite ? firma.webseite : null,
+    firma.kontaktEmail ? firma.kontaktEmail : null,
+  ]
     .filter(Boolean)
     .join(" · ");
-  const zeile2 = [
+  const zeile3 = [
     firma.steuernummer ? `Steuernummer ${firma.steuernummer}` : null,
-    firma.ustIdNr ? `USt-IdNr. ${firma.ustIdNr}` : null,
-    firma.bankname ? firma.bankname : null,
     firma.bankverbindung ? `IBAN ${firma.bankverbindung}` : null,
-    firma.kontaktTelefon ? `Tel. ${firma.kontaktTelefon}` : null,
-    firma.kontaktEmail ? firma.kontaktEmail : null,
-    firma.webseite ? firma.webseite : null,
+    firma.bankname ? firma.bankname : null,
+    firma.ustIdNr ? `USt-IdNr. ${firma.ustIdNr}` : null,
   ]
     .filter(Boolean)
     .join(" · ");
 
   return (
     <View style={letterStyles.footer} fixed>
-      <Text>{zeile1}</Text>
+      {zeile1 ? <Text>{zeile1}</Text> : null}
       {zeile2 ? <Text>{zeile2}</Text> : null}
+      {zeile3 ? <Text>{zeile3}</Text> : null}
     </View>
   );
 }

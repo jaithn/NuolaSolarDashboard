@@ -83,6 +83,8 @@ export async function generateAndStoreInvoicePdf(rechnungId: string): Promise<st
         strasse: objekt.adresse || null,
         plzOrt: `${objekt.plz} ${objekt.ort}`.trim() || null,
       }}
+      bearbeiterName={objekt.bearbeiterName}
+      kundennummer={mp.kundennummer}
       anredeSatz={anrede}
       // Entwuerfe haben noch keine offizielle Nummer (wird erst bei Freigabe
       // vergeben) - im PDF-Entwurf entsprechend als "ENTWURF" kennzeichnen.
