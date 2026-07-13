@@ -14,6 +14,10 @@ export function EditObjektForm({
   vermieterModus,
   vermieterName,
   vermieterAnschrift,
+  vermieterPlz,
+  vermieterOrt,
+  bearbeiterName,
+  geplanterLiefertermin,
 }: {
   id: string;
   name: string;
@@ -23,6 +27,10 @@ export function EditObjektForm({
   vermieterModus: "PRO_OBJEKT" | "PRO_EINHEIT";
   vermieterName: string | null;
   vermieterAnschrift: string | null;
+  vermieterPlz: string;
+  vermieterOrt: string;
+  bearbeiterName: string | null;
+  geplanterLiefertermin: string; // YYYY-MM-DD oder ""
 }) {
   const [state, formAction, pending] = useActionState(updateObjektAction, initialState);
   const [modus, setModus] = useState<"PRO_OBJEKT" | "PRO_EINHEIT">(vermieterModus);
@@ -48,6 +56,14 @@ export function EditObjektForm({
           <label htmlFor="ort">Ort</label>
           <input id="ort" name="ort" type="text" defaultValue={ort} required />
         </div>
+        <div className="field">
+          <label htmlFor="bearbeiterName">Bearbeiter:in (Firma)</label>
+          <input id="bearbeiterName" name="bearbeiterName" type="text" defaultValue={bearbeiterName ?? ""} />
+        </div>
+        <div className="field">
+          <label htmlFor="geplanterLiefertermin">Geplanter Liefertermin</label>
+          <input id="geplanterLiefertermin" name="geplanterLiefertermin" type="date" defaultValue={geplanterLiefertermin} />
+        </div>
       </div>
 
       <div className="field">
@@ -71,13 +87,21 @@ export function EditObjektForm({
             <input id="vermieterName" name="vermieterName" type="text" defaultValue={vermieterName ?? ""} />
           </div>
           <div className="field">
-            <label htmlFor="vermieterAnschrift">Vermieter:in (Anschrift)</label>
+            <label htmlFor="vermieterAnschrift">Vermieter:in (Straße &amp; Hausnr.)</label>
             <input
               id="vermieterAnschrift"
               name="vermieterAnschrift"
               type="text"
               defaultValue={vermieterAnschrift ?? ""}
             />
+          </div>
+          <div className="field">
+            <label htmlFor="vermieterPlz">Vermieter:in (PLZ)</label>
+            <input id="vermieterPlz" name="vermieterPlz" type="text" inputMode="numeric" defaultValue={vermieterPlz} />
+          </div>
+          <div className="field">
+            <label htmlFor="vermieterOrt">Vermieter:in (Ort)</label>
+            <input id="vermieterOrt" name="vermieterOrt" type="text" defaultValue={vermieterOrt} />
           </div>
         </div>
       ) : (

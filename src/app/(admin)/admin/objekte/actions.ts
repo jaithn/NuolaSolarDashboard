@@ -19,14 +19,28 @@ export async function createObjektAction(
   const adresse = String(formData.get("adresse") ?? "").trim();
   const plz = String(formData.get("plz") ?? "").trim();
   const ort = String(formData.get("ort") ?? "").trim();
-  const { vermieterModus, vermieterName, vermieterAnschrift } = parseVermieter(formData);
+  const { vermieterModus, vermieterName, vermieterAnschrift, vermieterPlz, vermieterOrt } = parseVermieter(formData);
+  const bearbeiterName = String(formData.get("bearbeiterName") ?? "").trim() || null;
+  const liefertermin = parseDatum(formData.get("geplanterLiefertermin"));
   if (!name || !adresse || !plz || !ort) return { error: "Bitte Name, Adresse, PLZ und Ort angeben." };
 
   await prisma.objekt.create({
-    data: { name, adresse, plz, ort, vermieterModus, vermieterName, vermieterAnschrift },
+    data: {
+      name, adresse, plz, ort,
+      vermieterModus, vermieterName, vermieterAnschrift, vermieterPlz, vermieterOrt,
+      bearbeiterName, geplanterLiefertermin: liefertermin,
+    },
   });
   revalidatePath("/admin/objekte");
   return {};
+}
+
+// Ein Datums-Formularfeld (YYYY-MM-DD) in ein Date wandeln; leer -> null.
+function parseDatum(value: FormDataEntryValue | null): Date | null {
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 // Vermieter-Angaben eines Objekts aus dem Formular lesen. Bei PRO_EINHEIT wird
@@ -35,15 +49,25 @@ function parseVermieter(formData: FormData): {
   vermieterModus: "PRO_OBJEKT" | "PRO_EINHEIT";
   vermieterName: string | null;
   vermieterAnschrift: string | null;
+  vermieterPlz: string;
+  vermieterOrt: string;
 } {
   const modusRaw = String(formData.get("vermieterModus") ?? "PRO_OBJEKT");
   const vermieterModus = modusRaw === "PRO_EINHEIT" ? "PRO_EINHEIT" : "PRO_OBJEKT";
   if (vermieterModus === "PRO_EINHEIT") {
-    return { vermieterModus, vermieterName: null, vermieterAnschrift: null };
+    return { vermieterModus, vermieterName: null, vermieterAnschrift: null, vermieterPlz: "", vermieterOrt: "" };
   }
   const vermieterName = String(formData.get("vermieterName") ?? "").trim();
   const vermieterAnschrift = String(formData.get("vermieterAnschrift") ?? "").trim();
-  return { vermieterModus, vermieterName: vermieterName || null, vermieterAnschrift: vermieterAnschrift || null };
+  const vermieterPlz = String(formData.get("vermieterPlz") ?? "").trim();
+  const vermieterOrt = String(formData.get("vermieterOrt") ?? "").trim();
+  return {
+    vermieterModus,
+    vermieterName: vermieterName || null,
+    vermieterAnschrift: vermieterAnschrift || null,
+    vermieterPlz,
+    vermieterOrt,
+  };
 }
 
 export async function updateObjektAction(
@@ -57,12 +81,18 @@ export async function updateObjektAction(
   const adresse = String(formData.get("adresse") ?? "").trim();
   const plz = String(formData.get("plz") ?? "").trim();
   const ort = String(formData.get("ort") ?? "").trim();
-  const { vermieterModus, vermieterName, vermieterAnschrift } = parseVermieter(formData);
+  const { vermieterModus, vermieterName, vermieterAnschrift, vermieterPlz, vermieterOrt } = parseVermieter(formData);
+  const bearbeiterName = String(formData.get("bearbeiterName") ?? "").trim() || null;
+  const liefertermin = parseDatum(formData.get("geplanterLiefertermin"));
   if (!name || !adresse || !plz || !ort) return { error: "Bitte Name, Adresse, PLZ und Ort angeben." };
 
   await prisma.objekt.update({
     where: { id },
-    data: { name, adresse, plz, ort, vermieterModus, vermieterName, vermieterAnschrift },
+    data: {
+      name, adresse, plz, ort,
+      vermieterModus, vermieterName, vermieterAnschrift, vermieterPlz, vermieterOrt,
+      bearbeiterName, geplanterLiefertermin: liefertermin,
+    },
   });
   revalidatePath("/admin/objekte");
   revalidatePath(`/admin/objekte/${id}`);
@@ -97,11 +127,17 @@ export async function createEinheitAction(
   const bezeichnung = String(formData.get("bezeichnung") ?? "").trim();
   const vermieterName = String(formData.get("vermieterName") ?? "").trim();
   const vermieterAnschrift = String(formData.get("vermieterAnschrift") ?? "").trim();
+  const vermieterPlz = String(formData.get("vermieterPlz") ?? "").trim();
+  const vermieterOrt = String(formData.get("vermieterOrt") ?? "").trim();
   if (!bezeichnung) return { error: "Bitte eine Bezeichnung angeben." };
 
   if (!objektId) return { error: "Bitte ein Objekt wählen." };
   await prisma.einheit.create({
-    data: { objektId, bezeichnung, vermieterName: vermieterName || null, vermieterAnschrift: vermieterAnschrift || null },
+    data: {
+      objektId, bezeichnung,
+      vermieterName: vermieterName || null, vermieterAnschrift: vermieterAnschrift || null,
+      vermieterPlz, vermieterOrt,
+    },
   });
   revalidatePath(`/admin/objekte/${objektId}`);
   revalidatePath("/admin/objekte");
@@ -118,11 +154,17 @@ export async function updateEinheitAction(
   const bezeichnung = String(formData.get("bezeichnung") ?? "").trim();
   const vermieterName = String(formData.get("vermieterName") ?? "").trim();
   const vermieterAnschrift = String(formData.get("vermieterAnschrift") ?? "").trim();
+  const vermieterPlz = String(formData.get("vermieterPlz") ?? "").trim();
+  const vermieterOrt = String(formData.get("vermieterOrt") ?? "").trim();
   if (!bezeichnung) return { error: "Bitte eine Bezeichnung angeben." };
 
   const einheit = await prisma.einheit.update({
     where: { id },
-    data: { bezeichnung, vermieterName: vermieterName || null, vermieterAnschrift: vermieterAnschrift || null },
+    data: {
+      bezeichnung,
+      vermieterName: vermieterName || null, vermieterAnschrift: vermieterAnschrift || null,
+      vermieterPlz, vermieterOrt,
+    },
   });
   revalidatePath(`/admin/einheiten/${id}`);
   revalidatePath(`/admin/objekte/${einheit.objektId}`);

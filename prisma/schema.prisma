@@ -27,9 +27,19 @@ model Objekt {
   vermieterModus VermieterModus @default(PRO_OBJEKT)
   // Vermieter (Gebaeudeeigentuemer) - nur bei vermieterModus = PRO_OBJEKT
   // gefuellt/verwendet. Beim eigenstaendigen Vertrag ist die Gegenpartei stets
-  // die Firma aus den Stammdaten.
+  // die Firma aus den Stammdaten. vermieterAnschrift = Strasse & Hausnummer;
+  // Postleitzahl/Ort separat (vermieterPlz/-Ort) fuer eine vollstaendige,
+  // strukturierte Vermieteranschrift auf den Vertraegen.
   vermieterName      String?
   vermieterAnschrift String?
+  vermieterPlz       String  @default("")
+  vermieterOrt       String  @default("")
+  // Sachbearbeiter:in der Firma fuer dieses Objekt. Erscheint auf allen Briefen
+  // rechts oben bei der Firmenanschrift.
+  bearbeiterName     String?
+  // Geplanter Beginn der Stromlieferung fuer dieses Objekt (wird im Onboarding-
+  // Anschreiben als geplanter Liefertermin genannt).
+  geplanterLiefertermin DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -49,8 +59,11 @@ model Einheit {
   bezeichnung String
   // Vermieter dieser Wohneinheit - nur verwendet, wenn das Objekt
   // vermieterModus = PRO_EINHEIT hat (Objekt aus mehreren Eigentumswohnungen).
+  // vermieterAnschrift = Strasse & Hausnummer; PLZ/Ort separat.
   vermieterName      String?
   vermieterAnschrift String?
+  vermieterPlz       String  @default("")
+  vermieterOrt       String  @default("")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

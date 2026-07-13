@@ -31,8 +31,16 @@ export function NewEinheitForm({
               <input id="vermieterName" name="vermieterName" type="text" />
             </div>
             <div className="field">
-              <label htmlFor="vermieterAnschrift">Vermieter:in (Anschrift)</label>
+              <label htmlFor="vermieterAnschrift">Vermieter:in (Straße &amp; Hausnr.)</label>
               <input id="vermieterAnschrift" name="vermieterAnschrift" type="text" />
+            </div>
+            <div className="field">
+              <label htmlFor="vermieterPlz">Vermieter:in (PLZ)</label>
+              <input id="vermieterPlz" name="vermieterPlz" type="text" inputMode="numeric" />
+            </div>
+            <div className="field">
+              <label htmlFor="vermieterOrt">Vermieter:in (Ort)</label>
+              <input id="vermieterOrt" name="vermieterOrt" type="text" />
             </div>
           </>
         )}

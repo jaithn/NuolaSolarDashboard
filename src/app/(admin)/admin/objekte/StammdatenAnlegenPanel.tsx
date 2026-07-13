@@ -116,8 +116,16 @@ function NewEinheitMitAuswahl({ objekte }: { objekte: ObjektOption[] }) {
               <input id="einheit-vermieterName" name="vermieterName" type="text" />
             </div>
             <div className="field">
-              <label htmlFor="einheit-vermieterAnschrift">Vermieter:in (Anschrift)</label>
+              <label htmlFor="einheit-vermieterAnschrift">Vermieter:in (Straße &amp; Hausnr.)</label>
               <input id="einheit-vermieterAnschrift" name="vermieterAnschrift" type="text" />
+            </div>
+            <div className="field">
+              <label htmlFor="einheit-vermieterPlz">Vermieter:in (PLZ)</label>
+              <input id="einheit-vermieterPlz" name="vermieterPlz" type="text" inputMode="numeric" />
+            </div>
+            <div className="field">
+              <label htmlFor="einheit-vermieterOrt">Vermieter:in (Ort)</label>
+              <input id="einheit-vermieterOrt" name="vermieterOrt" type="text" />
             </div>
           </>
         )}

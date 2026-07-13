@@ -29,6 +29,14 @@ export function NewObjektForm() {
           <label htmlFor="ort">Ort</label>
           <input id="ort" name="ort" type="text" required placeholder="Köln" />
         </div>
+        <div className="field">
+          <label htmlFor="bearbeiterName">Bearbeiter:in (Firma)</label>
+          <input id="bearbeiterName" name="bearbeiterName" type="text" placeholder="z. B. Max Mustermann" />
+        </div>
+        <div className="field">
+          <label htmlFor="geplanterLiefertermin">Geplanter Liefertermin</label>
+          <input id="geplanterLiefertermin" name="geplanterLiefertermin" type="date" />
+        </div>
       </div>
 
       <div className="field">
@@ -52,8 +60,16 @@ export function NewObjektForm() {
             <input id="vermieterName" name="vermieterName" type="text" />
           </div>
           <div className="field">
-            <label htmlFor="vermieterAnschrift">Vermieter:in (Anschrift)</label>
+            <label htmlFor="vermieterAnschrift">Vermieter:in (Straße &amp; Hausnr.)</label>
             <input id="vermieterAnschrift" name="vermieterAnschrift" type="text" />
+          </div>
+          <div className="field">
+            <label htmlFor="vermieterPlz">Vermieter:in (PLZ)</label>
+            <input id="vermieterPlz" name="vermieterPlz" type="text" inputMode="numeric" />
+          </div>
+          <div className="field">
+            <label htmlFor="vermieterOrt">Vermieter:in (Ort)</label>
+            <input id="vermieterOrt" name="vermieterOrt" type="text" />
           </div>
         </div>
       ) : (

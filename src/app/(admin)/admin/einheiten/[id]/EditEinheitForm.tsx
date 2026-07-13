@@ -11,12 +11,16 @@ export function EditEinheitForm({
   vermieterProEinheit,
   vermieterName,
   vermieterAnschrift,
+  vermieterPlz,
+  vermieterOrt,
 }: {
   id: string;
   bezeichnung: string;
   vermieterProEinheit: boolean;
   vermieterName: string | null;
   vermieterAnschrift: string | null;
+  vermieterPlz: string;
+  vermieterOrt: string;
 }) {
   const [state, formAction, pending] = useActionState(updateEinheitAction, initialState);
 
@@ -36,13 +40,21 @@ export function EditEinheitForm({
               <input id="vermieterName" name="vermieterName" type="text" defaultValue={vermieterName ?? ""} />
             </div>
             <div className="field">
-              <label htmlFor="vermieterAnschrift">Vermieter:in (Anschrift)</label>
+              <label htmlFor="vermieterAnschrift">Vermieter:in (Straße &amp; Hausnr.)</label>
               <input
                 id="vermieterAnschrift"
                 name="vermieterAnschrift"
                 type="text"
                 defaultValue={vermieterAnschrift ?? ""}
               />
+            </div>
+            <div className="field">
+              <label htmlFor="vermieterPlz">Vermieter:in (PLZ)</label>
+              <input id="vermieterPlz" name="vermieterPlz" type="text" inputMode="numeric" defaultValue={vermieterPlz} />
+            </div>
+            <div className="field">
+              <label htmlFor="vermieterOrt">Vermieter:in (Ort)</label>
+              <input id="vermieterOrt" name="vermieterOrt" type="text" defaultValue={vermieterOrt} />
             </div>
           </>
         )}

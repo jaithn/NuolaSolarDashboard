@@ -161,16 +161,25 @@ export async function renderOnboardingPdf(
       zeilen: [objekt.adresse || "", `${objekt.plz} ${objekt.ort}`.trim()],
     };
     // Vermieter: bei PRO_EINHEIT aus der Wohneinheit, sonst objektweit.
+    // Anschrift strukturiert: Strasse (vermieterAnschrift) + "PLZ Ort".
     const vermieter =
       objekt.vermieterModus === "PRO_EINHEIT"
-        ? { name: mietpartei.einheit.vermieterName, anschrift: mietpartei.einheit.vermieterAnschrift }
-        : { name: objekt.vermieterName, anschrift: objekt.vermieterAnschrift };
+        ? {
+            name: mietpartei.einheit.vermieterName,
+            strasse: mietpartei.einheit.vermieterAnschrift,
+            plzOrt: `${mietpartei.einheit.vermieterPlz} ${mietpartei.einheit.vermieterOrt}`.trim(),
+          }
+        : {
+            name: objekt.vermieterName,
+            strasse: objekt.vermieterAnschrift,
+            plzOrt: `${objekt.vermieterPlz} ${objekt.vermieterOrt}`.trim(),
+          };
     const gegenpartei: ContractParty =
       variant === "ergaenzung"
         ? {
             rolle: "Vermieter",
             name: vermieter.name || "—",
-            zeilen: [vermieter.anschrift || ""],
+            zeilen: [vermieter.strasse || "", vermieter.plzOrt].filter(Boolean),
           }
         : {
             rolle: "Lieferant",
