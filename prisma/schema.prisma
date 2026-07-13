@@ -225,6 +225,13 @@ enum VertragArt {
 model Mietpartei {
   id            String                @id @default(cuid())
   einheitId     String
+  // Fortlaufende Kundennummer. Wird beim Aktivstellen der Mietpartei vergeben
+  // (davor null, z.B. Interessent:innen haben noch keine). Zugleich Basis der
+  // SEPA-Mandatsreferenz (lib/sepa.ts). Eindeutigkeit wird im Anwendungscode
+  // ueber fortlaufende Vergabe (max+1) sichergestellt - bewusst KEIN DB-Unique,
+  // da ein nachtraeglicher Unique-Constraint auf der Bestandstabelle den
+  // Container-Start (prisma db push ohne --accept-data-loss) brechen wuerde.
+  kundennummer  Int?
   // Name der (natuerlichen) Person bzw. des Ansprechpartners. Darf leer ("")
   // sein, WENN eine Firma hinterlegt ist - dann ist "firma" der Pflicht-
   // Bezeichner. Bewusst non-null (Default ""), damit bestehende String-
@@ -506,6 +513,11 @@ model FirmenStammdaten {
   ustIdNr        String?
   bankname       String?
   bankverbindung String?
+  // SEPA-Glaeubiger-Identifikationsnummer (Creditor Identifier). Wird der Firma
+  // einmalig zugeteilt und ist fuer ALLE Lastschriftmandate identisch -> hier
+  // zentral hinterlegt. Die je Mandat eindeutige Mandatsreferenz wird dagegen
+  // pro Mietpartei aus deren Kundennummer abgeleitet (siehe lib/sepa.ts).
+  glaeubigerId   String?
   // Internetseite (Fusszeile Briefe). Optional.
   webseite       String?
   // Oeffentliche Kontaktdaten (Fusszeile Briefe, Rueckfragen). Die

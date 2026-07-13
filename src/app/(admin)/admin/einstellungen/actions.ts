@@ -68,6 +68,7 @@ export async function updateFirmenStammdatenAction(
   const ustIdNr = String(formData.get("ustIdNr") ?? "").trim();
   const bankname = String(formData.get("bankname") ?? "").trim();
   const bankverbindung = String(formData.get("bankverbindung") ?? "").trim();
+  const glaeubigerId = String(formData.get("glaeubigerId") ?? "").trim();
   const webseite = String(formData.get("webseite") ?? "").trim();
   const kontaktTelefon = String(formData.get("kontaktTelefon") ?? "").trim();
   const kontaktEmail = String(formData.get("kontaktEmail") ?? "").trim();
@@ -92,6 +93,7 @@ export async function updateFirmenStammdatenAction(
     ustIdNr: ustIdNr || null,
     bankname: bankname || null,
     bankverbindung: bankverbindung || null,
+    glaeubigerId: glaeubigerId || null,
     webseite: webseite || null,
     kontaktTelefon: kontaktTelefon || null,
     shellyFehlerEmail: shellyFehlerEmail || null,

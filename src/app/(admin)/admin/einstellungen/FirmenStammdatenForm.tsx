@@ -14,6 +14,7 @@ export function FirmenStammdatenForm(props: {
   ustIdNr: string | null;
   bankname: string | null;
   bankverbindung: string | null;
+  glaeubigerId: string | null;
   webseite: string | null;
   kontaktTelefon: string | null;
   kontaktEmail: string | null;
@@ -59,6 +60,21 @@ export function FirmenStammdatenForm(props: {
         <div className="field">
           <label htmlFor="bankverbindung">Bankverbindung (IBAN)</label>
           <input id="bankverbindung" name="bankverbindung" type="text" defaultValue={props.bankverbindung ?? ""} />
+        </div>
+        <div className="field">
+          <label htmlFor="glaeubigerId">SEPA-Gläubiger-ID</label>
+          <input
+            id="glaeubigerId"
+            name="glaeubigerId"
+            type="text"
+            defaultValue={props.glaeubigerId ?? ""}
+            placeholder="DE98ZZZ09999999999"
+            aria-describedby="glaeubigerId-hinweis"
+          />
+          <p id="glaeubigerId-hinweis" className="price-breakdown">
+            Gläubiger-Identifikationsnummer der Firma – für alle SEPA-Mandate gleich. Die Mandatsreferenz wird je
+            Mietpartei automatisch aus deren Kundennummer gebildet.
+          </p>
         </div>
         <div className="field">
           <label htmlFor="webseite">Internetseite</label>

@@ -9,6 +9,7 @@ import { erstelleRechnungsentwurf } from "@/lib/billing/generateInvoice";
 import { generateAndStoreInvoicePdf } from "@/lib/pdf/renderInvoicePdf";
 import { mietparteiAnzeigeName } from "@/lib/mietpartei";
 import { speichereDokument, loescheDokument } from "@/lib/dokumente";
+import { vergibKundennummerFallsNoetig } from "@/lib/kundennummer";
 import type { DokumentTyp, VertragArt } from "@prisma/client";
 
 export interface MietparteiFormState {
@@ -237,7 +238,7 @@ export async function createMietparteiAction(
     vormieterAuszug = datum;
   }
 
-  await prisma.$transaction(async (tx) => {
+  const neueMietparteiId = await prisma.$transaction(async (tx) => {
     if (vorhandener && vormieterAuszug) {
       await tx.mietpartei.update({ where: { id: vorhandener.id }, data: { auszugsdatum: vormieterAuszug } });
     }
@@ -252,7 +253,13 @@ export async function createMietparteiAction(
         },
       });
     }
+    return mietpartei.id;
   });
+
+  // Direkt als AKTIV angelegt -> sofort Kundennummer vergeben (analog Aktivstellen).
+  if (parsed.data.status === "AKTIV") {
+    await vergibKundennummerFallsNoetig(neueMietparteiId);
+  }
 
   revalidatePath("/admin/mietparteien");
 
@@ -422,6 +429,11 @@ export async function setMietparteiStatusAction(
     where: { id: mietparteiId },
     data: { status: zielStatus as "INTERESSENT" | "AKTIV" | "INAKTIV" },
   });
+  // Beim Aktivstellen eine Kundennummer vergeben (falls noch keine vorhanden) -
+  // sie ist zugleich Basis der SEPA-Mandatsreferenz.
+  if (zielStatus === "AKTIV") {
+    await vergibKundennummerFallsNoetig(mietparteiId);
+  }
   revalidatePath("/admin/mietparteien");
   revalidatePath(`/admin/mietparteien/${mietparteiId}`);
 
