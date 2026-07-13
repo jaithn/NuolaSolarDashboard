@@ -32,11 +32,11 @@ export function EditEinheitForm({
         {vermieterProEinheit && (
           <>
             <div className="field">
-              <label htmlFor="vermieterName">Vermieter (Name)</label>
+              <label htmlFor="vermieterName">Vermieter:in (Name)</label>
               <input id="vermieterName" name="vermieterName" type="text" defaultValue={vermieterName ?? ""} />
             </div>
             <div className="field">
-              <label htmlFor="vermieterAnschrift">Vermieter (Anschrift)</label>
+              <label htmlFor="vermieterAnschrift">Vermieter:in (Anschrift)</label>
               <input
                 id="vermieterAnschrift"
                 name="vermieterAnschrift"
@@ -49,7 +49,7 @@ export function EditEinheitForm({
       </div>
       {vermieterProEinheit && (
         <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", marginTop: 0 }}>
-          Vermieter dieser Wohneinheit (für die Ergänzung zum Mietvertrag).
+          Vermieter:in dieser Wohneinheit (für die Ergänzung zum Mietvertrag).
         </p>
       )}
       <button className="btn" type="submit" disabled={pending} style={{ maxWidth: "16rem" }}>

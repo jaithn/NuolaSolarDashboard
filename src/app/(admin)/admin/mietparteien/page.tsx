@@ -37,7 +37,7 @@ export default async function MietparteienPage() {
               // Status kenntlich zu machen; sonst greift aktiv/inaktiv.
               const badge =
                 m.status === "INTERESSENT"
-                  ? { klasse: "interessent", text: "Interessent" }
+                  ? { klasse: "interessent", text: "Interessent:in" }
                   : aktiv
                     ? { klasse: "aktiv", text: "aktiv" }
                     : { klasse: "inaktiv", text: "inaktiv" };
@@ -67,7 +67,7 @@ export default async function MietparteienPage() {
       </div>
 
       <div className="section">
-        <h2>Neue Mietpartei / Interessent anlegen</h2>
+        <h2>Neue Mietpartei / Interessent:in anlegen</h2>
         {einheitOptions.length === 0 ? (
           <p>Bitte zuerst ein Objekt mit Einheit anlegen.</p>
         ) : steuersaetze.length === 0 ? (

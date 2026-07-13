@@ -210,7 +210,7 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
             className="select-inline"
             defaultValue={val("status", mietpartei?.status ?? (mode === "create" ? "INTERESSENT" : "AKTIV"))}
           >
-            <option value="INTERESSENT">Interessent</option>
+            <option value="INTERESSENT">Interessent:in</option>
             <option value="AKTIV">Aktiv</option>
             <option value="INAKTIV">Inaktiv</option>
           </select>

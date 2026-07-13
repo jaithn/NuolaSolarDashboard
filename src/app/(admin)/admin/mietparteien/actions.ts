@@ -425,7 +425,7 @@ export async function setMietparteiStatusAction(
   revalidatePath("/admin/mietparteien");
   revalidatePath(`/admin/mietparteien/${mietparteiId}`);
 
-  const statusLabel = zielStatus === "AKTIV" ? "aktiv" : zielStatus === "INAKTIV" ? "inaktiv" : "Interessent";
+  const statusLabel = zielStatus === "AKTIV" ? "aktiv" : zielStatus === "INAKTIV" ? "inaktiv" : "Interessent:in";
   // Bei Aktivierung auf fehlende Scan-Rückläufer hinweisen (nicht blockierend).
   if (zielStatus === "AKTIV") {
     const hatVertrag = mietpartei.dokumente.some((d) => d.typ === "VERTRAG");

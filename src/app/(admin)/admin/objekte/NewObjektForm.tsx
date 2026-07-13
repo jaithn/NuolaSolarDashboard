@@ -32,7 +32,7 @@ export function NewObjektForm() {
       </div>
 
       <div className="field">
-        <label htmlFor="vermieterModus">Vermieter (für die Ergänzung zum Mietvertrag)</label>
+        <label htmlFor="vermieterModus">Vermieter:in (für die Ergänzung zum Mietvertrag)</label>
         <select
           id="vermieterModus"
           name="vermieterModus"
@@ -40,25 +40,25 @@ export function NewObjektForm() {
           value={modus}
           onChange={(e) => setModus(e.target.value as "PRO_OBJEKT" | "PRO_EINHEIT")}
         >
-          <option value="PRO_OBJEKT">Ein Vermieter für das ganze Objekt</option>
-          <option value="PRO_EINHEIT">Pro Wohneinheit ein eigener Vermieter</option>
+          <option value="PRO_OBJEKT">Ein:e Vermieter:in für das ganze Objekt</option>
+          <option value="PRO_EINHEIT">Je Wohneinheit ein:e eigene:r Vermieter:in</option>
         </select>
       </div>
 
       {modus === "PRO_OBJEKT" ? (
         <div className="form-grid">
           <div className="field">
-            <label htmlFor="vermieterName">Vermieter (Name)</label>
+            <label htmlFor="vermieterName">Vermieter:in (Name)</label>
             <input id="vermieterName" name="vermieterName" type="text" />
           </div>
           <div className="field">
-            <label htmlFor="vermieterAnschrift">Vermieter (Anschrift)</label>
+            <label htmlFor="vermieterAnschrift">Vermieter:in (Anschrift)</label>
             <input id="vermieterAnschrift" name="vermieterAnschrift" type="text" />
           </div>
         </div>
       ) : (
         <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", marginTop: 0 }}>
-          Der Vermieter wird dann beim Anlegen jeder Wohneinheit erfasst.
+          Die/der Vermieter:in wird dann beim Anlegen jeder Wohneinheit erfasst.
         </p>
       )}
 

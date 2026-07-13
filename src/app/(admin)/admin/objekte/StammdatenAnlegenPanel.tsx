@@ -112,11 +112,11 @@ function NewEinheitMitAuswahl({ objekte }: { objekte: ObjektOption[] }) {
         {vermieterProEinheit && (
           <>
             <div className="field">
-              <label htmlFor="einheit-vermieterName">Vermieter (Name)</label>
+              <label htmlFor="einheit-vermieterName">Vermieter:in (Name)</label>
               <input id="einheit-vermieterName" name="vermieterName" type="text" />
             </div>
             <div className="field">
-              <label htmlFor="einheit-vermieterAnschrift">Vermieter (Anschrift)</label>
+              <label htmlFor="einheit-vermieterAnschrift">Vermieter:in (Anschrift)</label>
               <input id="einheit-vermieterAnschrift" name="vermieterAnschrift" type="text" />
             </div>
           </>

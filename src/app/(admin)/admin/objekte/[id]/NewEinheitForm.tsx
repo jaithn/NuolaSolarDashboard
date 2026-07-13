@@ -27,11 +27,11 @@ export function NewEinheitForm({
         {vermieterProEinheit && (
           <>
             <div className="field">
-              <label htmlFor="vermieterName">Vermieter (Name)</label>
+              <label htmlFor="vermieterName">Vermieter:in (Name)</label>
               <input id="vermieterName" name="vermieterName" type="text" />
             </div>
             <div className="field">
-              <label htmlFor="vermieterAnschrift">Vermieter (Anschrift)</label>
+              <label htmlFor="vermieterAnschrift">Vermieter:in (Anschrift)</label>
               <input id="vermieterAnschrift" name="vermieterAnschrift" type="text" />
             </div>
           </>

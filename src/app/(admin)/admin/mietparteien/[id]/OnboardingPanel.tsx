@@ -38,7 +38,7 @@ interface Dokument {
 }
 
 const STATUS_LABEL: Record<Status, string> = {
-  INTERESSENT: "Interessent",
+  INTERESSENT: "Interessent:in",
   AKTIV: "Aktiv",
   INAKTIV: "Inaktiv",
 };

@@ -21,7 +21,8 @@
     "prisma:migrate:dev": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:demo-seed": "tsx prisma/demo-seed.ts",
-    "sync:dokumente": "tsx scripts/sync-dokumente.ts"
+    "sync:dokumente": "tsx scripts/sync-dokumente.ts",
+    "ci:build-status": "bash scripts/ci-build-status.sh"
   },
   "dependencies": {
     "@prisma/client": "^6.5.0",
