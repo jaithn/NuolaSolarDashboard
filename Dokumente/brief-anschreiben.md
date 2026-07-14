@@ -10,7 +10,7 @@ Ihr Solarstrom vom eigenen Dach
 
 ## einleitung
 
-mein Name ist Janik Kühn. Als Sohn von Ihren Vermietern {vermieter} bin ich mit der {objektadresse} persönlich verbunden. Gemeinsam mit meiner Ehefrau Katharina Niermann-Kühn haben wir auf dem Dach des Hauses eine Solaranlage installiert.  
+mein Name ist Janik Kühn. Als Sohn von Ihren Vermietern {vermieter} bin ich mit der Heidelberger Str. 32 persönlich verbunden. Gemeinsam mit meiner Ehefrau Katharina Niermann-Kühn haben wir auf dem Dach des Hauses eine Solaranlage installiert.
 
 Wir freuen uns sehr, Ihnen künftig direkt vor Ort erzeugten Solarstrom anbieten zu können. Hinter dem Angebot steht also kein anonymer Stromkonzern, sondern Menschen, die Ihr Zuhause und das Gebäude persönlich kennen. Unser Ziel ist es, Ihnen sauberen Strom vom eigenen Dach zu transparenten und fairen Konditionen zur Verfügung zu stellen.
 
