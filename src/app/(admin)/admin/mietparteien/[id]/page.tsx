@@ -56,6 +56,8 @@ export default async function MietparteiDetailPage({ params }: { params: Promise
       <h1>{mietparteiAnzeigeName(mietpartei)}</h1>
       <p>
         {mietpartei.einheit.objekt.name} – {mietpartei.einheit.bezeichnung}
+        {" · "}
+        Kundennummer: <strong>{mietpartei.kundennummer ?? "—"}</strong>
       </p>
 
       <div className="section">
@@ -126,15 +128,18 @@ export default async function MietparteiDetailPage({ params }: { params: Promise
             </tr>
           </thead>
           <tbody>
-            {abschlaege.map((a) => (
-              <tr key={a.id}>
-                <td>{a.nettoBetrag.toFixed(2)} €</td>
-                <td>{a.steuersatz.prozentsatz}%</td>
-                <td>{berechneBrutto(a.nettoBetrag, a.steuersatz.prozentsatz).bruttoBetrag.toFixed(2)} €</td>
-                <td>{a.gueltigAb.toLocaleDateString("de-DE")}</td>
-                <td>{a.gueltigBis ? a.gueltigBis.toLocaleDateString("de-DE") : "–"}</td>
-              </tr>
-            ))}
+            {abschlaege.map((a) => {
+              const brutto = a.bruttoBetrag ?? berechneBrutto(a.nettoBetrag, a.steuersatz.prozentsatz).bruttoBetrag;
+              return (
+                <tr key={a.id}>
+                  <td>{a.nettoBetrag.toFixed(2)} €</td>
+                  <td>{a.steuersatz.prozentsatz}%</td>
+                  <td>{brutto.toFixed(2)} €</td>
+                  <td>{a.gueltigAb.toLocaleDateString("de-DE")}</td>
+                  <td>{a.gueltigBis ? a.gueltigBis.toLocaleDateString("de-DE") : "–"}</td>
+                </tr>
+              );
+            })}
             {abschlaege.length === 0 && (
               <tr>
                 <td colSpan={5}>Noch kein Abschlag hinterlegt.</td>
@@ -152,8 +157,6 @@ export default async function MietparteiDetailPage({ params }: { params: Promise
         <OnboardingPanel
           mietparteiId={mietpartei.id}
           status={mietpartei.status}
-          vertragsart={mietpartei.vertragsart}
-          signierteVersionId={mietpartei.vertragVersionId}
           vertragVersionen={vertragVersionen.map((v) => ({
             id: v.id,
             art: v.art,

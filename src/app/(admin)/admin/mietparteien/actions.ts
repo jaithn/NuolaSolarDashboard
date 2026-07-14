@@ -11,7 +11,8 @@ import { generateAndStoreInvoicePdf } from "@/lib/pdf/renderInvoicePdf";
 import { mietparteiAnzeigeName } from "@/lib/mietpartei";
 import { speichereDokument, loescheDokument } from "@/lib/dokumente";
 import { vergibKundennummerFallsNoetig } from "@/lib/kundennummer";
-import type { DokumentTyp, VertragArt } from "@prisma/client";
+import { berechneNettoAusBrutto } from "@/lib/steuer";
+import type { DokumentTyp } from "@prisma/client";
 
 export interface MietparteiFormState {
   error?: string;
@@ -51,7 +52,7 @@ function collectValues(formData: FormData): Record<string, string> {
     "hatGrundpreis",
     "grundpreisNetto",
     "grundpreisSteuersatzId",
-    "abschlagNetto",
+    "abschlagBrutto",
     "abschlagSteuersatzId",
     "abschlagGueltigAb",
     "vormieterAuszugsdatum",
@@ -60,7 +61,6 @@ function collectValues(formData: FormData): Record<string, string> {
     "grundversorgerGrundpreisBrutto",
     "grundversorgerArbeitspreisBrutto",
     "angenommenerJahresverbrauchKwh",
-    "vertragsart",
   ];
   const out: Record<string, string> = {};
   for (const k of keys) out[k] = String(formData.get(k) ?? "");
@@ -97,7 +97,6 @@ type ParsedMietpartei = {
   grundversorgerGrundpreisBrutto: number | null;
   grundversorgerArbeitspreisBrutto: number | null;
   angenommenerJahresverbrauchKwh: number | null;
-  vertragsart: VertragArt | null;
 };
 
 function parseMietparteiInput(formData: FormData): { error: string } | { data: ParsedMietpartei } {
@@ -130,10 +129,6 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
   const gvGrund = Number(formData.get("grundversorgerGrundpreisBrutto"));
   const gvArbeit = Number(formData.get("grundversorgerArbeitspreisBrutto"));
   const angenommenerVerbrauch = Number(formData.get("angenommenerJahresverbrauchKwh"));
-  const vertragsartRaw = String(formData.get("vertragsart") ?? "");
-  const vertragsart = (["EIGENSTAENDIG", "ERGAENZUNG"].includes(vertragsartRaw)
-    ? vertragsartRaw
-    : null) as VertragArt | null;
 
   if (!einheitId || !email || !einzugsdatumRaw || !arbeitspreisSteuersatzId) {
     return { error: "Bitte alle Pflichtfelder ausfüllen." };
@@ -187,7 +182,6 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
       grundversorgerArbeitspreisBrutto: Number.isFinite(gvArbeit) && gvArbeit > 0 ? gvArbeit : null,
       angenommenerJahresverbrauchKwh:
         Number.isFinite(angenommenerVerbrauch) && angenommenerVerbrauch > 0 ? angenommenerVerbrauch : null,
-      vertragsart,
     },
   };
 }
@@ -234,12 +228,16 @@ export async function createMietparteiAction(
     };
   }
 
-  // Optionaler Abschlag direkt beim Anlegen. Standard-Gueltigkeitsbeginn ist
-  // das Einzugsdatum (falls im Formular nicht anders gesetzt).
-  const abschlagNetto = Number(formData.get("abschlagNetto"));
+  // Optionaler Abschlag direkt beim Anlegen. Der Betrag wird BRUTTO (inkl. MwSt.)
+  // erfasst; das Netto leiten wir daraus ab. Standard-Gueltigkeitsbeginn ist das
+  // Einzugsdatum (falls im Formular nicht anders gesetzt).
+  const abschlagBrutto = Number(formData.get("abschlagBrutto"));
   const abschlagSteuersatzId = String(formData.get("abschlagSteuersatzId") ?? "");
   const abschlagGueltigAbRaw = String(formData.get("abschlagGueltigAb") ?? "");
-  const legeAbschlagAn = Number.isFinite(abschlagNetto) && abschlagNetto > 0 && abschlagSteuersatzId;
+  const legeAbschlagAn = Number.isFinite(abschlagBrutto) && abschlagBrutto > 0 && Boolean(abschlagSteuersatzId);
+  const abschlagSatz = legeAbschlagAn
+    ? await prisma.steuersatz.findUnique({ where: { id: abschlagSteuersatzId } })
+    : null;
 
   // Bestaetigter Umzug: Auszugsdatum des Vormieters setzen (falls noch offen)
   // und dessen Schlussrechnungs-Entwurf vormerken.
@@ -258,11 +256,12 @@ export async function createMietparteiAction(
       await tx.mietpartei.update({ where: { id: vorhandener.id }, data: { auszugsdatum: vormieterAuszug } });
     }
     const mietpartei = await tx.mietpartei.create({ data: parsed.data });
-    if (legeAbschlagAn) {
+    if (legeAbschlagAn && abschlagSatz) {
       await tx.abschlag.create({
         data: {
           mietparteiId: mietpartei.id,
-          nettoBetrag: abschlagNetto,
+          bruttoBetrag: abschlagBrutto,
+          nettoBetrag: berechneNettoAusBrutto(abschlagBrutto, abschlagSatz.prozentsatz),
           steuersatzId: abschlagSteuersatzId,
           gueltigAb: abschlagGueltigAbRaw ? new Date(abschlagGueltigAbRaw) : parsed.data.einzugsdatum,
         },
@@ -271,10 +270,9 @@ export async function createMietparteiAction(
     return mietpartei.id;
   });
 
-  // Direkt als AKTIV angelegt -> sofort Kundennummer vergeben (analog Aktivstellen).
-  if (parsed.data.status === "AKTIV") {
-    await vergibKundennummerFallsNoetig(neueMietparteiId);
-  }
+  // Jede neue Mietpartei erhaelt sofort eine Kundennummer - auch Interessent:innen,
+  // da sie Basis der SEPA-Mandatsreferenz auf dem Onboarding-SEPA-Mandat ist.
+  await vergibKundennummerFallsNoetig(neueMietparteiId);
 
   revalidatePath("/admin/mietparteien");
 
@@ -328,14 +326,17 @@ export async function createAbschlagAction(
   await requireAdmin();
 
   const mietparteiId = String(formData.get("mietparteiId") ?? "");
-  const nettoBetrag = Number(formData.get("nettoBetrag"));
+  const bruttoBetrag = Number(formData.get("bruttoBetrag"));
   const steuersatzId = String(formData.get("steuersatzId") ?? "");
   const gueltigAbRaw = String(formData.get("gueltigAb") ?? "");
   const gueltigBisRaw = String(formData.get("gueltigBis") ?? "");
 
-  if (!steuersatzId || !gueltigAbRaw || !Number.isFinite(nettoBetrag) || nettoBetrag < 0) {
-    return { error: "Bitte Betrag, Steuersatz und Gültig-ab-Datum angeben." };
+  if (!steuersatzId || !gueltigAbRaw || !Number.isFinite(bruttoBetrag) || bruttoBetrag < 0) {
+    return { error: "Bitte Betrag (inkl. MwSt.), Steuersatz und Gültig-ab-Datum angeben." };
   }
+  const satz = await prisma.steuersatz.findUnique({ where: { id: steuersatzId } });
+  if (!satz) return { error: "Steuersatz nicht gefunden." };
+  const nettoBetrag = berechneNettoAusBrutto(bruttoBetrag, satz.prozentsatz);
 
   const gueltigAb = new Date(gueltigAbRaw);
   // Der neue Abschlag loest den bisherigen ab: jeder vor dem neuen beginnende
@@ -358,6 +359,7 @@ export async function createAbschlagAction(
     await tx.abschlag.create({
       data: {
         mietparteiId,
+        bruttoBetrag,
         nettoBetrag,
         steuersatzId,
         gueltigAb,

@@ -6,7 +6,12 @@ import {
   type OnboardingDokumentTyp,
 } from "@/lib/pdf/renderOnboardingPdfs";
 
-const GUELTIGE_DOKS: OnboardingDokumentTyp[] = ["anschreiben", "vertrag", "sepa"];
+const GUELTIGE_DOKS: OnboardingDokumentTyp[] = [
+  "anschreiben",
+  "vertrag-eigenstaendig",
+  "vertrag-ergaenzung",
+  "sepa",
+];
 
 // Rendert eines der drei Onboarding-Dokumente (Anschreiben, Vertrag, SEPA-Mandat)
 // als PDF. Nur fuer Admins. Wird nirgends gespeichert, sondern bei jedem Abruf

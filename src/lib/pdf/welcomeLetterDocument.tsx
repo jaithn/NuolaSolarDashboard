@@ -1,9 +1,11 @@
 import { Document, Page, Text, View } from "@react-pdf/renderer";
 import {
   letterStyles,
+  pageStyle,
   LetterHeader,
   EmpfaengerAdresse,
   LetterFooter,
+  Seitenzahl,
   OrtDatumZeile,
   Falzmarken,
   type FirmaBriefData,
@@ -53,7 +55,7 @@ export function WelcomeLetterDocument({
   const t = (key: string, standard: string) => abschnitt(abschnitte, key, standard, { firma: firma.name });
   return (
     <Document>
-      <Page size="A4" style={[letterStyles.page, { paddingTop: 34, lineHeight: 1.4 }]}>
+      <Page size="A4" style={{ ...pageStyle, paddingTop: 34, lineHeight: 1.4 }}>
         <Falzmarken />
         <LetterHeader logoPfad={logoPfad} firma={firma} zusatz={{ bearbeiterName, kundennummer }} />
         <EmpfaengerAdresse empfaenger={empfaenger} firma={firma} />
@@ -143,6 +145,7 @@ export function WelcomeLetterDocument({
         </View>
 
         <LetterFooter firma={firma} />
+        <Seitenzahl />
       </Page>
     </Document>
   );

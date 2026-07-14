@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { PriceInput, type SteuersatzOption } from "@/components/PriceInput";
+import { GrossPriceInput, type SteuersatzOption } from "@/components/PriceInput";
 import { createAbschlagAction, type AbschlagFormState } from "./actions";
 
 const initialState: AbschlagFormState = {};
@@ -20,11 +20,11 @@ export function NewAbschlagForm({
       {state.error && <div className="form-error">{state.error}</div>}
       <input type="hidden" name="mietparteiId" value={mietparteiId} />
 
-      <PriceInput
-        label="Monatlicher Abschlag"
-        nettoName="nettoBetrag"
+      <GrossPriceInput
+        label="Monatlicher Abschlag (inkl. MwSt.)"
+        bruttoName="bruttoBetrag"
         steuersatzName="steuersatzId"
-        defaultNetto={0}
+        defaultBrutto={0}
         steuersaetze={steuersaetze}
         required
       />

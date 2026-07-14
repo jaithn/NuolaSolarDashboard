@@ -7,6 +7,19 @@ gebaut; gepinnte Releases über Git-Tags `vX.Y.Z` (siehe CLAUDE.md → „Versio
 Die jeweils oberste Sektion dieser Datei wird beim Image-Build als „Neu in dieser
 Version" in die Image-Beschreibung (`org.opencontainers.image.description`) übernommen.
 
+## Onboarding: Kundennummer, beide Verträge, Brutto-Abschlag, Folgeseiten
+
+- **Kundennummer** wird jetzt schon beim Anlegen jeder Mietpartei vergeben (auch
+  Interessent:innen) und in den Stammdaten angezeigt – dadurch erscheint die
+  **SEPA-Mandatsreferenz** (`NUOLA-<Nr>`) zuverlässig auf dem Lastschriftmandat.
+- **Immer beide Verträge:** für jede Mietpartei werden Stromliefervertrag UND
+  Ergänzung zum Mietvertrag erzeugt; die Auswahl „Vertragsart" entfällt.
+- **Monatlicher Abschlag** wird als Brutto-Betrag (inkl. MwSt.) erfasst und genau so
+  im Vertrag/Anschreiben ausgewiesen – keine abweichende Rundung mehr. Ein neuer
+  Abschlag setzt den vorherigen automatisch außer Kraft.
+- **Mehrseitige Briefe:** kompletter Briefkopf auf jeder Seite, Seitenzahlen
+  „Seite X von Y", Trennlinie im Sichtfenster entfernt.
+
 ## Verträge & Onboarding aufeinander abgestimmt
 
 - **Ergänzung zum Mietvertrag** verschlankt: nur noch Stromversorgung, Strompreis und

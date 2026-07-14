@@ -3,7 +3,8 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { prisma } from "@/lib/db";
 import { berechneBrutto } from "@/lib/steuer";
 import { mietparteiAnzeigeName, anredeSatz, anredeKurz, mietparteiPostanschrift } from "@/lib/mietpartei";
-import { versionFuerMietpartei } from "@/lib/vertrag";
+import { aktiveVertragVersion } from "@/lib/vertrag";
+import type { VertragArt } from "@prisma/client";
 import { ladeBriefAbschnitte } from "@/lib/briefVorlagen";
 import { mandatsreferenz } from "@/lib/sepa";
 import { fmtDate } from "./format";
@@ -12,11 +13,12 @@ import { OnboardingLetterDocument, type OnboardingVergleich } from "./onboarding
 import { ContractDocument, type ContractParty, type VertragVariant } from "./contractDocument";
 import { SepaMandateDocument } from "./sepaMandateDocument";
 
-export type OnboardingDokumentTyp = "anschreiben" | "vertrag" | "sepa";
+export type OnboardingDokumentTyp = "anschreiben" | "vertrag-eigenstaendig" | "vertrag-ergaenzung" | "sepa";
 
 export const ONBOARDING_DOKUMENT_TITEL: Record<OnboardingDokumentTyp, string> = {
   anschreiben: "Anschreiben",
-  vertrag: "Vertrag",
+  "vertrag-eigenstaendig": "Stromliefervertrag",
+  "vertrag-ergaenzung": "Ergaenzung zum Mietvertrag",
   sepa: "SEPA-Lastschriftmandat",
 };
 
@@ -82,8 +84,11 @@ async function ladeBasis(mietparteiId: string) {
       : null;
 
   const aktuellerAbschlag = mietpartei.abschlaege[0];
+  // Abschlag ist brutto (inkl. MwSt.) erfasst - genau dieser Wert wird gezeigt.
+  // Fallback fuer Alt-Datensaetze ohne bruttoBetrag: aus dem Netto berechnen.
   const abschlagBrutto = aktuellerAbschlag
-    ? berechneBrutto(aktuellerAbschlag.nettoBetrag, aktuellerAbschlag.steuersatz.prozentsatz).bruttoBetrag
+    ? aktuellerAbschlag.bruttoBetrag ??
+      berechneBrutto(aktuellerAbschlag.nettoBetrag, aktuellerAbschlag.steuersatz.prozentsatz).bruttoBetrag
     : null;
 
   const objekt = mietpartei.einheit.objekt;
@@ -172,14 +177,17 @@ export async function renderOnboardingPdf(
     );
   }
 
-  if (dok === "vertrag") {
-    const version = await versionFuerMietpartei(mietpartei);
+  if (dok === "vertrag-eigenstaendig" || dok === "vertrag-ergaenzung") {
+    // Beide Vertraege werden immer aus der jeweils aktuell gueltigen Version der
+    // Vertragsart erzeugt (keine Vertragsart-Auswahl mehr an der Mietpartei).
+    const art: VertragArt = dok === "vertrag-ergaenzung" ? "ERGAENZUNG" : "EIGENSTAENDIG";
+    const version = await aktiveVertragVersion(art);
     if (!version) {
       throw new Error(
-        "Keine Vertragsversion vorhanden. Bitte im Admin unter Einstellungen die Vertragstexte einlesen (Sync).",
+        "Keine aktive Vertragsversion vorhanden. Bitte im Admin unter Einstellungen die Vertragstexte einlesen (Sync).",
       );
     }
-    const variant: VertragVariant = version.art === "ERGAENZUNG" ? "ergaenzung" : "eigenstaendig";
+    const variant: VertragVariant = art === "ERGAENZUNG" ? "ergaenzung" : "eigenstaendig";
 
     const strombezieher: ContractParty = {
       rolle: variant === "ergaenzung" ? "Mieter" : "Strombezieher",

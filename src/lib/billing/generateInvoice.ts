@@ -149,9 +149,12 @@ export async function erstelleRechnungsentwurf(
     const overlapVon = maxDate(abschlag.gueltigAb, zeitraum.von);
     const overlapBis = minDate(abschlagBis, zeitraum.bis);
     const monateAnteil = tageZwischen(overlapVon, overlapBis) / TAGE_PRO_MONAT;
-    const nettoAnteil = abschlag.nettoBetrag * monateAnteil;
-    const { bruttoBetrag } = berechneBrutto(nettoAnteil, abschlag.steuersatz.prozentsatz);
-    summeAbschlaegeBrutto += bruttoBetrag;
+    // Der Abschlag wird brutto (inkl. MwSt.) erfasst und genau so eingezogen -
+    // dieser Brutto-Wert ist massgeblich. Fallback fuer Alt-Datensaetze: aus dem
+    // Netto berechnen.
+    const bruttoProMonat =
+      abschlag.bruttoBetrag ?? berechneBrutto(abschlag.nettoBetrag, abschlag.steuersatz.prozentsatz).bruttoBetrag;
+    summeAbschlaegeBrutto += bruttoProMonat * monateAnteil;
   }
   summeAbschlaegeBrutto = Math.round(summeAbschlaegeBrutto * 100) / 100;
 

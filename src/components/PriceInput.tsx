@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { berechneBrutto } from "@/lib/steuer";
+import { berechneBrutto, berechneNettoAusBrutto } from "@/lib/steuer";
 
 export interface SteuersatzOption {
   id: string;
@@ -66,6 +66,67 @@ export function PriceInput({
       <div className="price-breakdown">
         Netto {netto.toFixed(2)} € · MwSt. {prozentsatz}% = {steuerBetrag.toFixed(2)} € · Brutto{" "}
         <strong>{bruttoBetrag.toFixed(2)} €</strong>
+      </div>
+    </div>
+  );
+}
+
+interface GrossPriceInputProps {
+  label: string;
+  bruttoName: string;
+  steuersatzName: string;
+  defaultBrutto?: number | null;
+  defaultSteuersatzId?: string | null;
+  steuersaetze: SteuersatzOption[];
+  required?: boolean;
+}
+
+/**
+ * Preiseingabe als BRUTTO-Betrag (inkl. MwSt.) + Steuersatz-Auswahl - fuer
+ * Betraege, die brutto erfasst werden (z.B. der monatliche Abschlag, der genau
+ * so per SEPA eingezogen und im Vertrag genannt wird). Netto/MwSt. werden live
+ * abgeleitet und angezeigt.
+ */
+export function GrossPriceInput({
+  label,
+  bruttoName,
+  steuersatzName,
+  defaultBrutto,
+  defaultSteuersatzId,
+  steuersaetze,
+  required,
+}: GrossPriceInputProps) {
+  const [brutto, setBrutto] = useState(defaultBrutto ?? 0);
+  const [steuersatzId, setSteuersatzId] = useState(defaultSteuersatzId || steuersaetze[0]?.id || "");
+
+  const prozentsatz = steuersaetze.find((s) => s.id === steuersatzId)?.prozentsatz ?? 0;
+  const bruttoWert = Number.isFinite(brutto) ? brutto : 0;
+  const netto = berechneNettoAusBrutto(bruttoWert, prozentsatz);
+  const steuerBetrag = Math.round((bruttoWert - netto) * 100) / 100;
+
+  return (
+    <div className="field">
+      <label>{label}</label>
+      <div className="price-input-row">
+        <input
+          type="number"
+          step="0.01"
+          name={bruttoName}
+          required={required}
+          value={brutto}
+          onChange={(e) => setBrutto(Number(e.target.value))}
+        />
+        <select name={steuersatzName} value={steuersatzId} onChange={(e) => setSteuersatzId(e.target.value)}>
+          {steuersaetze.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.bezeichnung} ({s.prozentsatz}%)
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="price-breakdown">
+        Brutto <strong>{bruttoWert.toFixed(2)} €</strong> · davon MwSt. {prozentsatz}% = {steuerBetrag.toFixed(2)} € ·
+        Netto {netto.toFixed(2)} €
       </div>
     </div>
   );

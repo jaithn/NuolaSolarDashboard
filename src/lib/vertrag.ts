@@ -14,21 +14,3 @@ export function aktiveVertragVersion(art: VertragArt): Promise<VertragVersion | 
     orderBy: { gueltigAb: "desc" },
   });
 }
-
-/**
- * Die fuer eine Mietpartei massgebliche Vertragsversion: die konkret
- * unterschriebene (falls dokumentiert), sonst die aktuell gueltige Version der
- * gewaehlten Vertragsart. Null, wenn keine Art gewaehlt ist bzw. keine Version
- * existiert.
- */
-export async function versionFuerMietpartei(mietpartei: {
-  vertragsart: VertragArt | null;
-  vertragVersionId: string | null;
-}): Promise<VertragVersion | null> {
-  if (mietpartei.vertragVersionId) {
-    const signiert = await prisma.vertragVersion.findUnique({ where: { id: mietpartei.vertragVersionId } });
-    if (signiert) return signiert;
-  }
-  if (!mietpartei.vertragsart) return null;
-  return aktiveVertragVersion(mietpartei.vertragsart);
-}

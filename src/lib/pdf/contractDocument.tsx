@@ -1,8 +1,10 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import {
   letterStyles,
+  pageStyle,
   LetterHeader,
   LetterFooter,
+  Seitenzahl,
   Falzmarken,
   GOLD,
   INK,
@@ -59,9 +61,20 @@ export interface ContractData {
   gegenparteiOrt: string;
 }
 
+// Schlichtes Layout (Ergaenzung): eigene Seiten-Paddings, da ohne Briefkopf.
+// Bewusst EINFACHES Objekt (nicht StyleSheet.create) - sonst wird die Seitenzahl
+// (render-Callback) auf dieser Page nicht gemalt (react-pdf 4.5.1).
+const plainPageStyle = {
+  paddingTop: 48,
+  paddingBottom: 56,
+  paddingHorizontal: 55,
+  fontSize: 10,
+  fontFamily: "Helvetica",
+  color: "#111",
+  lineHeight: 1.5,
+} as const;
+
 const s = StyleSheet.create({
-  // Schlichtes Layout (Ergaenzung): eigene Seiten-Paddings, da ohne Briefkopf.
-  plainPage: { paddingTop: 48, paddingBottom: 56, paddingHorizontal: 55, fontSize: 10, fontFamily: "Helvetica", color: "#111", lineHeight: 1.5 },
   docTitle: { fontSize: 15, marginTop: 8, marginBottom: 2, fontFamily: "Helvetica-Bold" },
   docTitleGold: { color: GOLD },
   docSubtitle: { fontSize: 9.5, marginBottom: 14, color: "#334155" },
@@ -237,10 +250,17 @@ export function ContractDocument(data: ContractData) {
   if (plain) {
     return (
       <Document>
-        <Page size="A4" style={s.plainPage}>
+        <Page size="A4" style={plainPageStyle}>
           <Text style={s.docTitle}>{titel}</Text>
           <Text style={s.docSubtitle}>{versionLabel}</Text>
           {koerper}
+          {/* Seitenzahl als direktes Page-Kind mit INLINE-Style (StyleSheet-Ref
+              + render wird in react-pdf 4.5.1 nicht gemalt). */}
+          <Text
+            style={{ position: "absolute", bottom: 40, left: 55, right: 55, fontSize: 7.5, color: "#9aa0a6", textAlign: "right" }}
+            fixed
+            render={({ pageNumber, totalPages }) => (totalPages > 1 ? `Seite ${pageNumber} von ${totalPages}` : "")}
+          />
           <Text style={s.plainFooter} fixed>
             {titel} · {versionLabel}
           </Text>
@@ -252,7 +272,7 @@ export function ContractDocument(data: ContractData) {
   // Eigenstaendiger Vertrag: Nuola-Layout.
   return (
     <Document>
-      <Page size="A4" style={letterStyles.page}>
+      <Page size="A4" style={pageStyle}>
         <Falzmarken />
         <LetterHeader logoPfad={logoPfad} firma={firma} zusatz={{ bearbeiterName, kundennummer }} />
         <Text style={[s.docTitle, s.docTitleGold]}>{titel}</Text>
@@ -261,6 +281,7 @@ export function ContractDocument(data: ContractData) {
         </Text>
         {koerper}
         <LetterFooter firma={firma} />
+        <Seitenzahl />
       </Page>
     </Document>
   );

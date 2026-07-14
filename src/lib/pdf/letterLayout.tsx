@@ -39,8 +39,20 @@ export interface BriefkopfZusatz {
   kundennummer?: number | null;
 }
 
+// Seiten-Style. WICHTIG (react-pdf 4.5.1): KEIN `lineHeight` auf der <Page> -
+// sonst wird der `render`-Callback der Seitenzahl nicht mehr ausgewertet (siehe
+// Seitenzahl()). Der Zeilenabstand 1,5 wird deshalb ueber den Inhalts-Wrapper
+// (letterStyles.body) gesetzt, nicht auf der Seite.
+export const pageStyle = {
+  paddingTop: 40,
+  paddingBottom: 78,
+  paddingHorizontal: 45,
+  fontSize: 10.5,
+  fontFamily: "Helvetica",
+  color: INK,
+} as const;
+
 export const letterStyles = StyleSheet.create({
-  page: { paddingTop: 40, paddingBottom: 70, paddingHorizontal: 45, fontSize: 10.5, fontFamily: "Helvetica", color: INK, lineHeight: 1.5 },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", minHeight: 70 },
   logo: { width: 150, height: "auto" },
   absender: { fontSize: 8.5, color: "#64748b", textAlign: "right" },
@@ -53,7 +65,9 @@ export const letterStyles = StyleSheet.create({
   // Ort + Datum unter dem Betreff, rechtsbuendig (DIN 5008).
   ortDatum: { fontSize: 10.5, textAlign: "right", marginBottom: 12 },
   title: { fontSize: 15, marginBottom: 10, color: GOLD, fontFamily: "Helvetica-Bold" },
-  section: { marginBottom: 14 },
+  // Fliesstext-Abschnitte mit Zeilenabstand 1,5 (frueher ueber die Page gesetzt;
+  // das geht nicht mehr, da Page-lineHeight die Seitenzahl bricht - siehe pageStyle).
+  section: { marginBottom: 14, lineHeight: 1.5 },
   goldBox: { padding: 12, borderWidth: 1, borderColor: GOLD, borderRadius: 4, marginBottom: 14 },
   goldFillBox: { padding: 12, backgroundColor: "#f6edda", borderRadius: 4, marginBottom: 14 },
   boxTitle: { fontSize: 11, marginBottom: 6, fontFamily: "Helvetica-Bold" },
@@ -76,6 +90,16 @@ export function Falzmarken() {
   );
 }
 
+/**
+ * Briefkopf als laufender Kopf (fixed) - Logo links, Absender/Bearbeitung rechts.
+ * Weil er `fixed` ist, wiederholt er sich auf JEDER Seite und reserviert dort
+ * Platz; so beginnt der Text auch auf Folgeseiten tief wie bei einem normalen
+ * Brief. Muss als erstes Kind der Page stehen, damit der Inhalt darunter fliesst.
+ *
+ * Hinweis: Ein nur-auf-Folgeseiten reduzierter Kopf (nur Logo) liesse sich nur
+ * ueber den `render`-Callback bauen; der stellt in react-pdf 4.5.1 Layout-Inhalte
+ * jedoch unzuverlaessig dar. Daher wird bewusst der volle Kopf wiederholt.
+ */
 export function LetterHeader({
   logoPfad,
   firma,
@@ -86,7 +110,7 @@ export function LetterHeader({
   zusatz?: BriefkopfZusatz;
 }) {
   return (
-    <View style={letterStyles.headerRow}>
+    <View style={letterStyles.headerRow} fixed>
       {logoPfad ? <Image src={logoPfad} style={letterStyles.logo} /> : <Text>{firma.name}</Text>}
       <View>
         <Text style={letterStyles.absender}>{firma.name}</Text>
@@ -156,5 +180,26 @@ export function LetterFooter({ firma }: { firma: FirmaBriefData }) {
       {zeile2 ? <Text>{zeile2}</Text> : null}
       {zeile3 ? <Text>{zeile3}</Text> : null}
     </View>
+  );
+}
+
+/**
+ * Seitenzahl "Seite X von Y" unten rechts - nur bei mehrseitigen Briefen.
+ *
+ * WICHTIG (react-pdf 4.5.1): Der `render`-Callback wird nur zuverlaessig
+ * ausgewertet, wenn dieses Element ein DIREKTES Kind der <Page> ist (nicht in
+ * LetterFooter o.ae. geschachtelt) und einen expliziten Inline-Style hat. Daher
+ * ist es eine eigene Komponente, die jedes mehrseitige Dokument neben
+ * <LetterFooter/> als letztes Page-Kind einbindet.
+ */
+export function Seitenzahl() {
+  return (
+    <Text
+      // Style bewusst INLINE (nicht via StyleSheet.create): in react-pdf 4.5.1
+      // wird der `render`-Callback bei einer StyleSheet-Referenz nicht gemalt.
+      style={{ position: "absolute", bottom: 60, left: 45, right: 45, fontSize: 7.5, color: "#94a3b8", textAlign: "right" }}
+      fixed
+      render={({ pageNumber, totalPages }) => (totalPages > 1 ? `Seite ${pageNumber} von ${totalPages}` : "")}
+    />
   );
 }

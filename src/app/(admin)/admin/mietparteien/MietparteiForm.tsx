@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { PriceInput, type SteuersatzOption } from "@/components/PriceInput";
+import { PriceInput, GrossPriceInput, type SteuersatzOption } from "@/components/PriceInput";
 import { createMietparteiAction, updateMietparteiAction, type MietparteiFormState } from "./actions";
 
 const initialState: MietparteiFormState = {};
@@ -48,7 +48,6 @@ interface MietparteiFormProps {
     grundversorgerGrundpreisBrutto: number | null;
     grundversorgerArbeitspreisBrutto: number | null;
     angenommenerJahresverbrauchKwh: number | null;
-    vertragsart: "EIGENSTAENDIG" | "ERGAENZUNG" | null;
   };
 }
 
@@ -249,19 +248,6 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
             <option value="INAKTIV">Inaktiv</option>
           </select>
         </div>
-        <div className="field">
-          <label htmlFor="vertragsart">Vertragsart</label>
-          <select
-            id="vertragsart"
-            name="vertragsart"
-            className="select-inline"
-            defaultValue={val("vertragsart", mietpartei?.vertragsart ?? "")}
-          >
-            <option value="">— noch offen —</option>
-            <option value="EIGENSTAENDIG">Eigenständiger Vertrag</option>
-            <option value="ERGAENZUNG">Ergänzung zum Mietvertrag</option>
-          </select>
-        </div>
       </div>
 
       <div className="form-grid">
@@ -418,11 +404,11 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
       {mode === "create" && (
         <div className="section" style={{ marginTop: "1rem", background: "var(--color-primary-tint)" }}>
           <h3 style={{ marginTop: 0 }}>Monatlicher Abschlag</h3>
-          <PriceInput
-            label="Abschlag (€/Monat)"
-            nettoName="abschlagNetto"
+          <GrossPriceInput
+            label="Abschlag (€/Monat, inkl. MwSt.)"
+            bruttoName="abschlagBrutto"
             steuersatzName="abschlagSteuersatzId"
-            defaultNetto={valNum("abschlagNetto", 0)}
+            defaultBrutto={valNum("abschlagBrutto", 0)}
             defaultSteuersatzId={val("abschlagSteuersatzId", "")}
             steuersaetze={steuersaetze}
           />

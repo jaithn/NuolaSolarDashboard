@@ -51,7 +51,8 @@ const DOK_LABEL: Record<DokTyp, string> = {
 
 const PDF_LINKS: { dok: string; label: string }[] = [
   { dok: "anschreiben", label: "Anschreiben" },
-  { dok: "vertrag", label: "Vertrag" },
+  { dok: "vertrag-eigenstaendig", label: "Stromliefervertrag" },
+  { dok: "vertrag-ergaenzung", label: "Ergänzung zum Mietvertrag" },
   { dok: "sepa", label: "SEPA-Lastschriftmandat" },
 ];
 
@@ -64,15 +65,11 @@ function fmtGroesse(bytes: number): string {
 export function OnboardingPanel({
   mietparteiId,
   status,
-  vertragsart,
-  signierteVersionId,
   vertragVersionen,
   dokumente,
 }: {
   mietparteiId: string;
   status: Status;
-  vertragsart: VertragArt | null;
-  signierteVersionId: string | null;
   vertragVersionen: VertragVersion[];
   dokumente: Dokument[];
 }) {
@@ -83,39 +80,35 @@ export function OnboardingPanel({
   const istAktiv = status === "AKTIV";
   const andereStatus = (["INTERESSENT", "AKTIV", "INAKTIV"] as Status[]).filter((s) => s !== status);
 
-  // Versionen der gewählten Vertragsart (für die Anzeige der aktuell gültigen Version).
-  const versionenDerArt = vertragsart ? vertragVersionen.filter((v) => v.art === vertragsart) : [];
-  const aktiveVersion = versionenDerArt.find((v) => v.gueltigBis === null) ?? null;
-  const signierteVersion = vertragVersionen.find((v) => v.id === signierteVersionId) ?? null;
+  // Aktuell gültige Version je Vertragsart (beide Verträge werden immer erzeugt).
+  const aktiveVersion = (art: VertragArt) =>
+    vertragVersionen.find((v) => v.art === art && v.gueltigBis === null) ?? null;
 
   return (
     <div>
-      {/* 0) Vertrag: Art + Version */}
-      <h3 style={{ marginTop: 0 }}>Vertrag</h3>
-      {vertragsart ? (
-        <>
-          <p style={{ marginTop: 0 }}>
-            Vertragsart: <strong>{VERTRAGSART_LABEL[vertragsart]}</strong>
-            {aktiveVersion ? (
-              <>
-                {" "}
-                · aktuell gültige Version: <strong>{aktiveVersion.version}</strong>
-              </>
-            ) : (
-              " · keine gültige Version vorhanden (bitte Texte synchronisieren)"
-            )}
-          </p>
-          <p style={{ marginTop: 0, fontSize: "0.85rem", color: "var(--color-muted)" }}>
-            Der Vertrag wird in der Version{" "}
-            <strong>{(signierteVersion ?? aktiveVersion)?.version ?? "—"}</strong> erzeugt.
-          </p>
-        </>
-      ) : (
-        <p style={{ marginTop: 0, color: "var(--color-muted)" }}>
-          Noch keine Vertragsart gewählt. Bitte oben in den Stammdaten festlegen (eigenständiger Vertrag oder
-          Ergänzung zum Mietvertrag).
-        </p>
-      )}
+      {/* 0) Verträge: es werden immer beide erzeugt (eigenständiger Vertrag UND
+         Ergänzung zum Mietvertrag) - keine Vertragsart-Auswahl mehr nötig. */}
+      <h3 style={{ marginTop: 0 }}>Verträge</h3>
+      <p style={{ marginTop: 0 }}>
+        Für jede Mietpartei werden <strong>beide</strong> Verträge erzeugt:
+      </p>
+      <ul style={{ marginTop: 0 }}>
+        {(["EIGENSTAENDIG", "ERGAENZUNG"] as VertragArt[]).map((art) => {
+          const v = aktiveVersion(art);
+          return (
+            <li key={art}>
+              {VERTRAGSART_LABEL[art]}:{" "}
+              {v ? (
+                <>
+                  aktuell gültige Version <strong>{v.version}</strong>
+                </>
+              ) : (
+                <span style={{ color: "var(--color-muted)" }}>keine gültige Version (bitte Texte synchronisieren)</span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
 
       {/* 1) PDF-Briefe erzeugen */}
       <h3 style={{ marginTop: "1.5rem" }}>Onboarding-Unterlagen (PDF)</h3>

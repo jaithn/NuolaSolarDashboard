@@ -1,9 +1,11 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import {
   letterStyles,
+  pageStyle,
   LetterHeader,
   EmpfaengerAdresse,
   LetterFooter,
+  Seitenzahl,
   OrtDatumZeile,
   Falzmarken,
   GOLD,
@@ -91,7 +93,7 @@ export function OnboardingLetterDocument({
 
   return (
     <Document>
-      <Page size="A4" style={letterStyles.page}>
+      <Page size="A4" style={pageStyle}>
         <Falzmarken />
         <LetterHeader logoPfad={logoPfad} firma={firma} zusatz={{ bearbeiterName, kundennummer }} />
         <EmpfaengerAdresse empfaenger={empfaenger} firma={firma} />
@@ -242,6 +244,7 @@ export function OnboardingLetterDocument({
         </View>
 
         <LetterFooter firma={firma} />
+        <Seitenzahl />
       </Page>
     </Document>
   );
