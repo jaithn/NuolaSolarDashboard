@@ -1,11 +1,10 @@
 ---
-art: ERGAENZUNG
-version: 1.1
-titel: Ergänzung zum Mietvertrag – Stromversorgung / Gebäudestromanlage
-gueltigAb: 2026-07-13
----
+
+## art: ERGAENZUNG version: 1.1 titel: Ergänzung zum Mietvertrag – Stromversorgung / Gebäudestromanlage gueltigAb: 2026-07-13
 
 ## § 1 Stromversorgung
+
+Diese Ergänzung ist Bestandteil des bestehenden Mietvertrages.  
 
 Das Mietobjekt wird über eine Gebäudestromanlage im Sinne des § 42b Energiewirtschaftsgesetz (EnWG) mit elektrischer Energie versorgt. Betreiberin der Gebäudestromanlage und Stromlieferantin ist die Nuola Solar GbR.
 

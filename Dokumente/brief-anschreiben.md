@@ -10,9 +10,9 @@ Ihr Solarstrom vom eigenen Dach
 
 ## einleitung
 
-mein Name ist Janik Kühn. Als Sohn von Ihren Vermietern {vermieter} bin ich mit der Heidelberger Str. 32 persönlich verbunden. Gemeinsam mit meiner Ehefrau Katharina Niermann-Kühn haben wir auf dem Dach des Hauses eine Solaranlage installiert.
+mein Name ist Janik Kühn. Als Sohn von Ihren Vermietern {vermieter} bin ich mit der Heidelberger Str. 32 persönlich verbunden. Meine Ehefrau Katharina Niermann-Kühn und ich haben auf dem Dach des Hauses eine Solaranlage installiert.
 
-Wir freuen uns sehr, Ihnen künftig direkt vor Ort erzeugten Solarstrom anbieten zu können. Hinter dem Angebot steht also kein anonymer Stromkonzern, sondern Menschen, die Ihr Zuhause und das Gebäude persönlich kennen. Unser Ziel ist es, Ihnen sauberen Strom vom eigenen Dach zu transparenten und fairen Konditionen zur Verfügung zu stellen.
+Wir freuen uns sehr, Ihnen künftig direkt vor Ort erzeugten Solarstrom anbieten zu können. Hinter dem Angebot steht also kein anonymer Stromkonzern, sondern Menschen, die Ihr Zuhause und das Gebäude persönlich kennen. Unser Ziel ist es, Ihnen nachhaltigen Strom vom eigenen Dach zu transparenten und fairen Konditionen zur Verfügung zu stellen.
 
 Nachfolgend finden Sie Ihr persönliches Angebot sowie einen Vergleich mit den aktuellen Konditionen des örtlichen Grundversorgers.
 
@@ -38,7 +38,9 @@ Versorgung über die Gebäudestromanlage
 
 ## gebaeude-text
 
-Ihr Zuhause wird über eine Gebäudestromanlage im Sinne des § 42b Energiewirtschaftsgesetz (EnWG) mit Strom versorgt. Betreiberin der Anlage und Ihre Stromlieferantin ist unsere {firma}. Der Strom kommt direkt vom Dach an Ihre Verbrauchsstelle, ohne Umweg über ein öffentliches Netz. Die Belieferung läuft für die Dauer Ihres Mietverhältnisses; Ihr Verbrauch wird über einen geeichten, Ihrer Wohnung eindeutig zugeordneten Stromzähler erfasst.
+Ihr Zuhause wird über eine Gebäudestromanlage im Sinne des § 42b Energiewirtschaftsgesetz (EnWG) mit Strom versorgt. Betreiberin der Anlage und Ihre Stromlieferantin ist unsere Firma {firma}. Der Strom kommt direkt vom Dach an Ihre Verbrauchsstelle, ohne Umweg über ein öffentliches Netz. Die Belieferung läuft für die Dauer Ihres Mietverhältnisses; Ihr Verbrauch wird über einen geeichten, Ihrer Wohnung eindeutig zugeordneten Stromzähler erfasst.  
+  
+Selbstverständlich ist Ihre Stromversorgung jederzeit sichergestellt. Reicht die auf dem Dach erzeugte Solarenergie einmal nicht aus, wird Ihr Bedarf automatisch über das öffentliche Stromnetz ergänzt. Für Sie entsteht dadurch keinerlei Mehraufwand.  
 
 ## abschlag-titel
 
@@ -46,7 +48,7 @@ Ihr monatlicher Abschlag
 
 ## abschlag-text
 
-Ihr monatlicher Abschlag basiert auf einem angenommenen Jahresverbrauch von {verbrauch}. Weicht Ihr tatsächlicher Verbrauch hiervon ab, sagen Sie uns einfach Ihren letzten Jahresverbrauch – wir passen Ihren Abschlag dann gerne an.
+Ihr monatlicher Abschlag basiert auf einem angenommenen Jahresverbrauch von {verbrauch}. Weicht Ihr tatsächlicher Verbrauch hiervon ab, teilen Sie uns einfach Ihren letzten Jahresverbrauch mit – wir passen Ihren Abschlag dann gerne entsprechend an.
 
 ## wechsel-titel
 
