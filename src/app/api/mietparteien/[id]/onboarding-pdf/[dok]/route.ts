@@ -8,6 +8,7 @@ import {
 
 const GUELTIGE_DOKS: OnboardingDokumentTyp[] = [
   "anschreiben",
+  "anschreiben-persoenlich",
   "vertrag-eigenstaendig",
   "vertrag-ergaenzung",
   "sepa",

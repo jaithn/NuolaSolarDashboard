@@ -50,7 +50,8 @@ const DOK_LABEL: Record<DokTyp, string> = {
 };
 
 const PDF_LINKS: { dok: string; label: string }[] = [
-  { dok: "anschreiben", label: "Anschreiben" },
+  { dok: "anschreiben", label: "Anschreiben (formal)" },
+  { dok: "anschreiben-persoenlich", label: "Anschreiben (persönlich)" },
   { dok: "vertrag-eigenstaendig", label: "Stromliefervertrag" },
   { dok: "vertrag-ergaenzung", label: "Ergänzung zum Mietvertrag" },
   { dok: "sepa", label: "SEPA-Lastschriftmandat" },

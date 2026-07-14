@@ -7,6 +7,17 @@ gebaut; gepinnte Releases über Git-Tags `vX.Y.Z` (siehe CLAUDE.md → „Versio
 Die jeweils oberste Sektion dieser Datei wird beim Image-Build als „Neu in dieser
 Version" in die Image-Beschreibung (`org.opencontainers.image.description`) übernommen.
 
+## Persönliches Anschreiben & editierbare Texte im Server-Dateisystem
+
+- **Zweites, persönlicheres Anschreiben** zusätzlich zum formalen – im Admin unter
+  „Onboarding-Unterlagen" getrennt auswählbar. Familiär formuliert (Bezug zu
+  Vermieter:innen und Haus über `{vermieter}`/`{objektadresse}`), mit eigener
+  Grußformel und Unterschrift.
+- **Editierbare Vorlagentexte im Data-Volume:** die `.md`-Dateien liegen im Docker
+  jetzt unter `/app/data/Dokumente` und sind damit direkt vom Server-Dateisystem aus
+  bearbeitbar. Beim Update werden nur neue Vorlagen ergänzt, eigene Änderungen bleiben
+  erhalten. Ordner per `DOKUMENTE_DIR` konfigurierbar.
+
 ## Onboarding: Kundennummer, beide Verträge, Brutto-Abschlag, Folgeseiten
 
 - **Kundennummer** wird jetzt schon beim Anlegen jeder Mietpartei vergeben (auch

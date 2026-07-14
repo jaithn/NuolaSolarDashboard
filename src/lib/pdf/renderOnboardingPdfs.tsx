@@ -13,10 +13,16 @@ import { OnboardingLetterDocument, type OnboardingVergleich } from "./onboarding
 import { ContractDocument, type ContractParty, type VertragVariant } from "./contractDocument";
 import { SepaMandateDocument } from "./sepaMandateDocument";
 
-export type OnboardingDokumentTyp = "anschreiben" | "vertrag-eigenstaendig" | "vertrag-ergaenzung" | "sepa";
+export type OnboardingDokumentTyp =
+  | "anschreiben"
+  | "anschreiben-persoenlich"
+  | "vertrag-eigenstaendig"
+  | "vertrag-ergaenzung"
+  | "sepa";
 
 export const ONBOARDING_DOKUMENT_TITEL: Record<OnboardingDokumentTyp, string> = {
   anschreiben: "Anschreiben",
+  "anschreiben-persoenlich": "Anschreiben (persoenlich)",
   "vertrag-eigenstaendig": "Stromliefervertrag",
   "vertrag-ergaenzung": "Ergaenzung zum Mietvertrag",
   sepa: "SEPA-Lastschriftmandat",
@@ -131,8 +137,11 @@ export async function renderOnboardingPdf(
   const { firma, logoAbsolutePath, empfaenger, mietpartei, konditionen, objekt, displayName, bearbeiterName, kundennummer, glaeubigerId } =
     basis;
 
-  if (dok === "anschreiben") {
-    const abschnitte = await ladeBriefAbschnitte("anschreiben");
+  if (dok === "anschreiben" || dok === "anschreiben-persoenlich") {
+    // Zwei auswaehlbare Anschreiben-Varianten (formal / persoenlich) - beide
+    // teilen sich Layout und Datenbasis, unterscheiden sich nur in den Texten
+    // (BriefVorlage-Schluessel = dok).
+    const abschnitte = await ladeBriefAbschnitte(dok);
     const gvArbeit = mietpartei.grundversorgerArbeitspreisBrutto;
     const gvGrund = mietpartei.grundversorgerGrundpreisBrutto;
     const vergleich: OnboardingVergleich | null = mietpartei.grundversorgerName
@@ -160,6 +169,7 @@ export async function renderOnboardingPdf(
             ? mietpartei.einheit.vermieterName
             : objekt.vermieterName) || undefined
         }
+        objektadresseText={objekt.adresse || undefined}
         verbrauchText={
           mietpartei.angenommenerJahresverbrauchKwh
             ? `${mietpartei.angenommenerJahresverbrauchKwh.toLocaleString("de-DE")} kWh`

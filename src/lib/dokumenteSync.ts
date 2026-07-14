@@ -8,13 +8,18 @@ import type { VertragArt } from "@prisma/client";
 // Vertragsversionen (mit automatischer Historie/Gueltigkeit) und Brief-Vorlagen.
 // Idempotent - kann beliebig oft ausgefuehrt werden (Seed/CLI/Admin-Button).
 
+// Ordner der editierbaren .md-Vorlagen. Standard: "Dokumente" im Projekt-Root.
+// Im Docker-Betrieb setzt der Entrypoint `DOKUMENTE_DIR` auf einen Ordner im
+// Data-Volume (`/app/data/Dokumente`), damit die Dateien vom Server-Dateisystem
+// aus bearbeitbar sind.
 function dokumenteDir(): string {
-  return path.join(process.cwd(), "Dokumente");
+  return process.env.DOKUMENTE_DIR || path.join(process.cwd(), "Dokumente");
 }
 
 // Dateiname (ohne "brief-"/".md") -> Schluessel der BriefVorlage.
 const BRIEF_SCHLUESSEL: Record<string, string> = {
   anschreiben: "anschreiben",
+  "anschreiben-persoenlich": "anschreiben-persoenlich",
   "sepa-mandat": "sepa",
   willkommen: "willkommen",
 };

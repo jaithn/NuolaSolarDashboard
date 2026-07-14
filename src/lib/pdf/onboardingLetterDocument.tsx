@@ -13,7 +13,7 @@ import {
   type EmpfaengerData,
 } from "./letterLayout";
 import { fmtEuro, fmtPreisKwh, fmtProzent } from "./format";
-import { abschnitt } from "@/lib/dokumenteVorlagen";
+import { abschnitt, abschnittZeilen } from "@/lib/dokumenteVorlagen";
 
 export interface OnboardingVergleich {
   name: string;
@@ -36,6 +36,8 @@ export interface OnboardingLetterData {
   lieferterminText?: string;
   // Vermieter:in-Bezeichnung für den Solaranlagen-Passus (Name oder Fallback).
   vermieterText?: string;
+  // Adresse des Wohngebäudes (Straße & Hausnr.) für den {objektadresse}-Platzhalter.
+  objektadresseText?: string;
   // Angenommener Jahresverbrauch als Text (z.B. "3.500 kWh") oder Fallback.
   verbrauchText?: string;
   konditionen: {
@@ -71,6 +73,7 @@ export function OnboardingLetterDocument({
   anredeSatz,
   lieferterminText,
   vermieterText,
+  objektadresseText,
   verbrauchText,
   konditionen,
   vergleich,
@@ -82,14 +85,15 @@ export function OnboardingLetterDocument({
   const telefonZusatz = kontaktTelefon ? ` unter ${kontaktTelefon}` : "";
   const vermieter = vermieterText || "Ihrer Vermieterin bzw. Ihrem Vermieter";
   const verbrauch = verbrauchText || "einem üblichen Haushaltsverbrauch";
-  const t = (key: string, standard: string) =>
-    abschnitt(abschnitte, key, standard, {
-      firma: firma.name,
-      telefon: telefonZusatz,
-      vermieter,
-      liefertermin: lieferterminText || "",
-      verbrauch,
-    });
+  const platzhalter = {
+    firma: firma.name,
+    telefon: telefonZusatz,
+    vermieter,
+    objektadresse: objektadresseText || "Ihrem Wohngebäude",
+    liefertermin: lieferterminText || "",
+    verbrauch,
+  };
+  const t = (key: string, standard: string) => abschnitt(abschnitte, key, standard, platzhalter);
 
   return (
     <Document>
@@ -239,8 +243,10 @@ export function OnboardingLetterDocument({
               `Haben Sie Fragen oder Unklarheiten zu Ihrem Angebot? Rufen Sie uns gerne an${telefonZusatz}. Wir beraten Sie persönlich und beantworten Ihre Fragen rund um Ihre Stromversorgung.`,
             )}
           </Text>
-          <Text style={{ marginTop: 10 }}>Mit freundlichen Grüßen</Text>
-          <Text>{firma.name}</Text>
+          <Text style={{ marginTop: 10 }}>{t("gruss", "Mit freundlichen Grüßen")}</Text>
+          {abschnittZeilen(abschnitte, "unterschrift", [firma.name], platzhalter).map((zeile, i) => (
+            <Text key={i}>{zeile}</Text>
+          ))}
         </View>
 
         <LetterFooter firma={firma} />

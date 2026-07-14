@@ -28,8 +28,19 @@ export HOME=/tmp
 # --accept-data-loss; bricht bei potenziell destruktiven Aenderungen ab).
 ./node_modules/.bin/prisma db push --skip-generate
 
-# Vertrags-/Brieftexte aus dem "Dokumente"-Ordner in die DB einlesen (idempotent).
-# Schlaegt der Sync fehl, soll der Container trotzdem starten (|| true).
+# Editierbare Vertrags-/Brieftexte (.md) im Data-Volume ablegen, damit sie vom
+# Server-Dateisystem aus bearbeitet werden koennen. Der ins Image gebackene
+# Ordner /app/Dokumente dient als Vorlage: beim ersten Start werden alle Dateien
+# uebernommen; bei spaeteren Updates ergaenzt "cp -n" nur NEUE Dateien und laesst
+# bereits vorhandene (evtl. bearbeitete) unberuehrt. Danach liest der Sync und
+# die App (Button "Vertragstexte einlesen") aus diesem Ordner.
+export DOKUMENTE_DIR=/app/data/Dokumente
+mkdir -p "$DOKUMENTE_DIR"
+cp -rn /app/Dokumente/. "$DOKUMENTE_DIR/" 2>/dev/null || true
+
+# Vertrags-/Brieftexte aus dem Dokumente-Ordner (DOKUMENTE_DIR) in die DB
+# einlesen (idempotent). Schlaegt der Sync fehl, soll der Container trotzdem
+# starten (|| true).
 ./node_modules/.bin/tsx scripts/sync-dokumente.ts || true
 
 # Ein Image, ein Container: Web-Server und Shelly-Polling-Worker laufen
