@@ -1,20 +1,21 @@
-# Anschreiben (Onboarding) – persönliche Variante
+# Anschreiben (Onboarding)
 
-Persönlichere, familiäre Alternative zum formalen Anschreiben (`brief-anschreiben.md`). Im Admin unter „Onboarding-Unterlagen" getrennt auswählbar. Abschnitte werden über die `## schluessel`\-Überschriften benannt; die Schlüssel dürfen NICHT umbenannt werden (der Code liest sie darüber aus).
-
-Platzhalter: `{firma}` = Firmenname, `{telefon}` = telefonischer Rückfrage-Zusatz (z. B. „ unter 0221 …", sonst leer), `{vermieter}` = Vermieter:in (Name oder Fallback), `{objektadresse}` = Adresse des Wohngebäudes (Straße & Hausnr.), `{liefertermin}` = geplanter Liefertermin (DD.MM.YYYY, sonst leer), `{verbrauch}` = angenommener Jahresverbrauch (z. B. „3.500 kWh", sonst Fallback). Dynamische Tabellen (Konditionen, Grundversorger-Vergleich) erzeugt das System selbst. Die Unterschrift steht in `## unterschrift` (je Zeile mit „- " davor).
+Editierbarer Text des Onboarding-Anschreibens. Abschnitte sind über die
+`## schluessel`-Überschriften benannt; die Schlüssel dürfen NICHT umbenannt
+werden (der Code liest sie darüber aus). Platzhalter: `{firma}` = Firmenname,
+`{telefon}` = telefonischer Rückfrage-Zusatz (z. B. „ unter 0221 …", sonst leer),
+`{vermieter}` = Vermieter:in (Name oder Fallback), `{liefertermin}` = geplanter
+Liefertermin (DD.MM.YYYY, sonst leer), `{verbrauch}` = angenommener
+Jahresverbrauch (z. B. „3.500 kWh", sonst Fallback). Dynamische Tabellen
+(Konditionen, Grundversorger-Vergleich) erzeugt das System selbst.
 
 ## titel
 
-Ihr Solarstrom vom eigenen Dach
+Ihr Strom aus der Gebäudestromanlage
 
 ## einleitung
 
-mein Name ist Janik Kühn. Als Sohn von Ihren Vermietern {vermieter} bin ich mit der Heidelberger Str. 32 persönlich verbunden. Meine Ehefrau Katharina Niermann-Kühn und ich haben auf dem Dach des Hauses eine Solaranlage installiert.
-
-Wir freuen uns sehr, Ihnen künftig direkt vor Ort erzeugten Solarstrom anbieten zu können. Hinter dem Angebot steht also kein anonymer Stromkonzern, sondern Menschen, die Ihr Zuhause und das Gebäude persönlich kennen. Unser Ziel ist es, Ihnen nachhaltigen Strom vom eigenen Dach zu transparenten und fairen Konditionen zur Verfügung zu stellen.
-
-Nachfolgend finden Sie Ihr persönliches Angebot sowie einen Vergleich mit den aktuellen Konditionen des örtlichen Grundversorgers.
+in Absprache mit {vermieter} haben wir auf Ihrem Wohngebäude eine Solaranlage installiert und freuen uns, Sie nun mit umweltfreundlichem Strom aus der Gebäudestromanlage versorgen zu können. Nachfolgend finden Sie Ihre persönlichen Konditionen sowie einen Vergleich mit dem örtlichen Grundversorger.
 
 ## liefertermin-hinweis
 
@@ -38,9 +39,7 @@ Versorgung über die Gebäudestromanlage
 
 ## gebaeude-text
 
-Ihr Zuhause wird über eine Gebäudestromanlage im Sinne des § 42b Energiewirtschaftsgesetz (EnWG) mit Strom versorgt. Betreiberin der Anlage und Ihre Stromlieferantin ist unsere Firma {firma}. Der Strom kommt direkt vom Dach an Ihre Verbrauchsstelle, ohne Umweg über ein öffentliches Netz. Die Belieferung läuft für die Dauer Ihres Mietverhältnisses; Ihr Verbrauch wird über einen geeichten, Ihrer Wohnung eindeutig zugeordneten Stromzähler erfasst.  
-  
-Selbstverständlich ist Ihre Stromversorgung jederzeit sichergestellt. Reicht die auf dem Dach erzeugte Solarenergie einmal nicht aus, wird Ihr Bedarf automatisch über das öffentliche Stromnetz ergänzt. Für Sie entsteht dadurch keinerlei Mehraufwand.  
+Das Mietobjekt wird über eine Gebäudestromanlage im Sinne des § 42b Energiewirtschaftsgesetz (EnWG) mit elektrischer Energie versorgt. Betreiberin der Gebäudestromanlage und Stromlieferantin ist die {firma}. Der Strom wird ohne Durchleitung durch ein öffentliches Netz an Ihre Verbrauchsstelle geliefert. Die Belieferung erfolgt für die Dauer des Mietverhältnisses; der Stromverbrauch wird über einen geeichten, Ihrem Mietobjekt eindeutig zugeordneten Stromzähler erfasst.
 
 ## abschlag-titel
 
@@ -48,7 +47,7 @@ Ihr monatlicher Abschlag
 
 ## abschlag-text
 
-Ihr monatlicher Abschlag basiert auf einem angenommenen Jahresverbrauch von {verbrauch}. Weicht Ihr tatsächlicher Verbrauch hiervon ab, teilen Sie uns einfach Ihren letzten Jahresverbrauch mit – wir passen Ihren Abschlag dann gerne entsprechend an.
+Ihr monatlicher Abschlag basiert auf einem angenommenen Jahresverbrauch von {verbrauch}. Weicht Ihr tatsächlicher Verbrauch hiervon ab, teilen Sie uns Ihren letzten Jahresverbrauch gerne schriftlich mit – wir passen Ihren Abschlag dann entsprechend an.
 
 ## wechsel-titel
 
@@ -56,21 +55,12 @@ Der Wechsel – ganz ohne Aufwand für Sie
 
 ## wechsel-text
 
-Damit der Wechsel für Sie so einfach wie möglich ist, übernehmen wir die Abmeldung Ihres bisherigen Stromzählers und die Kündigung Ihres bestehenden Stromliefervertrags. Nachteile entstehen Ihnen dadurch nicht. Etwaige Gasverträge bleiben unberührt.
+Um Ihnen den Wechsel so einfach wie möglich zu machen, übernehmen wir die Abmeldung Ihres bisherigen Stromzählers und die Kündigung Ihres bestehenden Stromliefervertrags. Für Sie entstehen dadurch keine finanziellen Nachteile. Etwaige Gasverträge bleiben hiervon unberührt.
 
 ## rueckgabe-text
 
-Bitte senden Sie uns die beigefügten, von Ihnen unterschriebenen Unterlagen möglichst innerhalb von fünf Werktagen per Post oder E-Mail zurück, damit wir Ihre Belieferung rechtzeitig einrichten können. Ganz herzlichen Dank für Ihr Vertrauen!
+Bitte senden Sie uns die beigefügten, von Ihnen unterschriebenen Unterlagen möglichst innerhalb von fünf Werktagen per Post oder E-Mail zurück, damit wir Ihre Belieferung rechtzeitig einrichten können. Herzlichen Dank für Ihr Vertrauen!
 
 ## schluss
 
-Haben Sie Fragen oder Wünsche? Melden Sie sich einfach bei uns – am liebsten persönlich{telefon}. Als Familie hinter Nuola Solar sind wir direkt für Sie da und kümmern uns gern um alles rund um Ihre Stromversorgung.
-
-## gruss
-
-Herzliche Grüße
-
-## unterschrift
-
--   Katharina Niermann-Kühn und Janik Kühn
--   Nuola Solar GbR
+Haben Sie Fragen oder Unklarheiten zu Ihrem Angebot? Rufen Sie uns gerne an{telefon}. Wir beraten Sie persönlich und beantworten Ihre Fragen rund um Ihre Stromversorgung.

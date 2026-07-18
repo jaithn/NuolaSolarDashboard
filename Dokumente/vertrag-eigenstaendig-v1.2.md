@@ -2,7 +2,7 @@
 art: EIGENSTAENDIG
 version: 1.2
 titel: Stromliefervertrag
-gueltigAb: 2026-07-13
+gueltigAb: 2026-07-14
 ---
 
 ## § 1 Stromversorgung
