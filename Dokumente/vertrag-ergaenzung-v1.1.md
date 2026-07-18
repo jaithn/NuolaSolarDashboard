@@ -7,6 +7,8 @@ gueltigAb: 2026-01-13
 
 ## § 1 Stromversorgung
 
+Diese Ergänzung ist Bestandteil des bestehenden Mietvertrages.
+
 Das Mietobjekt wird über eine Gebäudestromanlage im Sinne des § 42b Energiewirtschaftsgesetz (EnWG) mit elektrischer Energie versorgt. Betreiberin der Gebäudestromanlage und Stromlieferantin ist die Nuola Solar GbR.
 
 Der Mieter erklärt sich damit einverstanden, den für das Mietobjekt benötigten Strom ausschließlich über die Gebäudestromanlage der Nuola Solar GbR zu beziehen.
