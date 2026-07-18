@@ -29,6 +29,9 @@ interface MietparteiFormProps {
     einheitId: string;
     vorname: string;
     name: string;
+    vorname2: string;
+    name2: string;
+    anrede2: "HERR" | "FRAU" | "FAMILIE" | "FIRMA" | null;
     firma: string | null;
     anrede: "HERR" | "FRAU" | "FAMILIE" | "FIRMA" | null;
     email: string;
@@ -72,6 +75,13 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
   // oder eine natuerliche Person handelt.
   const [anrede, setAnrede] = useState(val("anrede", mietpartei?.anrede ?? ""));
   const istFirma = anrede === "FIRMA";
+
+  // Zweite Person (z.B. Ehepaar): per Button ein-/ausblendbar. Vorbelegt sichtbar,
+  // wenn der Datensatz bereits eine zweite Person hat oder nach einem Fehler.
+  const [zweitePerson, setZweitePerson] = useState(
+    state.values?.hatZweitePerson === "on" ||
+      Boolean(mietpartei?.vorname2?.trim() || mietpartei?.name2?.trim()),
+  );
 
   // Einheit (kontrolliert), damit die Mietpartei-Anschrift der Objektadresse der
   // gewählten Einheit folgen kann (Default, im Formular überschreibbar).
@@ -206,7 +216,61 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
             disabled={istFirma}
             required={!istFirma}
           />
+          {/* Button neben dem Namen: zweite Person hinzufuegen (nur bei Personen). */}
+          {!istFirma && !zweitePerson && (
+            <button
+              type="button"
+              className="btn-small"
+              style={{ marginTop: "0.4rem" }}
+              onClick={() => setZweitePerson(true)}
+            >
+              + Zweite Person
+            </button>
+          )}
         </div>
+        {/* Hidden-Feld: teilt dem Server mit, ob eine zweite Person aktiv ist
+           (die Felder koennen ausgeblendet/leer sein). */}
+        <input type="hidden" name="hatZweitePerson" value={!istFirma && zweitePerson ? "on" : ""} />
+        {/* Zweite Person (z.B. Ehepaar): eigene Anrede + Vor-/Nachname. */}
+        {!istFirma && zweitePerson && (
+          <>
+            <div className="field">
+              <label htmlFor="anrede2">Anrede (2. Person)</label>
+              <select
+                id="anrede2"
+                name="anrede2"
+                className="select-inline"
+                defaultValue={val("anrede2", mietpartei?.anrede2 ?? "")}
+              >
+                <option value="">— keine —</option>
+                <option value="HERR">Herr</option>
+                <option value="FRAU">Frau</option>
+                <option value="FAMILIE">Familie</option>
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="vorname2">Vorname (2. Person)</label>
+              <input
+                id="vorname2"
+                name="vorname2"
+                type="text"
+                defaultValue={val("vorname2", mietpartei?.vorname2 ?? "")}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="name2">Name (2. Person)</label>
+              <input id="name2" name="name2" type="text" defaultValue={val("name2", mietpartei?.name2 ?? "")} />
+              <button
+                type="button"
+                className="btn-small btn-danger"
+                style={{ marginTop: "0.4rem" }}
+                onClick={() => setZweitePerson(false)}
+              >
+                Zweite Person entfernen
+              </button>
+            </div>
+          </>
+        )}
         <div className="field">
           <label htmlFor="email">E-Mail</label>
           <input id="email" name="email" type="email" required defaultValue={val("email", mietpartei?.email ?? "")} />

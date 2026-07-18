@@ -19,7 +19,8 @@ export async function createObjektAction(
   const adresse = String(formData.get("adresse") ?? "").trim();
   const plz = String(formData.get("plz") ?? "").trim();
   const ort = String(formData.get("ort") ?? "").trim();
-  const { vermieterModus, vermieterName, vermieterAnschrift, vermieterPlz, vermieterOrt } = parseVermieter(formData);
+  const { vermieterModus, vermieterName, vermieterName2, vermieterAnschrift, vermieterPlz, vermieterOrt } =
+    parseVermieter(formData);
   const bearbeiterName = String(formData.get("bearbeiterName") ?? "").trim() || null;
   const liefertermin = parseDatum(formData.get("geplanterLiefertermin"));
   const hatWaermepumpe = formData.get("hatWaermepumpe") === "on";
@@ -28,7 +29,7 @@ export async function createObjektAction(
   await prisma.objekt.create({
     data: {
       name, adresse, plz, ort,
-      vermieterModus, vermieterName, vermieterAnschrift, vermieterPlz, vermieterOrt,
+      vermieterModus, vermieterName, vermieterName2, vermieterAnschrift, vermieterPlz, vermieterOrt,
       bearbeiterName, geplanterLiefertermin: liefertermin, hatWaermepumpe,
     },
   });
@@ -55,6 +56,7 @@ function parseDatum(value: FormDataEntryValue | null): Date | null {
 function parseVermieter(formData: FormData): {
   vermieterModus: "PRO_OBJEKT" | "PRO_EINHEIT";
   vermieterName: string | null;
+  vermieterName2: string | null;
   vermieterAnschrift: string | null;
   vermieterPlz: string;
   vermieterOrt: string;
@@ -62,15 +64,24 @@ function parseVermieter(formData: FormData): {
   const modusRaw = String(formData.get("vermieterModus") ?? "PRO_OBJEKT");
   const vermieterModus = modusRaw === "PRO_EINHEIT" ? "PRO_EINHEIT" : "PRO_OBJEKT";
   if (vermieterModus === "PRO_EINHEIT") {
-    return { vermieterModus, vermieterName: null, vermieterAnschrift: null, vermieterPlz: "", vermieterOrt: "" };
+    return {
+      vermieterModus,
+      vermieterName: null,
+      vermieterName2: null,
+      vermieterAnschrift: null,
+      vermieterPlz: "",
+      vermieterOrt: "",
+    };
   }
   const vermieterName = String(formData.get("vermieterName") ?? "").trim();
+  const vermieterName2 = String(formData.get("vermieterName2") ?? "").trim();
   const vermieterAnschrift = String(formData.get("vermieterAnschrift") ?? "").trim();
   const vermieterPlz = String(formData.get("vermieterPlz") ?? "").trim();
   const vermieterOrt = String(formData.get("vermieterOrt") ?? "").trim();
   return {
     vermieterModus,
     vermieterName: vermieterName || null,
+    vermieterName2: vermieterName2 || null,
     vermieterAnschrift: vermieterAnschrift || null,
     vermieterPlz,
     vermieterOrt,
@@ -88,7 +99,8 @@ export async function updateObjektAction(
   const adresse = String(formData.get("adresse") ?? "").trim();
   const plz = String(formData.get("plz") ?? "").trim();
   const ort = String(formData.get("ort") ?? "").trim();
-  const { vermieterModus, vermieterName, vermieterAnschrift, vermieterPlz, vermieterOrt } = parseVermieter(formData);
+  const { vermieterModus, vermieterName, vermieterName2, vermieterAnschrift, vermieterPlz, vermieterOrt } =
+    parseVermieter(formData);
   const bearbeiterName = String(formData.get("bearbeiterName") ?? "").trim() || null;
   const liefertermin = parseDatum(formData.get("geplanterLiefertermin"));
   const hatWaermepumpe = formData.get("hatWaermepumpe") === "on";
@@ -98,7 +110,7 @@ export async function updateObjektAction(
     where: { id },
     data: {
       name, adresse, plz, ort,
-      vermieterModus, vermieterName, vermieterAnschrift, vermieterPlz, vermieterOrt,
+      vermieterModus, vermieterName, vermieterName2, vermieterAnschrift, vermieterPlz, vermieterOrt,
       bearbeiterName, geplanterLiefertermin: liefertermin, hatWaermepumpe,
     },
   });
@@ -137,6 +149,7 @@ export async function createEinheitAction(
   // Vermieter-Angaben nur bei echten Wohneinheiten (Ergaenzung zum Mietvertrag).
   const istWohnung = typ === "WOHNEINHEIT";
   const vermieterName = istWohnung ? String(formData.get("vermieterName") ?? "").trim() : "";
+  const vermieterName2 = istWohnung ? String(formData.get("vermieterName2") ?? "").trim() : "";
   const vermieterAnschrift = istWohnung ? String(formData.get("vermieterAnschrift") ?? "").trim() : "";
   const vermieterPlz = istWohnung ? String(formData.get("vermieterPlz") ?? "").trim() : "";
   const vermieterOrt = istWohnung ? String(formData.get("vermieterOrt") ?? "").trim() : "";
@@ -146,7 +159,8 @@ export async function createEinheitAction(
   await prisma.einheit.create({
     data: {
       objektId, bezeichnung, typ,
-      vermieterName: vermieterName || null, vermieterAnschrift: vermieterAnschrift || null,
+      vermieterName: vermieterName || null, vermieterName2: vermieterName2 || null,
+      vermieterAnschrift: vermieterAnschrift || null,
       vermieterPlz, vermieterOrt,
     },
   });
@@ -166,6 +180,7 @@ export async function updateEinheitAction(
   const typ = parseEinheitTyp(formData);
   const istWohnung = typ === "WOHNEINHEIT";
   const vermieterName = istWohnung ? String(formData.get("vermieterName") ?? "").trim() : "";
+  const vermieterName2 = istWohnung ? String(formData.get("vermieterName2") ?? "").trim() : "";
   const vermieterAnschrift = istWohnung ? String(formData.get("vermieterAnschrift") ?? "").trim() : "";
   const vermieterPlz = istWohnung ? String(formData.get("vermieterPlz") ?? "").trim() : "";
   const vermieterOrt = istWohnung ? String(formData.get("vermieterOrt") ?? "").trim() : "";
@@ -175,7 +190,8 @@ export async function updateEinheitAction(
     where: { id },
     data: {
       bezeichnung, typ,
-      vermieterName: vermieterName || null, vermieterAnschrift: vermieterAnschrift || null,
+      vermieterName: vermieterName || null, vermieterName2: vermieterName2 || null,
+      vermieterAnschrift: vermieterAnschrift || null,
       vermieterPlz, vermieterOrt,
     },
   });

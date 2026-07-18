@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { updateEinheitAction, type ObjektFormState } from "../../objekte/actions";
 import { EinheitTypFeld, type EinheitTyp } from "../../objekte/EinheitTypFeld";
+import { ZweiterNameFeld } from "@/components/ZweiterNameFeld";
 
 const initialState: ObjektFormState = {};
 
@@ -12,6 +13,7 @@ export function EditEinheitForm({
   typ: typInitial,
   vermieterProEinheit,
   vermieterName,
+  vermieterName2,
   vermieterAnschrift,
   vermieterPlz,
   vermieterOrt,
@@ -21,6 +23,7 @@ export function EditEinheitForm({
   typ: EinheitTyp;
   vermieterProEinheit: boolean;
   vermieterName: string | null;
+  vermieterName2: string | null;
   vermieterAnschrift: string | null;
   vermieterPlz: string;
   vermieterOrt: string;
@@ -44,6 +47,11 @@ export function EditEinheitForm({
             <div className="field">
               <label htmlFor="vermieterName">Vermieter:in (Name)</label>
               <input id="vermieterName" name="vermieterName" type="text" defaultValue={vermieterName ?? ""} />
+              <ZweiterNameFeld
+                label="Zweite:r Vermieter:in (Name)"
+                buttonLabel="+ Zweite:r Vermieter:in"
+                defaultValue={vermieterName2 ?? ""}
+              />
             </div>
             <div className="field">
               <label htmlFor="vermieterAnschrift">Vermieter:in (Straße &amp; Hausnr.)</label>

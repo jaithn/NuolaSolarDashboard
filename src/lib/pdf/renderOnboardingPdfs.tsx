@@ -2,7 +2,13 @@ import path from "node:path";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { prisma } from "@/lib/db";
 import { berechneBrutto } from "@/lib/steuer";
-import { mietparteiAnzeigeName, anredeSatz, anredeKurz, mietparteiPostanschrift } from "@/lib/mietpartei";
+import {
+  mietparteiAnzeigeName,
+  anredeSatz,
+  empfaengerAnredeKurz,
+  mietparteiPostanschrift,
+  kombiniereNamen,
+} from "@/lib/mietpartei";
 import { aktiveVertragVersion } from "@/lib/vertrag";
 import type { VertragArt } from "@prisma/client";
 import { ladeBriefAbschnitte } from "@/lib/briefVorlagen";
@@ -101,7 +107,7 @@ async function ladeBasis(mietparteiId: string) {
   const displayName = mietparteiAnzeigeName(mietpartei);
   const post = mietparteiPostanschrift(mietpartei, objekt);
   const empfaenger: EmpfaengerData = {
-    anredeKurz: anredeKurz(mietpartei.anrede),
+    anredeKurz: empfaengerAnredeKurz(mietpartei),
     name: displayName,
     strasse: post.strasse,
     plzOrt: post.plzOrt,
@@ -166,8 +172,8 @@ export async function renderOnboardingPdf(
         lieferterminText={objekt.geplanterLiefertermin ? fmtDate(objekt.geplanterLiefertermin) : ""}
         vermieterText={
           (objekt.vermieterModus === "PRO_EINHEIT"
-            ? mietpartei.einheit.vermieterName
-            : objekt.vermieterName) || undefined
+            ? kombiniereNamen(mietpartei.einheit.vermieterName, mietpartei.einheit.vermieterName2)
+            : kombiniereNamen(objekt.vermieterName, objekt.vermieterName2)) || undefined
         }
         objektadresseText={objekt.adresse || undefined}
         verbrauchText={
@@ -213,13 +219,13 @@ export async function renderOnboardingPdf(
     const vermieter =
       objekt.vermieterModus === "PRO_EINHEIT"
         ? {
-            name: mietpartei.einheit.vermieterName,
+            name: kombiniereNamen(mietpartei.einheit.vermieterName, mietpartei.einheit.vermieterName2),
             strasse: mietpartei.einheit.vermieterAnschrift,
             ort: mietpartei.einheit.vermieterOrt,
             plzOrt: `${mietpartei.einheit.vermieterPlz} ${mietpartei.einheit.vermieterOrt}`.trim(),
           }
         : {
-            name: objekt.vermieterName,
+            name: kombiniereNamen(objekt.vermieterName, objekt.vermieterName2),
             strasse: objekt.vermieterAnschrift,
             ort: objekt.vermieterOrt,
             plzOrt: `${objekt.vermieterPlz} ${objekt.vermieterOrt}`.trim(),

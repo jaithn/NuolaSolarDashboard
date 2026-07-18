@@ -31,6 +31,9 @@ model Objekt {
   // Postleitzahl/Ort separat (vermieterPlz/-Ort) fuer eine vollstaendige,
   // strukturierte Vermieteranschrift auf den Vertraegen.
   vermieterName      String?
+  // Optionaler zweiter Vermietername (z.B. Eigentuemer-Ehepaar). Wird im Vertrag
+  // mit " und " an vermieterName angehaengt.
+  vermieterName2     String?
   vermieterAnschrift String?
   vermieterPlz       String  @default("")
   vermieterOrt       String  @default("")
@@ -77,6 +80,8 @@ model Einheit {
   // vermieterModus = PRO_EINHEIT hat (Objekt aus mehreren Eigentumswohnungen).
   // vermieterAnschrift = Strasse & Hausnummer; PLZ/Ort separat.
   vermieterName      String?
+  // Optionaler zweiter Vermietername (analog Objekt.vermieterName2).
+  vermieterName2     String?
   vermieterAnschrift String?
   vermieterPlz       String  @default("")
   vermieterOrt       String  @default("")
@@ -257,6 +262,14 @@ model Mietpartei {
   // Vorname der natuerlichen Person. Optional; der Nachname steht in "name"
   // (fuer die Anrede "Sehr geehrte/r Herr/Frau {name}"). Bei Firmen leer.
   vorname       String   @default("")
+  // Optionale ZWEITE Person der Mietpartei (z.B. Ehepaar). Leer -> nur eine
+  // Person. Der Anzeigename kombiniert beide (mietparteiAnzeigeName): bei
+  // gleichem Nachnamen "Vorname1 und Vorname2 Nachname", sonst "Vorname1 Name1
+  // und Vorname2 Name2". Die Briefanrede (anredeSatz) nutzt anrede2 pro Person
+  // (gleicher Nachname -> "Sehr geehrte Familie {Nachname}").
+  vorname2      String   @default("")
+  name2         String   @default("")
+  anrede2       Anrede?
   // Firmenname (juristische Person). Wenn gesetzt, darf "name" leer sein.
   firma         String?
   anrede        Anrede?

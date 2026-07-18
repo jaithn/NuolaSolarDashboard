@@ -38,6 +38,7 @@ export default async function EinheitDetailPage({ params }: { params: Promise<{ 
           vermieterProEinheit={einheit.objekt.vermieterModus === "PRO_EINHEIT"}
           typ={einheit.typ}
           vermieterName={einheit.vermieterName}
+          vermieterName2={einheit.vermieterName2}
           vermieterAnschrift={einheit.vermieterAnschrift}
           vermieterPlz={einheit.vermieterPlz}
           vermieterOrt={einheit.vermieterOrt}

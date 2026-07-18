@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { updateObjektAction, type ObjektFormState } from "../actions";
+import { ZweiterNameFeld } from "@/components/ZweiterNameFeld";
 
 const initialState: ObjektFormState = {};
 
@@ -13,6 +14,7 @@ export function EditObjektForm({
   ort,
   vermieterModus,
   vermieterName,
+  vermieterName2,
   vermieterAnschrift,
   vermieterPlz,
   vermieterOrt,
@@ -27,6 +29,7 @@ export function EditObjektForm({
   ort: string;
   vermieterModus: "PRO_OBJEKT" | "PRO_EINHEIT";
   vermieterName: string | null;
+  vermieterName2: string | null;
   vermieterAnschrift: string | null;
   vermieterPlz: string;
   vermieterOrt: string;
@@ -94,6 +97,11 @@ export function EditObjektForm({
           <div className="field">
             <label htmlFor="vermieterName">Vermieter:in (Name)</label>
             <input id="vermieterName" name="vermieterName" type="text" defaultValue={vermieterName ?? ""} />
+            <ZweiterNameFeld
+              label="Zweite:r Vermieter:in (Name)"
+              buttonLabel="+ Zweite:r Vermieter:in"
+              defaultValue={vermieterName2 ?? ""}
+            />
           </div>
           <div className="field">
             <label htmlFor="vermieterAnschrift">Vermieter:in (Straße &amp; Hausnr.)</label>

@@ -44,6 +44,10 @@ function collectValues(formData: FormData): Record<string, string> {
     "anrede",
     "vorname",
     "name",
+    "hatZweitePerson",
+    "anrede2",
+    "vorname2",
+    "name2",
     "firma",
     "email",
     "telefon",
@@ -84,6 +88,10 @@ type ParsedMietpartei = {
   // Nachname (natuerliche Person). Leerer String erlaubt, wenn firma gesetzt ist
   // (Schema: name String @default("")).
   name: string;
+  // Optionale zweite Person (z.B. Ehepaar). Leer -> nur eine Person.
+  vorname2: string;
+  name2: string;
+  anrede2: Anrede;
   firma: string | null;
   anrede: Anrede;
   email: string;
@@ -114,6 +122,10 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
   const einheitId = String(formData.get("einheitId") ?? "");
   const vorname = String(formData.get("vorname") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
+  const hatZweitePerson = formData.get("hatZweitePerson") === "on";
+  const vorname2 = String(formData.get("vorname2") ?? "").trim();
+  const name2 = String(formData.get("name2") ?? "").trim();
+  const anrede2Raw = String(formData.get("anrede2") ?? "").trim();
   const firma = String(formData.get("firma") ?? "").trim();
   const anredeRaw = String(formData.get("anrede") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
@@ -154,11 +166,18 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
   // Name/Vorname bleiben leer); HERR/FRAU/FAMILIE/keine -> natuerliche Person
   // (Nachname Pflicht, keine Firma).
   const anrede: Anrede = ["HERR", "FRAU", "FAMILIE", "FIRMA"].includes(anredeRaw) ? (anredeRaw as Anrede) : null;
+  // Anrede der zweiten Person (nie FIRMA - die zweite Person ist stets natuerlich).
+  const anrede2: Anrede = ["HERR", "FRAU", "FAMILIE"].includes(anrede2Raw) ? (anrede2Raw as Anrede) : null;
   const istFirma = anrede === "FIRMA";
+  // Zweite Person nur bei natuerlichen Personen und wenn ausgeklappt/befuellt.
+  const zweitePersonAktiv = !istFirma && hatZweitePerson;
   if (istFirma) {
     if (!firma) return { error: "Bitte den Firmennamen angeben." };
   } else if (!name) {
     return { error: "Bitte den Namen angeben." };
+  }
+  if (zweitePersonAktiv && !vorname2 && !name2) {
+    return { error: "Bitte für die zweite Person mindestens einen Namen angeben (oder das Feld ausblenden)." };
   }
 
   // Strikte E-Mail-Validierung: verhindert u.a. Zeilenumbrueche/Sonderzeichen
@@ -177,6 +196,10 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
       // Konsistenz erzwingen: Firmen haben keinen Vor-/Nachnamen, Personen keine Firma.
       vorname: istFirma ? "" : vorname,
       name: istFirma ? "" : name,
+      // Zweite Person nur bei natuerlichen Personen mit ausgeklapptem Feld.
+      vorname2: zweitePersonAktiv ? vorname2 : "",
+      name2: zweitePersonAktiv ? name2 : "",
+      anrede2: zweitePersonAktiv ? anrede2 : null,
       firma: istFirma ? firma : null,
       anrede,
       email,

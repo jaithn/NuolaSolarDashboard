@@ -5,6 +5,7 @@ import { NewObjektForm } from "./NewObjektForm";
 import { GeraetForm } from "../geraete/GeraetForm";
 import { EinheitTypFeld, type EinheitTyp } from "./EinheitTypFeld";
 import { createEinheitAction, type ObjektFormState } from "./actions";
+import { ZweiterNameFeld } from "@/components/ZweiterNameFeld";
 
 interface ObjektOption {
   id: string;
@@ -118,6 +119,11 @@ function NewEinheitMitAuswahl({ objekte }: { objekte: ObjektOption[] }) {
             <div className="field">
               <label htmlFor="einheit-vermieterName">Vermieter:in (Name)</label>
               <input id="einheit-vermieterName" name="vermieterName" type="text" />
+              <ZweiterNameFeld
+                id="einheit-vermieterName2"
+                label="Zweite:r Vermieter:in (Name)"
+                buttonLabel="+ Zweite:r Vermieter:in"
+              />
             </div>
             <div className="field">
               <label htmlFor="einheit-vermieterAnschrift">Vermieter:in (Straße &amp; Hausnr.)</label>

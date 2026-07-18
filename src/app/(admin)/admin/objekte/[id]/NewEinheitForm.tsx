@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { createEinheitAction } from "../actions";
 import type { ObjektFormState } from "../actions";
+import { ZweiterNameFeld } from "@/components/ZweiterNameFeld";
 import { EinheitTypFeld } from "../EinheitTypFeld";
 
 const initialState: ObjektFormState = {};
@@ -33,6 +34,7 @@ export function NewEinheitForm({
             <div className="field">
               <label htmlFor="vermieterName">Vermieter:in (Name)</label>
               <input id="vermieterName" name="vermieterName" type="text" />
+              <ZweiterNameFeld label="Zweite:r Vermieter:in (Name)" buttonLabel="+ Zweite:r Vermieter:in" />
             </div>
             <div className="field">
               <label htmlFor="vermieterAnschrift">Vermieter:in (Straße &amp; Hausnr.)</label>

@@ -41,6 +41,7 @@ export default async function ObjektDetailPage({
           ort={objekt.ort}
           vermieterModus={objekt.vermieterModus}
           vermieterName={objekt.vermieterName}
+          vermieterName2={objekt.vermieterName2}
           vermieterAnschrift={objekt.vermieterAnschrift}
           vermieterPlz={objekt.vermieterPlz}
           vermieterOrt={objekt.vermieterOrt}

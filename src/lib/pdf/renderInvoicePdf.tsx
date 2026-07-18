@@ -2,7 +2,7 @@ import path from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { prisma } from "@/lib/db";
-import { mietparteiAnzeigeName, anredeSatz, anredeKurz, mietparteiPostanschrift } from "@/lib/mietpartei";
+import { mietparteiAnzeigeName, anredeSatz, empfaengerAnredeKurz, mietparteiPostanschrift } from "@/lib/mietpartei";
 import { InvoiceDocument } from "./invoiceDocument";
 import type { FirmaBriefData } from "./letterLayout";
 
@@ -78,7 +78,7 @@ export async function generateAndStoreInvoicePdf(rechnungId: string): Promise<st
       firma={firmaBrief}
       logoPfad={logoAbsolutePath}
       empfaenger={{
-        anredeKurz: anredeKurz(mp.anrede),
+        anredeKurz: empfaengerAnredeKurz(mp),
         name: displayName,
         ...mietparteiPostanschrift(mp, objekt),
       }}

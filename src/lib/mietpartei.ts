@@ -21,11 +21,55 @@ export function mietparteiPostanschrift(
   return { strasse: strasse || null, plzOrt: `${plz} ${ort}`.trim() || null };
 }
 
-export function mietparteiAnzeigeName(m: { vorname?: string | null; name?: string | null; firma?: string | null }): string {
+/** "Vorname Name" einer einzelnen Person (leere Teile werden weggelassen). */
+function personName(vorname?: string | null, name?: string | null): string {
+  return [vorname?.trim(), name?.trim()].filter(Boolean).join(" ");
+}
+
+/** Gibt es eine zweite Person (Vorname2 oder Name2 gesetzt)? */
+function hatZweitePerson(m: { vorname2?: string | null; name2?: string | null }): boolean {
+  return Boolean(m.vorname2?.trim() || m.name2?.trim());
+}
+
+/** Tragen beide Personen denselben Nachnamen? (Grundlage fuer die Zusammenfassung.) */
+function gleicherNachname(m: { name?: string | null; name2?: string | null }): boolean {
+  const n1 = m.name?.trim();
+  const n2 = m.name2?.trim();
+  return Boolean(n1 && n2 && n1.toLowerCase() === n2.toLowerCase());
+}
+
+export function mietparteiAnzeigeName(m: {
+  vorname?: string | null;
+  name?: string | null;
+  firma?: string | null;
+  vorname2?: string | null;
+  name2?: string | null;
+}): string {
   const firma = m.firma?.trim();
-  const person = [m.vorname?.trim(), m.name?.trim()].filter(Boolean).join(" ");
+  let person: string;
+  if (hatZweitePerson(m)) {
+    if (gleicherNachname(m)) {
+      // Gleicher Nachname -> "Vorname1 und Vorname2 Nachname".
+      const vornamen = [m.vorname?.trim(), m.vorname2?.trim()].filter(Boolean).join(" und ");
+      person = [vornamen, m.name?.trim()].filter(Boolean).join(" ");
+    } else {
+      // Unterschiedlicher Nachname -> "Vorname1 Name1 und Vorname2 Name2".
+      person = [personName(m.vorname, m.name), personName(m.vorname2, m.name2)].filter(Boolean).join(" und ");
+    }
+  } else {
+    person = personName(m.vorname, m.name);
+  }
   if (firma && person) return `${firma} (${person})`;
   return firma || person || "—";
+}
+
+/**
+ * Kombiniert zwei Freitext-Namen (z.B. Vermieter-Ehepaar) als "Name1 und Name2".
+ * Leere Teile werden weggelassen; ohne Namen wird null zurueckgegeben.
+ */
+export function kombiniereNamen(name1?: string | null, name2?: string | null): string | null {
+  const teile = [name1?.trim(), name2?.trim()].filter(Boolean);
+  return teile.length ? teile.join(" und ") : null;
 }
 
 /** Anrede-Text (z.B. "Sehr geehrte Familie …"). Leer, wenn keine Anrede. */
@@ -63,14 +107,61 @@ export function anredeKurz(anrede: Anrede): string {
  * identisch anreden. Bei FIRMA ohne Namen ("Sehr geehrte Damen und Herren"),
  * bei natuerlichen Personen "Sehr geehrte/r … {Nachname}", sonst neutral.
  */
-export function anredeSatz(m: { anrede?: Anrede; vorname?: string | null; name?: string | null; firma?: string | null }): string {
+/** Anrede-Segment einer Person (z.B. "Sehr geehrter Herr Klein"); ohne Anrede "Guten Tag …". */
+function anredeSegment(anrede: Anrede, nachname?: string | null): string {
+  const nm = nachname?.trim() ?? "";
+  const text = anredeText(anrede);
+  return (text ? `${text} ${nm}` : `Guten Tag ${nm}`).trim();
+}
+
+export function anredeSatz(m: {
+  anrede?: Anrede;
+  vorname?: string | null;
+  name?: string | null;
+  firma?: string | null;
+  vorname2?: string | null;
+  name2?: string | null;
+  anrede2?: Anrede;
+}): string {
   if (m.anrede === "FIRMA") return anredeText("FIRMA");
+
+  // Zwei Personen: bei gleichem Nachnamen zusammengefasst als "Familie",
+  // sonst getrennte Anreden (Damen zuerst), die zweite kleingeschrieben
+  // fortgesetzt ("…, sehr geehrter Herr …").
+  if (hatZweitePerson(m)) {
+    if (gleicherNachname(m)) {
+      return `${anredeText("FAMILIE")} ${m.name?.trim()}`;
+    }
+    const p1 = { anrede: m.anrede, nachname: m.name };
+    const p2 = { anrede: m.anrede2, nachname: m.name2 };
+    // Damen zuerst: ist NUR die zweite Person eine Frau, wird sie vorangestellt.
+    const [ersteP, zweiteP] = p2.anrede === "FRAU" && p1.anrede !== "FRAU" ? [p2, p1] : [p1, p2];
+    const erste = anredeSegment(ersteP.anrede, ersteP.nachname);
+    const zweiteRoh = anredeSegment(zweiteP.anrede, zweiteP.nachname);
+    const zweite = zweiteRoh.charAt(0).toLowerCase() + zweiteRoh.slice(1);
+    return `${erste}, ${zweite}`;
+  }
+
   const displayName = mietparteiAnzeigeName(m);
   if (m.anrede === "HERR" || m.anrede === "FRAU" || m.anrede === "FAMILIE") {
     const nachname = m.name?.trim() || m.firma?.trim() || displayName;
     return `${anredeText(m.anrede)} ${nachname}`;
   }
   return `Guten Tag ${displayName}`;
+}
+
+/**
+ * Kurz-Anrede fuer das Anschriftenfeld (Fensterumschlag). Bei zwei Personen mit
+ * gleichem Nachnamen "Familie", sonst die Kurz-Anrede der ersten Person.
+ */
+export function empfaengerAnredeKurz(m: {
+  anrede?: Anrede;
+  name?: string | null;
+  vorname2?: string | null;
+  name2?: string | null;
+}): string {
+  if (hatZweitePerson(m) && gleicherNachname(m)) return "Familie";
+  return anredeKurz(m.anrede);
 }
 
 interface MietparteiStatusInput {
