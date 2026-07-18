@@ -39,6 +39,8 @@ interface MietparteiFormProps {
     einzugsdatum: Date;
     auszugsdatum: Date | null;
     status: "INTERESSENT" | "AKTIV" | "INAKTIV";
+    anschreibenVariante: string;
+    braucheErgaenzung: boolean;
     arbeitspreisNetto: number;
     arbeitspreisSteuersatzId: string;
     grundpreisNetto: number | null;
@@ -251,6 +253,38 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
             <option value="INAKTIV">Inaktiv</option>
           </select>
         </div>
+        <div className="field">
+          <label htmlFor="anschreibenVariante">Anschreiben</label>
+          <select
+            id="anschreibenVariante"
+            name="anschreibenVariante"
+            className="select-inline"
+            defaultValue={val("anschreibenVariante", mietpartei?.anschreibenVariante ?? "formal")}
+          >
+            <option value="formal">Formal</option>
+            <option value="persoenlich">Persönlich</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="field">
+        <label>
+          {/* Hidden-Fallback: sorgt dafuer, dass ein abgehaktes Feld sicher als
+             "aus" ankommt (React 19 sendet unangehakte Checkboxen sonst gar nicht). */}
+          <input
+            type="checkbox"
+            name="braucheErgaenzung"
+            defaultChecked={
+              state.values?.braucheErgaenzung !== undefined
+                ? state.values.braucheErgaenzung === "on"
+                : (mietpartei?.braucheErgaenzung ?? true)
+            }
+          />{" "}
+          Ergänzung zum Mietvertrag erforderlich
+        </label>
+        <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", margin: "0.2rem 0 0" }}>
+          Ist diese Option deaktiviert, wird nur der eigenständige Stromliefervertrag erzeugt.
+        </p>
       </div>
 
       <div className="form-grid">

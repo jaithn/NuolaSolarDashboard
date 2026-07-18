@@ -296,6 +296,16 @@ model Mietpartei {
   // Vorjahresverbrauch nachreichen, woraufhin der Abschlag angepasst wird.
   angenommenerJahresverbrauchKwh  Float?
 
+  // Welche Anschreiben-Variante fuer diese Mietpartei verwendet wird:
+  // "formal" (Default) oder "persoenlich". Steuert, welcher BriefVorlage-Text
+  // das Onboarding-Anschreiben speist und welche Variante als PDF erzeugt/
+  // gespeichert wird. Beim Anlegen waehlbar, im Onboarding aenderbar.
+  anschreibenVariante String @default("formal")
+  // Braucht diese Mietpartei eine Ergaenzung zum Mietvertrag? Wenn false, wird
+  // nur der eigenstaendige Stromliefervertrag erzeugt (z.B. wenn die Partei
+  // ohnehin einen eigenstaendigen Vertrag erhaelt oder kein Mietverhaeltnis mit
+  // Ergaenzungsbedarf besteht). Beim Anlegen abgefragt, im Onboarding aenderbar.
+  braucheErgaenzung Boolean @default(true)
   // Vertragsart dieser Mietpartei (welche Vertrags-PDF erzeugt wird). Null =
   // noch nicht festgelegt.
   vertragsart      VertragArt?

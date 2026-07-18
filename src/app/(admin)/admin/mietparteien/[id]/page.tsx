@@ -157,6 +157,8 @@ export default async function MietparteiDetailPage({ params }: { params: Promise
         <OnboardingPanel
           mietparteiId={mietpartei.id}
           status={mietpartei.status}
+          anschreibenVariante={mietpartei.anschreibenVariante}
+          braucheErgaenzung={mietpartei.braucheErgaenzung}
           vertragVersionen={vertragVersionen.map((v) => ({
             id: v.id,
             art: v.art,

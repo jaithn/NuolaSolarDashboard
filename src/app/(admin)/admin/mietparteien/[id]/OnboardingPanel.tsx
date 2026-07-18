@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import {
   setMietparteiStatusAction,
+  setOnboardingOptionenAction,
   uploadDokumentAction,
   deleteDokumentAction,
   type OnboardingState,
@@ -49,13 +50,6 @@ const DOK_LABEL: Record<DokTyp, string> = {
   SONSTIGES: "Sonstiges",
 };
 
-const PDF_LINKS: { dok: string; label: string }[] = [
-  { dok: "anschreiben", label: "Anschreiben (formal)" },
-  { dok: "anschreiben-persoenlich", label: "Anschreiben (persönlich)" },
-  { dok: "vertrag-eigenstaendig", label: "Stromliefervertrag" },
-  { dok: "vertrag-ergaenzung", label: "Ergänzung zum Mietvertrag" },
-  { dok: "sepa", label: "SEPA-Lastschriftmandat" },
-];
 
 function fmtGroesse(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -66,35 +60,84 @@ function fmtGroesse(bytes: number): string {
 export function OnboardingPanel({
   mietparteiId,
   status,
+  anschreibenVariante,
+  braucheErgaenzung,
   vertragVersionen,
   dokumente,
 }: {
   mietparteiId: string;
   status: Status;
+  anschreibenVariante: string;
+  braucheErgaenzung: boolean;
   vertragVersionen: VertragVersion[];
   dokumente: Dokument[];
 }) {
   const [statusState, statusAction, statusPending] = useActionState(setMietparteiStatusAction, initialState);
+  const [optionenState, optionenAction, optionenPending] = useActionState(setOnboardingOptionenAction, initialState);
   const [uploadState, uploadAction, uploadPending] = useActionState(uploadDokumentAction, initialState);
   const [deleteState, deleteAction, deletePending] = useActionState(deleteDokumentAction, initialState);
 
   const istAktiv = status === "AKTIV";
   const andereStatus = (["INTERESSENT", "AKTIV", "INAKTIV"] as Status[]).filter((s) => s !== status);
 
-  // Aktuell gültige Version je Vertragsart (beide Verträge werden immer erzeugt).
+  // Aktuell gültige Version je Vertragsart.
   const aktiveVersion = (art: VertragArt) =>
     vertragVersionen.find((v) => v.art === art && v.gueltigBis === null) ?? null;
 
+  // PDF-Links folgen den Onboarding-Optionen: nur die gewaehlte Anschreiben-
+  // Variante und die Ergaenzung nur, wenn sie erforderlich ist.
+  const anschreibenDok = anschreibenVariante === "persoenlich" ? "anschreiben-persoenlich" : "anschreiben";
+  const anschreibenLabel =
+    anschreibenVariante === "persoenlich" ? "Anschreiben (persönlich)" : "Anschreiben (formal)";
+  const pdfLinks: { dok: string; label: string }[] = [
+    { dok: anschreibenDok, label: anschreibenLabel },
+    { dok: "vertrag-eigenstaendig", label: "Stromliefervertrag" },
+    ...(braucheErgaenzung ? [{ dok: "vertrag-ergaenzung", label: "Ergänzung zum Mietvertrag" }] : []),
+    { dok: "sepa", label: "SEPA-Lastschriftmandat" },
+  ];
+
   return (
     <div>
-      {/* 0) Verträge: es werden immer beide erzeugt (eigenständiger Vertrag UND
-         Ergänzung zum Mietvertrag) - keine Vertragsart-Auswahl mehr nötig. */}
-      <h3 style={{ marginTop: 0 }}>Verträge</h3>
-      <p style={{ marginTop: 0 }}>
-        Für jede Mietpartei werden <strong>beide</strong> Verträge erzeugt:
-      </p>
+      {/* 0) Onboarding-Optionen: Anschreiben-Variante + Ergaenzungs-Bedarf,
+         auch nachtraeglich aenderbar. */}
+      <h3 style={{ marginTop: 0 }}>Onboarding-Optionen</h3>
+      {optionenState.error && <div className="form-error">{optionenState.error}</div>}
+      {optionenState.success && (
+        <div className="form-notice" role="status">
+          {optionenState.success}
+        </div>
+      )}
+      <form action={optionenAction} style={{ display: "flex", gap: "1rem", alignItems: "flex-end", flexWrap: "wrap" }}>
+        <input type="hidden" name="mietparteiId" value={mietparteiId} />
+        <div className="field" style={{ margin: 0 }}>
+          <label htmlFor="opt-anschreiben">Anschreiben</label>
+          <select
+            id="opt-anschreiben"
+            name="anschreibenVariante"
+            className="select-inline"
+            defaultValue={anschreibenVariante === "persoenlich" ? "persoenlich" : "formal"}
+          >
+            <option value="formal">Formal</option>
+            <option value="persoenlich">Persönlich</option>
+          </select>
+        </div>
+        <div className="field" style={{ margin: 0 }}>
+          <label>
+            <input type="checkbox" name="braucheErgaenzung" defaultChecked={braucheErgaenzung} /> Ergänzung zum
+            Mietvertrag erforderlich
+          </label>
+        </div>
+        <button className="btn-small" type="submit" disabled={optionenPending}>
+          {optionenPending ? "…" : "Optionen speichern"}
+        </button>
+      </form>
+
+      <h3 style={{ marginTop: "1.5rem" }}>Verträge</h3>
       <ul style={{ marginTop: 0 }}>
-        {(["EIGENSTAENDIG", "ERGAENZUNG"] as VertragArt[]).map((art) => {
+        {(braucheErgaenzung
+          ? (["EIGENSTAENDIG", "ERGAENZUNG"] as VertragArt[])
+          : (["EIGENSTAENDIG"] as VertragArt[])
+        ).map((art) => {
           const v = aktiveVersion(art);
           return (
             <li key={art}>
@@ -117,7 +160,7 @@ export function OnboardingPanel({
         Werden bei jedem Abruf frisch aus den aktuellen Stammdaten erzeugt.
       </p>
       <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
-        {PDF_LINKS.map((l) => (
+        {pdfLinks.map((l) => (
           <a
             key={l.dok}
             className="btn-small"

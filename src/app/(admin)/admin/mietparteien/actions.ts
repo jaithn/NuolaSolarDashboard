@@ -53,6 +53,8 @@ function collectValues(formData: FormData): Record<string, string> {
     "einzugsdatum",
     "auszugsdatum",
     "status",
+    "anschreibenVariante",
+    "braucheErgaenzung",
     "arbeitspreisNetto",
     "arbeitspreisSteuersatzId",
     "hatGrundpreis",
@@ -93,6 +95,9 @@ type ParsedMietpartei = {
   einzugsdatum: Date;
   auszugsdatum: Date | null;
   status: "INTERESSENT" | "AKTIV" | "INAKTIV";
+  // Anschreiben-Variante ("formal" | "persoenlich") und Ergaenzungs-Bedarf.
+  anschreibenVariante: "formal" | "persoenlich";
+  braucheErgaenzung: boolean;
   arbeitspreisNetto: number;
   arbeitspreisSteuersatzId: string;
   grundpreisNetto: number | null;
@@ -123,6 +128,10 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
     | "INTERESSENT"
     | "AKTIV"
     | "INAKTIV";
+  const anschreibenVariante = formData.get("anschreibenVariante") === "persoenlich" ? "persoenlich" : "formal";
+  // Checkbox: "on" wenn angehakt. Beim Bearbeiten wird zusaetzlich ein Hidden-
+  // Feld gesendet, damit ein abgehaktes Feld sicher als false ankommt.
+  const braucheErgaenzung = formData.get("braucheErgaenzung") === "on";
   const arbeitspreisNetto = Number(formData.get("arbeitspreisNetto"));
   const arbeitspreisSteuersatzId = String(formData.get("arbeitspreisSteuersatzId") ?? "");
   const hatGrundpreis = formData.get("hatGrundpreis") === "on";
@@ -178,6 +187,8 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
       einzugsdatum: new Date(einzugsdatumRaw),
       auszugsdatum: auszugsdatumRaw ? new Date(auszugsdatumRaw) : null,
       status,
+      anschreibenVariante,
+      braucheErgaenzung,
       arbeitspreisNetto,
       arbeitspreisSteuersatzId,
       grundpreisNetto: hatGrundpreis && Number.isFinite(grundpreisNetto) ? grundpreisNetto : null,
@@ -477,6 +488,31 @@ export async function setMietparteiStatusAction(
     }
   }
   return { success: `Status auf „${statusLabel}" gesetzt.` };
+}
+
+/**
+ * Aktualisiert die Onboarding-Optionen einer Mietpartei nachtraeglich:
+ * Anschreiben-Variante (formal/persoenlich) und Ergaenzungs-Bedarf. Wird vom
+ * OnboardingPanel genutzt, damit beide Optionen auch nach dem Anlegen aenderbar
+ * bleiben.
+ */
+export async function setOnboardingOptionenAction(
+  _prevState: OnboardingState,
+  formData: FormData,
+): Promise<OnboardingState> {
+  await requireAdmin();
+
+  const mietparteiId = String(formData.get("mietparteiId") ?? "");
+  if (!mietparteiId) return { error: "Mietpartei fehlt." };
+  const anschreibenVariante = formData.get("anschreibenVariante") === "persoenlich" ? "persoenlich" : "formal";
+  const braucheErgaenzung = formData.get("braucheErgaenzung") === "on";
+
+  await prisma.mietpartei.update({
+    where: { id: mietparteiId },
+    data: { anschreibenVariante, braucheErgaenzung },
+  });
+  revalidatePath(`/admin/mietparteien/${mietparteiId}`);
+  return { success: "Onboarding-Optionen gespeichert." };
 }
 
 const DOKUMENT_TYPEN: DokumentTyp[] = ["VERTRAG", "SEPA", "ANSCHREIBEN", "SONSTIGES"];
