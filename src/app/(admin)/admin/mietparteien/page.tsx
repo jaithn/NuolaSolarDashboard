@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { MietparteiAnlegenPanel } from "./MietparteiAnlegenPanel";
-import { isMietparteiEffectivelyAktiv, mietparteiAnzeigeName } from "@/lib/mietpartei";
+import { mietparteiAnzeigeName } from "@/lib/mietpartei";
 
 export default async function MietparteienPage() {
   const [mietparteien, einheiten, steuersaetze] = await Promise.all([
@@ -44,13 +44,17 @@ export default async function MietparteienPage() {
           </thead>
           <tbody>
             {mietparteien.map((m) => {
-              const aktiv = isMietparteiEffectivelyAktiv(m);
-              // Interessenten sind (noch) nicht effektiv aktiv, aber als eigener
-              // Status kenntlich zu machen; sonst greift aktiv/inaktiv.
+              // Die Badge folgt dem manuell gepflegten Status (das, was der Admin
+              // eingestellt hat). Ein zukuenftiger Lieferbeginn macht eine als AKTIV
+              // gefuehrte Mietpartei bewusst NICHT "inaktiv" (der frueher genutzte
+              // "effektiv aktiv"-Check gilt nur fuer Login/Abrechnung/Polling).
+              // Nur ein bereits erfolgter Auszug wird zusaetzlich als inaktiv
+              // gekennzeichnet.
+              const ausgezogen = m.auszugsdatum != null && m.auszugsdatum < new Date();
               const badge =
                 m.status === "INTERESSENT"
                   ? { klasse: "interessent", text: "Interessent:in" }
-                  : aktiv
+                  : m.status === "AKTIV" && !ausgezogen
                     ? { klasse: "aktiv", text: "aktiv" }
                     : { klasse: "inaktiv", text: "inaktiv" };
               return (

@@ -15,14 +15,11 @@ export function BatchEntwuerfeForm() {
     <div>
       <form action={formAction}>
         {state.error && <div className="form-error">{state.error}</div>}
+        {/* Der Sammel-Lauf erzeugt bewusst NUR Jahresabrechnungen. Schluss-
+           rechnungen entstehen einzeln beim Auszug/Mieterwechsel und werden
+           hier daher nicht angeboten. */}
+        <input type="hidden" name="typ" value="JAHRESABRECHNUNG" />
         <div className="form-grid">
-          <div className="field">
-            <label htmlFor="batch-typ">Typ</label>
-            <select id="batch-typ" name="typ" className="select-inline" defaultValue="JAHRESABRECHNUNG">
-              <option value="JAHRESABRECHNUNG">Jahresabrechnung</option>
-              <option value="SCHLUSSRECHNUNG">Schlussrechnung</option>
-            </select>
-          </div>
           <div className="field">
             <label htmlFor="batch-von">Zeitraum von</label>
             <input id="batch-von" name="von" type="date" required defaultValue={jahresanfang} />

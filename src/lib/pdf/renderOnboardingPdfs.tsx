@@ -199,10 +199,14 @@ export async function renderOnboardingPdf(
     }
     const variant: VertragVariant = art === "ERGAENZUNG" ? "ergaenzung" : "eigenstaendig";
 
+    // Anschrift der Mietpartei (Postanschrift, faellt auf die Objektadresse
+    // zurueck, wenn an der Mietpartei nichts hinterlegt ist) - NICHT die reine
+    // Objektadresse: die im Kasten genannte Strombezieher-/Mieter-Anschrift ist
+    // die der Vertragspartei.
     const strombezieher: ContractParty = {
       rolle: variant === "ergaenzung" ? "Mieter" : "Strombezieher",
       name: displayName,
-      zeilen: [objekt.adresse || "", `${objekt.plz} ${objekt.ort}`.trim()],
+      zeilen: [empfaenger.strasse || "", empfaenger.plzOrt || ""].filter(Boolean),
     };
     // Vermieter: bei PRO_EINHEIT aus der Wohneinheit, sonst objektweit.
     // Anschrift strukturiert: Strasse (vermieterAnschrift) + "PLZ Ort".

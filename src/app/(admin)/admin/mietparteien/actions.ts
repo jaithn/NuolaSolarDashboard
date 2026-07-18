@@ -20,6 +20,12 @@ export interface MietparteiFormState {
   // Rohwerte zum Wiederbefuellen des Formulars nach einem Validierungsfehler
   // (React 19 setzt unkontrollierte Felder sonst nach der Server-Action zurueck).
   values?: Record<string, string>;
+  // Wechselt bei jedem erfolgreichen Speichern (Edit). Fliesst in den Form-key
+  // ein, damit die kontrollierten Felder (u.a. das Anrede-<select>) nach dem
+  // automatischen Formular-Reset von React 19 neu gemountet und mit dem
+  // aktuellen Wert befuellt werden - sonst zeigt das <select> faelschlich wieder
+  // "- keine -", obwohl der Wert korrekt gespeichert wurde.
+  savedNonce?: string;
   // Gesetzt, wenn die gewaehlte Einheit bereits eine aktive Mietpartei hat:
   // die UI fragt dann zurueck ("Ist das richtig?") und erhebt das Auszugsdatum
   // des Vormieters, bevor der Umzug bestaetigt wird.
@@ -312,7 +318,10 @@ export async function updateMietparteiAction(
   await prisma.mietpartei.update({ where: { id }, data: parsed.data });
   revalidatePath("/admin/mietparteien");
   revalidatePath(`/admin/mietparteien/${id}`);
-  return {};
+  // savedNonce erzwingt einen Remount der kontrollierten Felder (siehe key im
+  // Formular), damit die Anzeige nach dem React-19-Formular-Reset den frisch
+  // gespeicherten Werten entspricht.
+  return { success: "Änderungen gespeichert.", savedNonce: Date.now().toString() };
 }
 
 export interface AbschlagFormState {

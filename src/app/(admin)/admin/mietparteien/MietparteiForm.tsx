@@ -109,7 +109,10 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
   const [abschlagGueltigAb, setAbschlagGueltigAb] = useState(val("abschlagGueltigAb") || einzugsdatum);
 
   return (
-    <form action={formAction} key={`${mietpartei?.id ?? "create"}-${state.confirmUmzug ? "confirm" : "form"}`}>
+    <form
+      action={formAction}
+      key={`${mietpartei?.id ?? "create"}-${state.confirmUmzug ? "confirm" : state.savedNonce ?? "form"}`}
+    >
       {state.error && <div className="form-error">{state.error}</div>}
       {state.success && <div className="form-notice" role="status">{state.success}</div>}
       {mietpartei && <input type="hidden" name="id" value={mietpartei.id} />}

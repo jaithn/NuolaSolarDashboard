@@ -152,7 +152,9 @@ export async function batchEntwuerfeAction(
 ): Promise<BatchFormState> {
   await requireAdmin();
 
-  const typ = String(formData.get("typ") ?? "JAHRESABRECHNUNG") as "JAHRESABRECHNUNG" | "SCHLUSSRECHNUNG";
+  // Der Sammel-Lauf erzeugt ausschliesslich Jahresabrechnungen - Schluss-
+   // rechnungen werden nur einzeln beim Auszug/Mieterwechsel erstellt.
+  const typ = "JAHRESABRECHNUNG" as const;
   const vonRaw = String(formData.get("von") ?? "");
   const bisRaw = String(formData.get("bis") ?? "");
   if (!vonRaw || !bisRaw) {

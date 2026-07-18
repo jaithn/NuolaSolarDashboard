@@ -91,8 +91,9 @@ export default async function RechnungenPage({
       <div className="section">
         <h2>Entwürfe für alle aktiven Einheiten erzeugen</h2>
         <p>
-          Erstellt in einem Schwung Rechnungsentwürfe für alle im Zeitraum aktiven Mietparteien. Einheiten mit bereits
-          bestehender, überschneidender Rechnung werden übersprungen.
+          Erstellt in einem Schwung <strong>Jahresabrechnungs</strong>-Entwürfe für alle im Zeitraum aktiven
+          Mietparteien. Einheiten mit bereits bestehender, überschneidender Rechnung werden übersprungen.
+          Schlussrechnungen werden hier nicht erzeugt – sie entstehen einzeln beim Auszug/Mieterwechsel.
         </p>
         <BatchEntwuerfeForm />
       </div>
