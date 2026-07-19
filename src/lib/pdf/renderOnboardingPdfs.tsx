@@ -321,6 +321,10 @@ export async function renderOnboardingPdf(
       bearbeiterName={bearbeiterName}
       kundennummer={kundennummer}
       zahlungspflichtiger={displayName}
+      kontoinhaber={mietpartei.kontoinhaber}
+      iban={mietpartei.iban}
+      bankName={mietpartei.bankName}
+      bic={mietpartei.bicOderBlz}
       glaeubigerId={glaeubigerId}
       mandatsreferenz={mandatsreferenz(kundennummer)}
       abschnitte={abschnitte}

@@ -12,6 +12,7 @@ import { mietparteiAnzeigeName } from "@/lib/mietpartei";
 import { speichereDokument, loescheDokument } from "@/lib/dokumente";
 import { vergibKundennummerFallsNoetig } from "@/lib/kundennummer";
 import { berechneNettoAusBrutto } from "@/lib/steuer";
+import { normalisiereIban, istGueltigeIban, bankAusIban } from "@/lib/bank/iban";
 import type { DokumentTyp } from "@prisma/client";
 
 export interface MietparteiFormState {
@@ -51,6 +52,9 @@ function collectValues(formData: FormData): Record<string, string> {
     "firma",
     "email",
     "telefon",
+    "kontoinhaber",
+    "iban",
+    "bankName",
     "anschrift",
     "anschriftPlz",
     "anschriftOrt",
@@ -96,6 +100,12 @@ type ParsedMietpartei = {
   anrede: Anrede;
   email: string;
   telefon: string | null;
+  // Bankverbindung (SEPA). iban normalisiert; bankName/bicOderBlz aus der IBAN
+  // abgeleitet (Fallback: manuell eingegebener Bankname).
+  kontoinhaber: string;
+  iban: string | null;
+  bankName: string | null;
+  bicOderBlz: string | null;
   // Postanschrift (Strasse) der Mietpartei; leer -> Objektadresse. PLZ/Ort separat.
   anschrift: string | null;
   anschriftPlz: string;
@@ -130,6 +140,9 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
   const anredeRaw = String(formData.get("anrede") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
   const telefon = String(formData.get("telefon") ?? "").trim();
+  const kontoinhaber = String(formData.get("kontoinhaber") ?? "").trim();
+  const ibanRaw = String(formData.get("iban") ?? "").trim();
+  const bankNameManuell = String(formData.get("bankName") ?? "").trim();
   const anschrift = String(formData.get("anschrift") ?? "").trim();
   const anschriftPlz = String(formData.get("anschriftPlz") ?? "").trim();
   const anschriftOrt = String(formData.get("anschriftOrt") ?? "").trim();
@@ -193,6 +206,14 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
     return { error: "Der Arbeitspreis ist ungültig." };
   }
 
+  // IBAN optional; wenn angegeben, normalisieren + Pruefsumme pruefen und Bank
+  // ableiten (Fallback: manuell eingegebener Bankname).
+  const iban = ibanRaw ? normalisiereIban(ibanRaw) : "";
+  if (iban && !istGueltigeIban(iban)) {
+    return { error: "Die IBAN ist ungültig." };
+  }
+  const bankInfo = iban ? bankAusIban(iban) : null;
+
   return {
     data: {
       einheitId,
@@ -208,6 +229,10 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
       anrede,
       email,
       telefon: telefon || null,
+      kontoinhaber,
+      iban: iban || null,
+      bankName: bankInfo?.bankName || bankNameManuell || null,
+      bicOderBlz: bankInfo?.bic || null,
       anschrift: anschrift || null,
       anschriftPlz,
       anschriftOrt,
@@ -360,6 +385,15 @@ export async function updateMietparteiAction(
   // Formular), damit die Anzeige nach dem React-19-Formular-Reset den frisch
   // gespeicherten Werten entspricht.
   return { success: "Änderungen gespeichert.", savedNonce: Date.now().toString() };
+}
+
+/**
+ * Live-Ermittlung von Bankname/BIC aus einer IBAN (fuer die Formular-Vorbefuellung
+ * beim Eintippen). Gibt null zurueck, wenn die IBAN ungueltig oder unbekannt ist.
+ */
+export async function bankAusIbanAction(iban: string): Promise<{ bankName: string; bic: string } | null> {
+  await requireAdmin();
+  return bankAusIban(iban);
 }
 
 export interface AbschlagFormState {

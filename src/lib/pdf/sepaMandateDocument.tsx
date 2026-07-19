@@ -22,6 +22,13 @@ export interface SepaMandateData {
   kundennummer?: number | null;
   // Name des Zahlungspflichtigen (Mietende) für den Mandatstext.
   zahlungspflichtiger: string;
+  // Optionale, bereits bekannte Kontoverbindung - wird ins Mandat eingedruckt
+  // (z.B. beim automatisch erzeugten Neu-Mandat nach einer IBAN-Änderung).
+  // Fehlt ein Wert, bleibt die jeweilige Ausfülllinie leer.
+  kontoinhaber?: string | null;
+  iban?: string | null;
+  bankName?: string | null;
+  bic?: string | null;
   // SEPA-Gläubiger-ID (Firma) und Mandatsreferenz (aus Kundennummer). Wenn
   // beide vorhanden, werden sie direkt eingedruckt und der Ergänzungshinweis
   // entfällt; sonst bleibt eine Ausfülllinie stehen.
@@ -62,6 +69,10 @@ export function SepaMandateDocument({
   bearbeiterName,
   kundennummer,
   zahlungspflichtiger,
+  kontoinhaber,
+  iban,
+  bankName,
+  bic,
   glaeubigerId,
   mandatsreferenz,
   abschnitte,
@@ -111,10 +122,10 @@ export function SepaMandateDocument({
         <Text style={{ ...letterStyles.boxTitle, marginBottom: 8 }}>
           {t("kontoverbindung-titel", "Ihre Kontoverbindung")}
         </Text>
-        <Feld label="Kontoinhaber (Vor- und Nachname)" wert={zahlungspflichtiger} />
-        <Feld label="Name des Kreditinstituts" />
-        <Feld label="IBAN" />
-        <Feld label="BIC" />
+        <Feld label="Kontoinhaber (Vor- und Nachname)" wert={kontoinhaber?.trim() || zahlungspflichtiger} />
+        <Feld label="Name des Kreditinstituts" wert={bankName?.trim() || undefined} />
+        <Feld label="IBAN" wert={iban?.trim() || undefined} />
+        <Feld label="BIC" wert={bic?.trim() || undefined} />
 
         <Text style={s.mandatText}>
           {t(

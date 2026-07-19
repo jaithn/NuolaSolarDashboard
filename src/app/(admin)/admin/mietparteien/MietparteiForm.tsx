@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { PriceInput, GrossPriceInput, type SteuersatzOption } from "@/components/PriceInput";
 import { berechneBrutto } from "@/lib/steuer";
-import { createMietparteiAction, updateMietparteiAction, type MietparteiFormState } from "./actions";
+import { createMietparteiAction, updateMietparteiAction, bankAusIbanAction, type MietparteiFormState } from "./actions";
 
 const initialState: MietparteiFormState = {};
 
@@ -37,6 +37,9 @@ interface MietparteiFormProps {
     anrede: "HERR" | "FRAU" | "FAMILIE" | "FIRMA" | null;
     email: string;
     telefon: string | null;
+    kontoinhaber: string;
+    iban: string | null;
+    bankName: string | null;
     anschrift: string | null;
     anschriftPlz: string;
     anschriftOrt: string;
@@ -127,6 +130,16 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
   // wird der Vorschlag nicht mehr ueberschrieben.
   const [abschlagBrutto, setAbschlagBrutto] = useState<number>(Number(val("abschlagBrutto")) || 0);
   const [abschlagManuell, setAbschlagManuell] = useState<boolean>(Boolean(state.values?.abschlagBrutto));
+
+  // Bankname wird beim IBAN-Verlassen automatisch aus der IBAN ermittelt
+  // (bankAusIbanAction), bleibt aber manuell ueberschreibbar.
+  const [bankName, setBankName] = useState(val("bankName", mietpartei?.bankName ?? ""));
+  const onIbanBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
+    const iban = e.target.value.trim();
+    if (!iban) return;
+    const info = await bankAusIbanAction(iban);
+    if (info?.bankName) setBankName(info.bankName);
+  };
 
   const satzProzent = (id: string | undefined | null) =>
     steuersaetze.find((s) => s.id === id)?.prozentsatz ?? 0;
@@ -435,6 +448,40 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
       <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", marginTop: 0 }}>
         Vorbelegt mit der Objektadresse – bei Bedarf anpassen (z. B. abweichende Rechnungsanschrift).
       </p>
+
+      <div className="section" style={{ marginTop: "1rem" }}>
+        <h3 style={{ marginTop: 0 }}>Bankverbindung (SEPA)</h3>
+        <div className="form-grid">
+          <div className="field">
+            <label htmlFor="kontoinhaber">Kontoinhaber:in (Vor- und Nachname)</label>
+            <input
+              id="kontoinhaber"
+              name="kontoinhaber"
+              type="text"
+              defaultValue={val("kontoinhaber", mietpartei?.kontoinhaber ?? "")}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="iban">IBAN</label>
+            <input
+              id="iban"
+              name="iban"
+              type="text"
+              autoComplete="off"
+              defaultValue={val("iban", mietpartei?.iban ?? "")}
+              onBlur={onIbanBlur}
+              aria-describedby="iban-hinweis"
+            />
+            <p id="iban-hinweis" style={{ fontSize: "0.8rem", color: "var(--color-muted)", margin: "0.2rem 0 0" }}>
+              Bank wird beim Verlassen des Feldes automatisch ermittelt.
+            </p>
+          </div>
+          <div className="field">
+            <label htmlFor="bankName">Bank</label>
+            <input id="bankName" name="bankName" type="text" value={bankName} onChange={(e) => setBankName(e.target.value)} />
+          </div>
+        </div>
+      </div>
 
       <PriceInput
         label="Arbeitspreis (€/kWh)"

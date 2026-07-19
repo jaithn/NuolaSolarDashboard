@@ -24,6 +24,9 @@ export default async function ProfilPage() {
           emailVerifiziert={mietpartei.emailVerifiziert}
           emailPending={mietpartei.emailPending}
           telefon={mietpartei.telefon}
+          kontoinhaber={mietpartei.kontoinhaber}
+          iban={mietpartei.iban}
+          bankName={mietpartei.bankName}
         />
       </div>
     </div>

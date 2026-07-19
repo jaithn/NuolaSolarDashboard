@@ -46,6 +46,43 @@ export function passwordResetEmailHtml(params: { resetUrl: string }): string {
   );
 }
 
+/** An die Firmen-Adresse: eine Mietpartei hat im Portal eine neue Bankverbindung hinterlegt. */
+export function bankverbindungGeaendertEmailHtml(params: {
+  kunde: string;
+  kundennummer: number | null;
+  iban: string;
+  bankName: string;
+}): string {
+  return layout(
+    "Neue Bankverbindung hinterlegt",
+    `
+      <p>Die folgende Mietpartei hat im Mieter-Dashboard eine <strong>neue Bankverbindung</strong> hinterlegt:</p>
+      <p><strong>Kundin/Kunde:</strong> ${params.kunde}${
+        params.kundennummer != null ? ` (Kundennummer ${params.kundennummer})` : ""
+      }<br/>
+      <strong>IBAN:</strong> ${params.iban}<br/>
+      <strong>Bank:</strong> ${params.bankName || "—"}</p>
+      <p>Ein neues SEPA-Lastschriftmandat wird benötigt. Die Mietpartei wurde gebeten, das vorausgefüllte
+      Mandat herunterzuladen, zu unterschreiben und wieder hochzuladen.</p>
+    `,
+  );
+}
+
+/** An die Firmen-Adresse: die Mietpartei hat das neue, unterschriebene SEPA-Mandat hochgeladen. */
+export function neuesSepaMandatHochgeladenEmailHtml(params: { kunde: string; kundennummer: number | null }): string {
+  return layout(
+    "Neues SEPA-Mandat hochgeladen",
+    `
+      <p>Die folgende Mietpartei hat ihr <strong>unterschriebenes SEPA-Lastschriftmandat</strong> (neue Bankverbindung)
+      im Mieter-Dashboard hochgeladen:</p>
+      <p><strong>Kundin/Kunde:</strong> ${params.kunde}${
+        params.kundennummer != null ? ` (Kundennummer ${params.kundennummer})` : ""
+      }</p>
+      <p>Das Dokument liegt in den Vertragsunterlagen der Mietpartei bereit.</p>
+    `,
+  );
+}
+
 export interface ShellyFehlerZeile {
   geraet: string;
   deviceId: string;
