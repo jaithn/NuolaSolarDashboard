@@ -3,6 +3,8 @@
 import { useActionState, useState } from "react";
 import { createObjektAction, type ObjektFormState } from "./actions";
 import { ZweiterNameFeld } from "@/components/ZweiterNameFeld";
+import { VermieterAnredeFirma } from "@/components/VermieterAnredeFirma";
+import { ObjektZusatzFelder } from "@/components/ObjektZusatzFelder";
 
 const initialState: ObjektFormState = {};
 
@@ -83,12 +85,15 @@ export function NewObjektForm() {
             <label htmlFor="vermieterOrt">Vermieter:in (Ort)</label>
             <input id="vermieterOrt" name="vermieterOrt" type="text" />
           </div>
+          <VermieterAnredeFirma />
         </div>
       ) : (
         <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", marginTop: 0 }}>
           Die/der Vermieter:in wird dann beim Anlegen jeder Wohneinheit erfasst.
         </p>
       )}
+
+      <ObjektZusatzFelder />
 
       <button className="btn" type="submit" disabled={pending} style={{ maxWidth: "16rem" }}>
         {pending ? "Wird gespeichert…" : "Objekt anlegen"}

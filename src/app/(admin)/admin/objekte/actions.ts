@@ -4,9 +4,17 @@ import { requireAdmin } from "@/lib/auth/guards";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import { istVermietbareEinheit, type EinheitTyp } from "./einheitTyp";
+import type { Anrede } from "@prisma/client";
 
 export interface ObjektFormState {
   error?: string;
+}
+
+// Anrede-Formularwert lesen (fuer Vermieter:in). Leer/ungueltig -> null.
+function parseAnrede(value: FormDataEntryValue | null): Anrede | null {
+  const raw = String(value ?? "").trim();
+  return raw === "HERR" || raw === "FRAU" || raw === "FAMILIE" || raw === "FIRMA" ? (raw as Anrede) : null;
 }
 
 export async function createObjektAction(
@@ -19,8 +27,8 @@ export async function createObjektAction(
   const adresse = String(formData.get("adresse") ?? "").trim();
   const plz = String(formData.get("plz") ?? "").trim();
   const ort = String(formData.get("ort") ?? "").trim();
-  const { vermieterModus, vermieterName, vermieterName2, vermieterAnschrift, vermieterPlz, vermieterOrt } =
-    parseVermieter(formData);
+  const vermieter = parseVermieter(formData);
+  const zusatz = parseObjektZusatz(formData);
   const bearbeiterName = String(formData.get("bearbeiterName") ?? "").trim() || null;
   const liefertermin = parseDatum(formData.get("geplanterLiefertermin"));
   const hatWaermepumpe = formData.get("hatWaermepumpe") === "on";
@@ -29,7 +37,8 @@ export async function createObjektAction(
   await prisma.objekt.create({
     data: {
       name, adresse, plz, ort,
-      vermieterModus, vermieterName, vermieterName2, vermieterAnschrift, vermieterPlz, vermieterOrt,
+      ...vermieter,
+      ...zusatz,
       bearbeiterName, geplanterLiefertermin: liefertermin, hatWaermepumpe,
     },
   });
@@ -38,9 +47,31 @@ export async function createObjektAction(
 }
 
 // Einheiten-Typ aus dem Formular lesen (Fallback WOHNEINHEIT).
-function parseEinheitTyp(formData: FormData): "WOHNEINHEIT" | "ALLGEMEINSTROM" | "WAERMEPUMPE" {
+function parseEinheitTyp(formData: FormData): EinheitTyp {
   const raw = String(formData.get("typ") ?? "WOHNEINHEIT");
-  return raw === "ALLGEMEINSTROM" || raw === "WAERMEPUMPE" ? raw : "WOHNEINHEIT";
+  return raw === "GEWERBEEINHEIT" || raw === "ALLGEMEINSTROM" || raw === "WAERMEPUMPE" ? raw : "WOHNEINHEIT";
+}
+
+// Objekt-Zusatzfelder (oeffentlicher Zaehler, Hausverwaltung, Unterzeichner der
+// Ergaenzung) aus dem Formular lesen.
+function parseObjektZusatz(formData: FormData) {
+  const oeffentlicherZaehler = String(formData.get("oeffentlicherZaehler") ?? "").trim() || null;
+  const hausverwaltungName = String(formData.get("hausverwaltungName") ?? "").trim() || null;
+  const hausverwaltungAnschrift = String(formData.get("hausverwaltungAnschrift") ?? "").trim() || null;
+  const hausverwaltungPlz = String(formData.get("hausverwaltungPlz") ?? "").trim();
+  const hausverwaltungOrt = String(formData.get("hausverwaltungOrt") ?? "").trim();
+  const unterzeichnerRaw = String(formData.get("ergaenzungUnterzeichner") ?? "VERMIETER");
+  // Hausverwaltung nur als Unterzeichner zulassen, wenn ein Name hinterlegt ist.
+  const ergaenzungUnterzeichner =
+    unterzeichnerRaw === "HAUSVERWALTUNG" && hausverwaltungName ? "HAUSVERWALTUNG" : "VERMIETER";
+  return {
+    oeffentlicherZaehler,
+    hausverwaltungName,
+    hausverwaltungAnschrift,
+    hausverwaltungPlz,
+    hausverwaltungOrt,
+    ergaenzungUnterzeichner: ergaenzungUnterzeichner as "VERMIETER" | "HAUSVERWALTUNG",
+  };
 }
 
 // Ein Datums-Formularfeld (YYYY-MM-DD) in ein Date wandeln; leer -> null.
@@ -51,12 +82,29 @@ function parseDatum(value: FormDataEntryValue | null): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+// Vermieter-Angaben einer Einheit (nur bei vermietbaren Einheiten -
+// Wohn-/Gewerbeeinheit; Sonder-Einheiten haben keine eigene Vermieter:in).
+function parseEinheitVermieter(formData: FormData, typ: EinheitTyp) {
+  const aktiv = istVermietbareEinheit(typ);
+  return {
+    vermieterName: aktiv ? String(formData.get("vermieterName") ?? "").trim() || null : null,
+    vermieterName2: aktiv ? String(formData.get("vermieterName2") ?? "").trim() || null : null,
+    vermieterAnrede: aktiv ? parseAnrede(formData.get("vermieterAnrede")) : null,
+    vermieterFirma: aktiv ? String(formData.get("vermieterFirma") ?? "").trim() || null : null,
+    vermieterAnschrift: aktiv ? String(formData.get("vermieterAnschrift") ?? "").trim() || null : null,
+    vermieterPlz: aktiv ? String(formData.get("vermieterPlz") ?? "").trim() : "",
+    vermieterOrt: aktiv ? String(formData.get("vermieterOrt") ?? "").trim() : "",
+  };
+}
+
 // Vermieter-Angaben eines Objekts aus dem Formular lesen. Bei PRO_EINHEIT wird
 // der objektweite Vermieter bewusst geleert (er wird dann je Einheit gepflegt).
 function parseVermieter(formData: FormData): {
   vermieterModus: "PRO_OBJEKT" | "PRO_EINHEIT";
   vermieterName: string | null;
   vermieterName2: string | null;
+  vermieterAnrede: Anrede | null;
+  vermieterFirma: string | null;
   vermieterAnschrift: string | null;
   vermieterPlz: string;
   vermieterOrt: string;
@@ -68,6 +116,8 @@ function parseVermieter(formData: FormData): {
       vermieterModus,
       vermieterName: null,
       vermieterName2: null,
+      vermieterAnrede: null,
+      vermieterFirma: null,
       vermieterAnschrift: null,
       vermieterPlz: "",
       vermieterOrt: "",
@@ -75,6 +125,7 @@ function parseVermieter(formData: FormData): {
   }
   const vermieterName = String(formData.get("vermieterName") ?? "").trim();
   const vermieterName2 = String(formData.get("vermieterName2") ?? "").trim();
+  const vermieterFirma = String(formData.get("vermieterFirma") ?? "").trim();
   const vermieterAnschrift = String(formData.get("vermieterAnschrift") ?? "").trim();
   const vermieterPlz = String(formData.get("vermieterPlz") ?? "").trim();
   const vermieterOrt = String(formData.get("vermieterOrt") ?? "").trim();
@@ -82,6 +133,8 @@ function parseVermieter(formData: FormData): {
     vermieterModus,
     vermieterName: vermieterName || null,
     vermieterName2: vermieterName2 || null,
+    vermieterAnrede: parseAnrede(formData.get("vermieterAnrede")),
+    vermieterFirma: vermieterFirma || null,
     vermieterAnschrift: vermieterAnschrift || null,
     vermieterPlz,
     vermieterOrt,
@@ -99,8 +152,8 @@ export async function updateObjektAction(
   const adresse = String(formData.get("adresse") ?? "").trim();
   const plz = String(formData.get("plz") ?? "").trim();
   const ort = String(formData.get("ort") ?? "").trim();
-  const { vermieterModus, vermieterName, vermieterName2, vermieterAnschrift, vermieterPlz, vermieterOrt } =
-    parseVermieter(formData);
+  const vermieter = parseVermieter(formData);
+  const zusatz = parseObjektZusatz(formData);
   const bearbeiterName = String(formData.get("bearbeiterName") ?? "").trim() || null;
   const liefertermin = parseDatum(formData.get("geplanterLiefertermin"));
   const hatWaermepumpe = formData.get("hatWaermepumpe") === "on";
@@ -110,7 +163,8 @@ export async function updateObjektAction(
     where: { id },
     data: {
       name, adresse, plz, ort,
-      vermieterModus, vermieterName, vermieterName2, vermieterAnschrift, vermieterPlz, vermieterOrt,
+      ...vermieter,
+      ...zusatz,
       bearbeiterName, geplanterLiefertermin: liefertermin, hatWaermepumpe,
     },
   });
@@ -146,22 +200,14 @@ export async function createEinheitAction(
   const objektId = String(formData.get("objektId") ?? "");
   const bezeichnung = String(formData.get("bezeichnung") ?? "").trim();
   const typ = parseEinheitTyp(formData);
-  // Vermieter-Angaben nur bei echten Wohneinheiten (Ergaenzung zum Mietvertrag).
-  const istWohnung = typ === "WOHNEINHEIT";
-  const vermieterName = istWohnung ? String(formData.get("vermieterName") ?? "").trim() : "";
-  const vermieterName2 = istWohnung ? String(formData.get("vermieterName2") ?? "").trim() : "";
-  const vermieterAnschrift = istWohnung ? String(formData.get("vermieterAnschrift") ?? "").trim() : "";
-  const vermieterPlz = istWohnung ? String(formData.get("vermieterPlz") ?? "").trim() : "";
-  const vermieterOrt = istWohnung ? String(formData.get("vermieterOrt") ?? "").trim() : "";
+  const vermieter = parseEinheitVermieter(formData, typ);
   if (!bezeichnung) return { error: "Bitte eine Bezeichnung angeben." };
 
   if (!objektId) return { error: "Bitte ein Objekt wählen." };
   await prisma.einheit.create({
     data: {
       objektId, bezeichnung, typ,
-      vermieterName: vermieterName || null, vermieterName2: vermieterName2 || null,
-      vermieterAnschrift: vermieterAnschrift || null,
-      vermieterPlz, vermieterOrt,
+      ...vermieter,
     },
   });
   revalidatePath(`/admin/objekte/${objektId}`);
@@ -178,21 +224,14 @@ export async function updateEinheitAction(
   const id = String(formData.get("id") ?? "");
   const bezeichnung = String(formData.get("bezeichnung") ?? "").trim();
   const typ = parseEinheitTyp(formData);
-  const istWohnung = typ === "WOHNEINHEIT";
-  const vermieterName = istWohnung ? String(formData.get("vermieterName") ?? "").trim() : "";
-  const vermieterName2 = istWohnung ? String(formData.get("vermieterName2") ?? "").trim() : "";
-  const vermieterAnschrift = istWohnung ? String(formData.get("vermieterAnschrift") ?? "").trim() : "";
-  const vermieterPlz = istWohnung ? String(formData.get("vermieterPlz") ?? "").trim() : "";
-  const vermieterOrt = istWohnung ? String(formData.get("vermieterOrt") ?? "").trim() : "";
+  const vermieter = parseEinheitVermieter(formData, typ);
   if (!bezeichnung) return { error: "Bitte eine Bezeichnung angeben." };
 
   const einheit = await prisma.einheit.update({
     where: { id },
     data: {
       bezeichnung, typ,
-      vermieterName: vermieterName || null, vermieterName2: vermieterName2 || null,
-      vermieterAnschrift: vermieterAnschrift || null,
-      vermieterPlz, vermieterOrt,
+      ...vermieter,
     },
   });
   revalidatePath(`/admin/einheiten/${id}`);

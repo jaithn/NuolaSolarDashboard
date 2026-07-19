@@ -4,7 +4,10 @@ Editierbarer Text des Onboarding-Anschreibens. Abschnitte sind über die
 `## schluessel`-Überschriften benannt; die Schlüssel dürfen NICHT umbenannt
 werden (der Code liest sie darüber aus). Platzhalter: `{firma}` = Firmenname,
 `{telefon}` = telefonischer Rückfrage-Zusatz (z. B. „ unter 0221 …", sonst leer),
-`{vermieter}` = Vermieter:in (Name oder Fallback), `{liefertermin}` = geplanter
+`{vermieter}` = Vermieter:in (nur Name/Fallback), `{vermieterMitAnrede}` =
+Vermieter:in inkl. Anrede-Wort (z. B. „Ihrer Vermieterin Anna Müller", „der
+Muster GmbH"), `{verbrauchsstelle}` = Bezeichnung der Einheit je Typ (z. B.
+„Wohnung", „Gewerbeeinheit", „Verbrauchsstelle"), `{liefertermin}` = geplanter
 Liefertermin (DD.MM.YYYY, sonst leer), `{verbrauch}` = angenommener
 Jahresverbrauch (z. B. „3.500 kWh", sonst Fallback). Dynamische Tabellen
 (Konditionen, Grundversorger-Vergleich) erzeugt das System selbst.
@@ -15,7 +18,7 @@ Ihr Strom aus der Gebäudestromanlage
 
 ## einleitung
 
-in Absprache mit {vermieter} haben wir auf Ihrem Wohngebäude eine Solaranlage installiert und freuen uns, Sie nun mit umweltfreundlichem Strom aus der Gebäudestromanlage versorgen zu können. Nachfolgend finden Sie Ihre persönlichen Konditionen sowie einen Vergleich mit dem örtlichen Grundversorger.
+in Absprache mit {vermieterMitAnrede} haben wir auf Ihrem Wohngebäude eine Solaranlage installiert und freuen uns, Sie nun mit umweltfreundlichem Strom aus der Gebäudestromanlage versorgen zu können. Nachfolgend finden Sie Ihre persönlichen Konditionen sowie einen Vergleich mit dem örtlichen Grundversorger.
 
 ## liefertermin-hinweis
 
@@ -39,7 +42,7 @@ Versorgung über die Gebäudestromanlage
 
 ## gebaeude-text
 
-Das Mietobjekt wird über eine Gebäudestromanlage im Sinne des § 42b Energiewirtschaftsgesetz (EnWG) mit elektrischer Energie versorgt. Betreiberin der Gebäudestromanlage und Stromlieferantin ist die {firma}. Der Strom wird ohne Durchleitung durch ein öffentliches Netz an Ihre Verbrauchsstelle geliefert. Die Belieferung erfolgt für die Dauer des Mietverhältnisses; der Stromverbrauch wird über einen geeichten, Ihrem Mietobjekt eindeutig zugeordneten Stromzähler erfasst.
+Das Mietobjekt wird über eine Gebäudestromanlage im Sinne des § 42b Energiewirtschaftsgesetz (EnWG) mit elektrischer Energie versorgt. Betreiberin der Gebäudestromanlage und Stromlieferantin ist die {firma}. Der Strom wird ohne Durchleitung durch ein öffentliches Netz an Ihre Verbrauchsstelle geliefert. Die Belieferung erfolgt für die Dauer des Mietverhältnisses; der Stromverbrauch wird über einen geeichten, Ihrer {verbrauchsstelle} eindeutig zugeordneten Stromzähler erfasst.
 
 ## abschlag-titel
 

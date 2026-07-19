@@ -2,7 +2,7 @@
 
 Persönlichere, familiäre Alternative zum formalen Anschreiben (`brief-anschreiben.md`). Im Admin unter „Onboarding-Unterlagen" getrennt auswählbar. Abschnitte werden über die `## schluessel`\-Überschriften benannt; die Schlüssel dürfen NICHT umbenannt werden (der Code liest sie darüber aus).
 
-Platzhalter: `{firma}` = Firmenname, `{telefon}` = telefonischer Rückfrage-Zusatz (z. B. „ unter 0221 …", sonst leer), `{vermieter}` = Vermieter:in (Name oder Fallback), `{objektadresse}` = Adresse des Wohngebäudes (Straße & Hausnr.), `{liefertermin}` = geplanter Liefertermin (DD.MM.YYYY, sonst leer), `{verbrauch}` = angenommener Jahresverbrauch (z. B. „3.500 kWh", sonst Fallback). Dynamische Tabellen (Konditionen, Grundversorger-Vergleich) erzeugt das System selbst. Die Unterschrift steht in `## unterschrift` (je Zeile mit „- " davor).
+Platzhalter: `{firma}` = Firmenname, `{telefon}` = telefonischer Rückfrage-Zusatz (z. B. „ unter 0221 …", sonst leer), `{vermieter}` = Vermieter:in (nur Name/Fallback), `{vermieterMitAnrede}` = Vermieter:in inkl. Anrede-Wort („Ihrer Vermieterin …", „der Muster GmbH"), `{verbrauchsstelle}` = Bezeichnung der Einheit je Typ („Wohnung", „Gewerbeeinheit", „Verbrauchsstelle"), `{objektadresse}` = Adresse des Wohngebäudes (Straße & Hausnr.), `{liefertermin}` = geplanter Liefertermin (DD.MM.YYYY, sonst leer), `{verbrauch}` = angenommener Jahresverbrauch (z. B. „3.500 kWh", sonst Fallback). Dynamische Tabellen (Konditionen, Grundversorger-Vergleich) erzeugt das System selbst. Die Unterschrift steht in `## unterschrift` (je Zeile mit „- " davor).
 
 ## titel
 
@@ -38,7 +38,7 @@ Versorgung über die Gebäudestromanlage
 
 ## gebaeude-text
 
-Ihr Zuhause wird über eine Gebäudestromanlage im Sinne des § 42b Energiewirtschaftsgesetz (EnWG) mit Strom versorgt. Betreiberin der Anlage und Ihre Stromlieferantin ist unsere {firma}. Der Strom kommt direkt vom Dach an Ihre Verbrauchsstelle, ohne Umweg über ein öffentliches Netz. Die Belieferung läuft für die Dauer Ihres Mietverhältnisses; Ihr Verbrauch wird über einen geeichten, Ihrer Wohnung eindeutig zugeordneten Stromzähler erfasst.
+Ihr Zuhause wird über eine Gebäudestromanlage im Sinne des § 42b Energiewirtschaftsgesetz (EnWG) mit Strom versorgt. Betreiberin der Anlage und Ihre Stromlieferantin ist unsere {firma}. Der Strom kommt direkt vom Dach an Ihre Verbrauchsstelle, ohne Umweg über ein öffentliches Netz. Die Belieferung läuft für die Dauer Ihres Mietverhältnisses; Ihr Verbrauch wird über einen geeichten, Ihrer {verbrauchsstelle} eindeutig zugeordneten Stromzähler erfasst.
 
 ## abschlag-titel
 

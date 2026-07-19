@@ -34,8 +34,15 @@ export interface OnboardingLetterData {
   // Geplanter Liefertermin (Objekt), bereits als DD.MM.YYYY formatiert - "" wenn
   // nicht gesetzt.
   lieferterminText?: string;
-  // Vermieter:in-Bezeichnung für den Solaranlagen-Passus (Name oder Fallback).
+  // Vermieter:in-Bezeichnung (nur Name) für den {vermieter}-Platzhalter (z.B. im
+  // persönlichen Anschreiben, das das Anrede-Wort selbst setzt).
   vermieterText?: string;
+  // Vermieter:in inkl. Anrede-Wort für den {vermieterMitAnrede}-Platzhalter, z.B.
+  // „Ihrer Vermieterin Anna Müller" / „der Muster GmbH" (formales Anschreiben).
+  vermieterMitAnredeText?: string;
+  // Bezeichnung der Verbrauchsstelle je Einheiten-Typ ({verbrauchsstelle}), z.B.
+  // „Wohnung" / „Gewerbeeinheit" / „Verbrauchsstelle".
+  verbrauchsstelleTyp?: string;
   // Adresse des Wohngebäudes (Straße & Hausnr.) für den {objektadresse}-Platzhalter.
   objektadresseText?: string;
   // Angenommener Jahresverbrauch als Text (z.B. "3.500 kWh") oder Fallback.
@@ -73,6 +80,8 @@ export function OnboardingLetterDocument({
   anredeSatz,
   lieferterminText,
   vermieterText,
+  vermieterMitAnredeText,
+  verbrauchsstelleTyp,
   objektadresseText,
   verbrauchText,
   konditionen,
@@ -84,11 +93,14 @@ export function OnboardingLetterDocument({
     vergleich && (vergleich.arbeitspreisBrutto != null || vergleich.grundpreisBrutto != null);
   const telefonZusatz = kontaktTelefon ? ` unter ${kontaktTelefon}` : "";
   const vermieter = vermieterText || "Ihrer Vermieterin bzw. Ihrem Vermieter";
+  const vermieterMitAnrede = vermieterMitAnredeText || vermieter;
   const verbrauch = verbrauchText || "einem üblichen Haushaltsverbrauch";
   const platzhalter = {
     firma: firma.name,
     telefon: telefonZusatz,
     vermieter,
+    vermieterMitAnrede,
+    verbrauchsstelle: verbrauchsstelleTyp || "Verbrauchsstelle",
     objektadresse: objektadresseText || "Ihrem Wohngebäude",
     liefertermin: lieferterminText || "",
     verbrauch,
@@ -110,7 +122,7 @@ export function OnboardingLetterDocument({
           <Text>
             {t(
               "einleitung",
-              "in Absprache mit {vermieter} haben wir auf Ihrem Wohngebäude eine Solaranlage installiert und freuen uns, Sie nun mit umweltfreundlichem Strom aus der Gebäudestromanlage versorgen zu können. Nachfolgend finden Sie Ihre persönlichen Konditionen sowie einen Vergleich mit dem örtlichen Grundversorger.",
+              "in Absprache mit {vermieterMitAnrede} haben wir auf Ihrem Wohngebäude eine Solaranlage installiert und freuen uns, Sie nun mit umweltfreundlichem Strom aus der Gebäudestromanlage versorgen zu können. Nachfolgend finden Sie Ihre persönlichen Konditionen sowie einen Vergleich mit dem örtlichen Grundversorger.",
             )}
           </Text>
           {lieferterminText ? (
@@ -202,7 +214,7 @@ export function OnboardingLetterDocument({
           <Text style={s.passus}>
             {t(
               "gebaeude-text",
-              `Das Mietobjekt wird über eine Gebäudestromanlage im Sinne des § 42b Energiewirtschaftsgesetz (EnWG) mit elektrischer Energie versorgt. Betreiberin der Gebäudestromanlage und Stromlieferantin ist die ${firma.name}. Der Strom wird ohne Durchleitung durch ein öffentliches Netz an Ihre Verbrauchsstelle geliefert. Die Belieferung erfolgt für die Dauer des Mietverhältnisses; der Stromverbrauch wird über einen geeichten, Ihrem Mietobjekt eindeutig zugeordneten Stromzähler erfasst.`,
+              `Das Mietobjekt wird über eine Gebäudestromanlage im Sinne des § 42b Energiewirtschaftsgesetz (EnWG) mit elektrischer Energie versorgt. Betreiberin der Gebäudestromanlage und Stromlieferantin ist die ${firma.name}. Der Strom wird ohne Durchleitung durch ein öffentliches Netz an Ihre Verbrauchsstelle geliefert. Die Belieferung erfolgt für die Dauer des Mietverhältnisses; der Stromverbrauch wird über einen geeichten, Ihrer {verbrauchsstelle} eindeutig zugeordneten Stromzähler erfasst.`,
             )}
           </Text>
         </View>

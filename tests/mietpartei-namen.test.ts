@@ -4,7 +4,9 @@ import {
   anredeSatz,
   empfaengerAnredeKurz,
   kombiniereNamen,
+  vermieterAnredePhrase,
 } from "../src/lib/mietpartei";
+import { verbrauchsstelleBezeichnung } from "../src/app/(admin)/admin/objekte/einheitTyp";
 
 describe("mietparteiAnzeigeName – zweite Person", () => {
   it("zeigt eine Einzelperson wie bisher", () => {
@@ -31,6 +33,40 @@ describe("mietparteiAnzeigeName – zweite Person", () => {
 
   it("nutzt für Firmen weiterhin den Firmennamen", () => {
     expect(mietparteiAnzeigeName({ firma: "Muster GmbH" })).toBe("Muster GmbH");
+  });
+
+  it("zeigt bei Firma mit Ansprechpartner nur die Firma (Brief adressiert die Firma)", () => {
+    expect(mietparteiAnzeigeName({ firma: "Muster GmbH", vorname: "Max", name: "Meier" })).toBe("Muster GmbH");
+  });
+});
+
+describe("vermieterAnredePhrase", () => {
+  it("Frau -> 'Ihrer Vermieterin {Name}'", () => {
+    expect(vermieterAnredePhrase({ anrede: "FRAU", name: "Anna Müller" })).toBe("Ihrer Vermieterin Anna Müller");
+  });
+  it("Herr -> 'Ihrem Vermieter {Name}'", () => {
+    expect(vermieterAnredePhrase({ anrede: "HERR", name: "Peter Klein" })).toBe("Ihrem Vermieter Peter Klein");
+  });
+  it("Firma -> 'der {Firma}'", () => {
+    expect(vermieterAnredePhrase({ anrede: "FIRMA", firma: "Immo GmbH" })).toBe("der Immo GmbH");
+  });
+  it("ohne Anrede -> nur Name", () => {
+    expect(vermieterAnredePhrase({ name: "Sabine Keller" })).toBe("Sabine Keller");
+  });
+  it("ohne alles -> neutraler Fallback", () => {
+    expect(vermieterAnredePhrase({})).toBe("Ihrer Vermieterin bzw. Ihrem Vermieter");
+  });
+});
+
+describe("verbrauchsstelleBezeichnung", () => {
+  it("Wohneinheit -> Wohnung", () => {
+    expect(verbrauchsstelleBezeichnung("WOHNEINHEIT")).toBe("Wohnung");
+  });
+  it("Gewerbeeinheit -> Gewerbeeinheit", () => {
+    expect(verbrauchsstelleBezeichnung("GEWERBEEINHEIT")).toBe("Gewerbeeinheit");
+  });
+  it("Allgemeinstrom -> Verbrauchsstelle", () => {
+    expect(verbrauchsstelleBezeichnung("ALLGEMEINSTROM")).toBe("Verbrauchsstelle");
   });
 });
 

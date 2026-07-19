@@ -46,6 +46,10 @@ export function mietparteiAnzeigeName(m: {
   name2?: string | null;
 }): string {
   const firma = m.firma?.trim();
+  // Firmen werden in Briefen ueber den Firmennamen gefuehrt; ein optionaler
+  // Ansprechpartner-Name (m.name/m.vorname) wird bewusst NICHT in den Adressaten
+  // aufgenommen.
+  if (firma) return firma;
   let person: string;
   if (hatZweitePerson(m)) {
     if (gleicherNachname(m)) {
@@ -59,8 +63,7 @@ export function mietparteiAnzeigeName(m: {
   } else {
     person = personName(m.vorname, m.name);
   }
-  if (firma && person) return `${firma} (${person})`;
-  return firma || person || "—";
+  return person || "—";
 }
 
 /**
@@ -70,6 +73,28 @@ export function mietparteiAnzeigeName(m: {
 export function kombiniereNamen(name1?: string | null, name2?: string | null): string | null {
   const teile = [name1?.trim(), name2?.trim()].filter(Boolean);
   return teile.length ? teile.join(" und ") : null;
+}
+
+/**
+ * Formuliert die Vermieter:in-Nennung fuer das Anschreiben abhaengig von der
+ * Anrede, z.B. „Ihrer Vermieterin Anna Müller", „Ihrem Vermieter …", bei Firma
+ * „der {Firma}". Ohne Anrede: nur der Name; ohne alles ein neutraler Fallback.
+ */
+export function vermieterAnredePhrase(v: {
+  anrede?: Anrede;
+  name?: string | null;
+  firma?: string | null;
+}): string {
+  const name = v.name?.trim();
+  const firma = v.firma?.trim();
+  if (v.anrede === "FIRMA") {
+    const bez = firma || name;
+    return bez ? `der ${bez}` : "Ihrer Vermietergesellschaft";
+  }
+  if (v.anrede === "FRAU") return name ? `Ihrer Vermieterin ${name}` : "Ihrer Vermieterin";
+  if (v.anrede === "HERR") return name ? `Ihrem Vermieter ${name}` : "Ihrem Vermieter";
+  if (v.anrede === "FAMILIE") return name ? `Ihren Vermietern ${name}` : "Ihren Vermietern";
+  return name || "Ihrer Vermieterin bzw. Ihrem Vermieter";
 }
 
 /** Anrede-Text (z.B. "Sehr geehrte Familie …"). Leer, wenn keine Anrede. */

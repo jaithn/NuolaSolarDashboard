@@ -3,7 +3,9 @@
 import { useActionState, useState } from "react";
 import { updateEinheitAction, type ObjektFormState } from "../../objekte/actions";
 import { EinheitTypFeld, type EinheitTyp } from "../../objekte/EinheitTypFeld";
+import { istVermietbareEinheit } from "../../objekte/einheitTyp";
 import { ZweiterNameFeld } from "@/components/ZweiterNameFeld";
+import { VermieterAnredeFirma } from "@/components/VermieterAnredeFirma";
 
 const initialState: ObjektFormState = {};
 
@@ -14,6 +16,8 @@ export function EditEinheitForm({
   vermieterProEinheit,
   vermieterName,
   vermieterName2,
+  vermieterAnrede,
+  vermieterFirma,
   vermieterAnschrift,
   vermieterPlz,
   vermieterOrt,
@@ -24,13 +28,15 @@ export function EditEinheitForm({
   vermieterProEinheit: boolean;
   vermieterName: string | null;
   vermieterName2: string | null;
+  vermieterAnrede: string | null;
+  vermieterFirma: string | null;
   vermieterAnschrift: string | null;
   vermieterPlz: string;
   vermieterOrt: string;
 }) {
   const [state, formAction, pending] = useActionState(updateEinheitAction, initialState);
   const [typ, setTyp] = useState<EinheitTyp>(typInitial);
-  const zeigeVermieter = vermieterProEinheit && typ === "WOHNEINHEIT";
+  const zeigeVermieter = vermieterProEinheit && istVermietbareEinheit(typ);
 
   return (
     <form action={formAction}>
@@ -70,6 +76,7 @@ export function EditEinheitForm({
               <label htmlFor="vermieterOrt">Vermieter:in (Ort)</label>
               <input id="vermieterOrt" name="vermieterOrt" type="text" defaultValue={vermieterOrt} />
             </div>
+            <VermieterAnredeFirma anredeDefault={vermieterAnrede ?? ""} firmaDefault={vermieterFirma ?? ""} />
           </>
         )}
       </div>

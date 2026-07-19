@@ -30,12 +30,13 @@ export function EinheitTypFeld({
         onChange={(e) => onChange(e.target.value as EinheitTyp)}
       >
         <option value="WOHNEINHEIT">Wohneinheit</option>
+        <option value="GEWERBEEINHEIT">Gewerbeeinheit</option>
         <option value="ALLGEMEINSTROM">Allgemeinstrom (Vermieter:in)</option>
         <option value="WAERMEPUMPE">Wärmepumpe</option>
       </select>
-      {typ !== "WOHNEINHEIT" && (
+      {typ !== "WOHNEINHEIT" && typ !== "GEWERBEEINHEIT" && (
         <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", margin: "0.25rem 0 0" }}>
-          Keiner Wohnung zugeordnet, keine Ergänzung zum Mietvertrag. Die Partei (i. d. R. die
+          Keiner Miet-/Gewerbeeinheit zugeordnet, keine Ergänzung zum Mietvertrag. Die Partei (i. d. R. die
           Vermieter:in) erhält einen eigenständigen Stromliefervertrag.
         </p>
       )}

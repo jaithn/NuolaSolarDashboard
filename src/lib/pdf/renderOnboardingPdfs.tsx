@@ -8,7 +8,9 @@ import {
   empfaengerAnredeKurz,
   mietparteiPostanschrift,
   kombiniereNamen,
+  vermieterAnredePhrase,
 } from "@/lib/mietpartei";
+import { verbrauchsstelleBezeichnung, type EinheitTyp } from "@/app/(admin)/admin/objekte/einheitTyp";
 import { aktiveVertragVersion } from "@/lib/vertrag";
 import type { VertragArt } from "@prisma/client";
 import { ladeBriefAbschnitte } from "@/lib/briefVorlagen";
@@ -143,6 +145,25 @@ export async function renderOnboardingPdf(
   const { firma, logoAbsolutePath, empfaenger, mietpartei, konditionen, objekt, displayName, bearbeiterName, kundennummer, glaeubigerId } =
     basis;
 
+  // Vermieter:in aufloesen: Quelle ist bei PRO_EINHEIT die Wohn-/Gewerbeeinheit,
+  // sonst das Objekt. Name = kombinierter Personenname; bei Anrede FIRMA gilt der
+  // Firmenname. Die Hausverwaltung + der Unterzeichner der Ergaenzung liegen stets
+  // am Objekt.
+  const vq = objekt.vermieterModus === "PRO_EINHEIT" ? mietpartei.einheit : objekt;
+  const vermieterName = kombiniereNamen(vq.vermieterName, vq.vermieterName2);
+  const vermieter = {
+    anrede: vq.vermieterAnrede,
+    name: vermieterName,
+    firma: vq.vermieterFirma,
+    strasse: vq.vermieterAnschrift,
+    ort: vq.vermieterOrt,
+    plzOrt: `${vq.vermieterPlz} ${vq.vermieterOrt}`.trim(),
+  };
+  // Anzeigename der Vermieter:in (Vertrag): bei Firma der Firmenname, sonst der
+  // Personenname (mit Fallback aufeinander).
+  const vermieterAnzeige =
+    vermieter.anrede === "FIRMA" ? vermieter.firma || vermieter.name : vermieter.name || vermieter.firma;
+
   if (dok === "anschreiben" || dok === "anschreiben-persoenlich") {
     // Zwei auswaehlbare Anschreiben-Varianten (formal / persoenlich) - beide
     // teilen sich Layout und Datenbasis, unterscheiden sich nur in den Texten
@@ -170,11 +191,9 @@ export async function renderOnboardingPdf(
         kundennummer={kundennummer}
         anredeSatz={anredeSatz(mietpartei)}
         lieferterminText={objekt.geplanterLiefertermin ? fmtDate(objekt.geplanterLiefertermin) : ""}
-        vermieterText={
-          (objekt.vermieterModus === "PRO_EINHEIT"
-            ? kombiniereNamen(mietpartei.einheit.vermieterName, mietpartei.einheit.vermieterName2)
-            : kombiniereNamen(objekt.vermieterName, objekt.vermieterName2)) || undefined
-        }
+        vermieterText={(vermieter.anrede === "FIRMA" ? vermieter.firma : vermieter.name) || undefined}
+        vermieterMitAnredeText={vermieterAnredePhrase(vermieter)}
+        verbrauchsstelleTyp={verbrauchsstelleBezeichnung(mietpartei.einheit.typ as EinheitTyp)}
         objektadresseText={objekt.adresse || undefined}
         verbrauchText={
           mietpartei.angenommenerJahresverbrauchKwh
@@ -214,29 +233,27 @@ export async function renderOnboardingPdf(
       name: displayName,
       zeilen: [empfaenger.strasse || "", empfaenger.plzOrt || ""].filter(Boolean),
     };
-    // Vermieter: bei PRO_EINHEIT aus der Wohneinheit, sonst objektweit.
-    // Anschrift strukturiert: Strasse (vermieterAnschrift) + "PLZ Ort".
-    const vermieter =
-      objekt.vermieterModus === "PRO_EINHEIT"
-        ? {
-            name: kombiniereNamen(mietpartei.einheit.vermieterName, mietpartei.einheit.vermieterName2),
-            strasse: mietpartei.einheit.vermieterAnschrift,
-            ort: mietpartei.einheit.vermieterOrt,
-            plzOrt: `${mietpartei.einheit.vermieterPlz} ${mietpartei.einheit.vermieterOrt}`.trim(),
-          }
-        : {
-            name: kombiniereNamen(objekt.vermieterName, objekt.vermieterName2),
-            strasse: objekt.vermieterAnschrift,
-            ort: objekt.vermieterOrt,
-            plzOrt: `${objekt.vermieterPlz} ${objekt.vermieterOrt}`.trim(),
-          };
+    // Gegenpartei der Ergaenzung: standardmaessig die Vermieter:in; unterschreibt
+    // laut Objekt-Einstellung die Hausverwaltung, tritt diese als Gegenpartei auf.
+    const unterzeichnerHausverwaltung =
+      objekt.ergaenzungUnterzeichner === "HAUSVERWALTUNG" && Boolean(objekt.hausverwaltungName?.trim());
+    const ergaenzungGegenpartei: ContractParty = unterzeichnerHausverwaltung
+      ? {
+          rolle: "Hausverwaltung",
+          name: objekt.hausverwaltungName || "—",
+          zeilen: [
+            objekt.hausverwaltungAnschrift || "",
+            `${objekt.hausverwaltungPlz} ${objekt.hausverwaltungOrt}`.trim(),
+          ].filter(Boolean),
+        }
+      : {
+          rolle: "Vermieter",
+          name: vermieterAnzeige || "—",
+          zeilen: [vermieter.strasse || "", vermieter.plzOrt].filter(Boolean),
+        };
     const gegenpartei: ContractParty =
       variant === "ergaenzung"
-        ? {
-            rolle: "Vermieter",
-            name: vermieter.name || "—",
-            zeilen: [vermieter.strasse || "", vermieter.plzOrt].filter(Boolean),
-          }
+        ? ergaenzungGegenpartei
         : {
             rolle: "Lieferant",
             name: firma.name,
@@ -247,6 +264,7 @@ export async function renderOnboardingPdf(
               firma.kontaktEmail ?? "",
             ],
           };
+    const gegenparteiOrt = unterzeichnerHausverwaltung ? objekt.hausverwaltungOrt : vermieter.ort;
 
     return renderToBuffer(
       <ContractDocument
@@ -271,6 +289,8 @@ export async function renderOnboardingPdf(
               .filter((z) => z.modus === "ADDIEREN")
               .map((z) => z.shellyGeraet.bezeichnung)
               .join(", ") || null,
+          // Zaehlernummer des oeffentlichen Zaehlers (Uebergabe zum Netz), optional.
+          oeffentlicherZaehler: objekt.oeffentlicherZaehler || null,
         }}
         beginn={mietpartei.einzugsdatum}
         konditionen={{
@@ -281,7 +301,7 @@ export async function renderOnboardingPdf(
           abschlagBrutto: konditionen.abschlagBrutto,
         }}
         strombezieherOrt={mietpartei.anschriftOrt?.trim() || objekt.ort || ""}
-        gegenparteiOrt={(variant === "ergaenzung" ? vermieter.ort : firma.ort) || ""}
+        gegenparteiOrt={(variant === "ergaenzung" ? gegenparteiOrt : firma.ort) || ""}
       />,
     );
   }

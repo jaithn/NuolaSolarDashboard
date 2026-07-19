@@ -34,9 +34,27 @@ model Objekt {
   // Optionaler zweiter Vermietername (z.B. Eigentuemer-Ehepaar). Wird im Vertrag
   // mit " und " an vermieterName angehaengt.
   vermieterName2     String?
+  // Anrede der Vermieter:in (steuert im Anschreiben die Formulierung "Ihrem
+  // Vermieter"/"Ihrer Vermieterin"/"der {Firma}"). Optional.
+  vermieterAnrede    Anrede?
+  // Optionaler Firmenname der Vermieter:in (juristische Person). Bei Anrede FIRMA
+  // wird dieser statt des Personennamens verwendet.
+  vermieterFirma     String?
   vermieterAnschrift String?
   vermieterPlz       String  @default("")
   vermieterOrt       String  @default("")
+  // Zaehlernummer des oeffentlichen Zaehlers (Uebergabezaehler zum oeffentlichen
+  // Netz). Optional, dokumentarisch/fuer den Vertrag.
+  oeffentlicherZaehler String?
+  // Optionale Hausverwaltung des Objekts. Kann die Ergaenzung zum Mietvertrag
+  // unterschreiben (siehe ergaenzungUnterzeichner).
+  hausverwaltungName      String?
+  hausverwaltungAnschrift String?
+  hausverwaltungPlz       String  @default("")
+  hausverwaltungOrt       String  @default("")
+  // Wer unterschreibt die Ergaenzung zum Mietvertrag: die Vermieter:in (Default)
+  // oder die Hausverwaltung.
+  ergaenzungUnterzeichner ErgaenzungUnterzeichner @default(VERMIETER)
   // Sachbearbeiter:in der Firma fuer dieses Objekt. Erscheint auf allen Briefen
   // rechts oben bei der Firmenanschrift.
   bearbeiterName     String?
@@ -67,8 +85,15 @@ enum VermieterModus {
 // getrennt ausgewiesen (Allgemeinstrom vs. Waermepumpe).
 enum EinheitTyp {
   WOHNEINHEIT
+  GEWERBEEINHEIT
   ALLGEMEINSTROM
   WAERMEPUMPE
+}
+
+// Wer unterschreibt die Ergaenzung zum Mietvertrag auf Vermieterseite?
+enum ErgaenzungUnterzeichner {
+  VERMIETER
+  HAUSVERWALTUNG
 }
 
 model Einheit {
@@ -82,6 +107,10 @@ model Einheit {
   vermieterName      String?
   // Optionaler zweiter Vermietername (analog Objekt.vermieterName2).
   vermieterName2     String?
+  // Anrede + optionaler Firmenname der Vermieter:in (analog Objekt), nur bei
+  // vermieterModus = PRO_EINHEIT verwendet.
+  vermieterAnrede    Anrede?
+  vermieterFirma     String?
   vermieterAnschrift String?
   vermieterPlz       String  @default("")
   vermieterOrt       String  @default("")

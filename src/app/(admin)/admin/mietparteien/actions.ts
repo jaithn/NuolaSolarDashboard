@@ -193,9 +193,10 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
   return {
     data: {
       einheitId,
-      // Konsistenz erzwingen: Firmen haben keinen Vor-/Nachnamen, Personen keine Firma.
-      vorname: istFirma ? "" : vorname,
-      name: istFirma ? "" : name,
+      // Bei Firmen ist ein Ansprechpartner-Name optional erlaubt (wird gespeichert,
+      // aber im Brief wird weiterhin die Firma angeschrieben). Personen haben keine Firma.
+      vorname,
+      name,
       // Zweite Person nur bei natuerlichen Personen mit ausgeklapptem Feld.
       vorname2: zweitePersonAktiv ? vorname2 : "",
       name2: zweitePersonAktiv ? name2 : "",

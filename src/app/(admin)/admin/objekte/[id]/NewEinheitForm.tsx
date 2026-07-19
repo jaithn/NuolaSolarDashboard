@@ -4,7 +4,8 @@ import { useActionState, useState } from "react";
 import { createEinheitAction } from "../actions";
 import type { ObjektFormState } from "../actions";
 import { ZweiterNameFeld } from "@/components/ZweiterNameFeld";
-import { EinheitTypFeld } from "../EinheitTypFeld";
+import { VermieterAnredeFirma } from "@/components/VermieterAnredeFirma";
+import { EinheitTypFeld, type EinheitTyp } from "../EinheitTypFeld";
 
 const initialState: ObjektFormState = {};
 
@@ -16,7 +17,7 @@ export function NewEinheitForm({
   vermieterProEinheit: boolean;
 }) {
   const [state, formAction, pending] = useActionState(createEinheitAction, initialState);
-  const [typ, setTyp] = useState<"WOHNEINHEIT" | "ALLGEMEINSTROM" | "WAERMEPUMPE">("WOHNEINHEIT");
+  const [typ, setTyp] = useState<EinheitTyp>("WOHNEINHEIT");
   const zeigeVermieter = vermieterProEinheit && typ === "WOHNEINHEIT";
 
   return (
@@ -48,6 +49,7 @@ export function NewEinheitForm({
               <label htmlFor="vermieterOrt">Vermieter:in (Ort)</label>
               <input id="vermieterOrt" name="vermieterOrt" type="text" />
             </div>
+            <VermieterAnredeFirma />
           </>
         )}
       </div>

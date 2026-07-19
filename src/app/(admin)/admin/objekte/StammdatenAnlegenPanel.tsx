@@ -4,8 +4,10 @@ import { useActionState, useState } from "react";
 import { NewObjektForm } from "./NewObjektForm";
 import { GeraetForm } from "../geraete/GeraetForm";
 import { EinheitTypFeld, type EinheitTyp } from "./EinheitTypFeld";
+import { istVermietbareEinheit } from "./einheitTyp";
 import { createEinheitAction, type ObjektFormState } from "./actions";
 import { ZweiterNameFeld } from "@/components/ZweiterNameFeld";
+import { VermieterAnredeFirma } from "@/components/VermieterAnredeFirma";
 
 interface ObjektOption {
   id: string;
@@ -86,7 +88,7 @@ function NewEinheitMitAuswahl({ objekte }: { objekte: ObjektOption[] }) {
   const [typ, setTyp] = useState<EinheitTyp>("WOHNEINHEIT");
   // Vermieter-Felder nur bei echten Wohneinheiten in „pro Wohneinheit"-Objekten.
   const vermieterProEinheit = objekte.find((o) => o.id === objektId)?.vermieterProEinheit ?? false;
-  const zeigeVermieter = vermieterProEinheit && typ === "WOHNEINHEIT";
+  const zeigeVermieter = vermieterProEinheit && istVermietbareEinheit(typ);
 
   return (
     <form action={formAction}>
@@ -137,6 +139,7 @@ function NewEinheitMitAuswahl({ objekte }: { objekte: ObjektOption[] }) {
               <label htmlFor="einheit-vermieterOrt">Vermieter:in (Ort)</label>
               <input id="einheit-vermieterOrt" name="vermieterOrt" type="text" />
             </div>
+            <VermieterAnredeFirma idPrefix="einheit-" />
           </>
         )}
       </div>

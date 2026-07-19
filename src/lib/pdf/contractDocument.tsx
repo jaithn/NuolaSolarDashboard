@@ -47,6 +47,8 @@ export interface ContractData {
     einheit: string;
     // Name(n) des zugeordneten Zählers (Shelly-Gerät). Null, wenn keiner zugeordnet.
     zaehler?: string | null;
+    // Zaehlernummer des oeffentlichen Zaehlers (Uebergabe zum Netz). Optional.
+    oeffentlicherZaehler?: string | null;
   };
   beginn: Date;
   konditionen: {
@@ -223,6 +225,9 @@ export function ContractDocument(data: ContractData) {
             {verbrauchsstelle.einheit ? ` – ${verbrauchsstelle.einheit}` : ""}
             {verbrauchsstelle.zaehler ? ` – Zähler: ${verbrauchsstelle.zaehler}` : ""}
           </Text>
+          {verbrauchsstelle.oeffentlicherZaehler ? (
+            <Text style={s.parteiZeile}>Öffentlicher Zähler (Netz): {verbrauchsstelle.oeffentlicherZaehler}</Text>
+          ) : null}
           <Text style={s.parteiZeile}>Lieferbeginn: {fmtDate(beginn)}</Text>
         </View>
       </View>

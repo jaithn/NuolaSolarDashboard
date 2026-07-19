@@ -3,6 +3,8 @@
 import { useActionState, useState } from "react";
 import { updateObjektAction, type ObjektFormState } from "../actions";
 import { ZweiterNameFeld } from "@/components/ZweiterNameFeld";
+import { VermieterAnredeFirma } from "@/components/VermieterAnredeFirma";
+import { ObjektZusatzFelder } from "@/components/ObjektZusatzFelder";
 
 const initialState: ObjektFormState = {};
 
@@ -15,9 +17,17 @@ export function EditObjektForm({
   vermieterModus,
   vermieterName,
   vermieterName2,
+  vermieterAnrede,
+  vermieterFirma,
   vermieterAnschrift,
   vermieterPlz,
   vermieterOrt,
+  oeffentlicherZaehler,
+  hausverwaltungName,
+  hausverwaltungAnschrift,
+  hausverwaltungPlz,
+  hausverwaltungOrt,
+  ergaenzungUnterzeichner,
   bearbeiterName,
   geplanterLiefertermin,
   hatWaermepumpe,
@@ -30,9 +40,17 @@ export function EditObjektForm({
   vermieterModus: "PRO_OBJEKT" | "PRO_EINHEIT";
   vermieterName: string | null;
   vermieterName2: string | null;
+  vermieterAnrede: string | null;
+  vermieterFirma: string | null;
   vermieterAnschrift: string | null;
   vermieterPlz: string;
   vermieterOrt: string;
+  oeffentlicherZaehler: string | null;
+  hausverwaltungName: string | null;
+  hausverwaltungAnschrift: string | null;
+  hausverwaltungPlz: string;
+  hausverwaltungOrt: string;
+  ergaenzungUnterzeichner: string;
   bearbeiterName: string | null;
   geplanterLiefertermin: string; // YYYY-MM-DD oder ""
   hatWaermepumpe: boolean;
@@ -120,12 +138,22 @@ export function EditObjektForm({
             <label htmlFor="vermieterOrt">Vermieter:in (Ort)</label>
             <input id="vermieterOrt" name="vermieterOrt" type="text" defaultValue={vermieterOrt} />
           </div>
+          <VermieterAnredeFirma anredeDefault={vermieterAnrede ?? ""} firmaDefault={vermieterFirma ?? ""} />
         </div>
       ) : (
         <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", marginTop: 0 }}>
           Die/der Vermieter:in wird je Wohneinheit erfasst (siehe die jeweilige Einheit).
         </p>
       )}
+
+      <ObjektZusatzFelder
+        oeffentlicherZaehler={oeffentlicherZaehler ?? ""}
+        hausverwaltungName={hausverwaltungName ?? ""}
+        hausverwaltungAnschrift={hausverwaltungAnschrift ?? ""}
+        hausverwaltungPlz={hausverwaltungPlz}
+        hausverwaltungOrt={hausverwaltungOrt}
+        ergaenzungUnterzeichner={ergaenzungUnterzeichner}
+      />
 
       <button className="btn" type="submit" disabled={pending} style={{ maxWidth: "16rem" }}>
         {pending ? "Wird gespeichert…" : "Speichern"}

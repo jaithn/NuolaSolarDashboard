@@ -42,9 +42,17 @@ export default async function ObjektDetailPage({
           vermieterModus={objekt.vermieterModus}
           vermieterName={objekt.vermieterName}
           vermieterName2={objekt.vermieterName2}
+          vermieterAnrede={objekt.vermieterAnrede}
+          vermieterFirma={objekt.vermieterFirma}
           vermieterAnschrift={objekt.vermieterAnschrift}
           vermieterPlz={objekt.vermieterPlz}
           vermieterOrt={objekt.vermieterOrt}
+          oeffentlicherZaehler={objekt.oeffentlicherZaehler}
+          hausverwaltungName={objekt.hausverwaltungName}
+          hausverwaltungAnschrift={objekt.hausverwaltungAnschrift}
+          hausverwaltungPlz={objekt.hausverwaltungPlz}
+          hausverwaltungOrt={objekt.hausverwaltungOrt}
+          ergaenzungUnterzeichner={objekt.ergaenzungUnterzeichner}
           bearbeiterName={objekt.bearbeiterName}
           geplanterLiefertermin={objekt.geplanterLiefertermin ? objekt.geplanterLiefertermin.toISOString().slice(0, 10) : ""}
           hatWaermepumpe={objekt.hatWaermepumpe}

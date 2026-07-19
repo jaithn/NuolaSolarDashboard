@@ -195,25 +195,24 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
             <input id="firma" name="firma" type="text" defaultValue={val("firma", mietpartei?.firma ?? "")} required />
           </div>
         )}
-        {/* Vor-/Nachname bei Anrede „Firma" ausgegraut (deaktiviert). */}
-        <div className="field" style={istFirma ? { opacity: 0.5 } : undefined}>
-          <label htmlFor="vorname">Vorname</label>
+        {/* Bei Firma sind Vor-/Nachname als optionaler Ansprechpartner nutzbar
+           (Briefe adressieren weiterhin die Firma). */}
+        <div className="field">
+          <label htmlFor="vorname">{istFirma ? "Vorname (Ansprechpartner:in, optional)" : "Vorname"}</label>
           <input
             id="vorname"
             name="vorname"
             type="text"
             defaultValue={val("vorname", mietpartei?.vorname ?? "")}
-            disabled={istFirma}
           />
         </div>
-        <div className="field" style={istFirma ? { opacity: 0.5 } : undefined}>
-          <label htmlFor="name">Name</label>
+        <div className="field">
+          <label htmlFor="name">{istFirma ? "Name (Ansprechpartner:in, optional)" : "Name"}</label>
           <input
             id="name"
             name="name"
             type="text"
             defaultValue={val("name", mietpartei?.name ?? "")}
-            disabled={istFirma}
             required={!istFirma}
           />
           {/* Button neben dem Namen: zweite Person hinzufuegen (nur bei Personen). */}
