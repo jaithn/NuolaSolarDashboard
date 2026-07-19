@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { getSession } from "@/lib/auth/getSession";
 import { prisma } from "@/lib/db";
-import { resolveDokumentPfad } from "@/lib/dokumente";
+import { resolveDokumentPfad, kundenOrdner } from "@/lib/dokumente";
 
 const CONTENT_TYPES: Record<string, string> = {
   ".pdf": "application/pdf",
@@ -30,7 +30,8 @@ export async function GET(
   }
 
   const contentType = CONTENT_TYPES[path.extname(dok.pfad).toLowerCase()] ?? "application/octet-stream";
-  const buffer = await readFile(resolveDokumentPfad(dok.mietparteiId, dok.pfad)).catch(() => null);
+  const ordner = await kundenOrdner(dok.mietparteiId);
+  const buffer = await readFile(resolveDokumentPfad(ordner, dok.pfad)).catch(() => null);
   if (!buffer) {
     return NextResponse.json({ error: "Datei nicht gefunden." }, { status: 404 });
   }

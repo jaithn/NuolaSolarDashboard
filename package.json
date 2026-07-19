@@ -22,6 +22,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:demo-seed": "tsx prisma/demo-seed.ts",
     "sync:dokumente": "tsx scripts/sync-dokumente.ts",
+    "migrate:kundenordner": "tsx scripts/migrate-kundenordner.ts",
     "ci:build-status": "bash scripts/ci-build-status.sh"
   },
   "dependencies": {

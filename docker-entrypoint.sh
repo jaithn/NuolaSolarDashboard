@@ -43,6 +43,10 @@ cp -rn /app/Dokumente/. "$DOKUMENTE_DIR/" 2>/dev/null || true
 # starten (|| true).
 ./node_modules/.bin/tsx scripts/sync-dokumente.ts || true
 
+# Einmalige, idempotente Migration der Dokumentablage von data/mietparteien/<id>
+# auf data/kunden/<kundennummer> (best-effort; Fehler brechen den Start nicht).
+./node_modules/.bin/tsx scripts/migrate-kundenordner.ts || true
+
 # Ein Image, ein Container: Web-Server und Shelly-Polling-Worker laufen
 # gemeinsam. Stirbt einer der beiden Prozesse, beendet sich der Container
 # (restart: unless-stopped startet dann beide neu). POSIX-sh-kompatibel.
