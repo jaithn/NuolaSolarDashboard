@@ -7,6 +7,29 @@ gebaut; gepinnte Releases über Git-Tags `vX.Y.Z` (siehe CLAUDE.md → „Versio
 Die jeweils oberste Sektion dieser Datei wird beim Image-Build als „Neu in dieser
 Version" in die Image-Beschreibung (`org.opencontainers.image.description`) übernommen.
 
+## Bankverbindung, Allgemeinstrom-Anlage, +-Menü & Dark-Mode-Logo
+
+- **Bankverbindung im Mietprofil** (Kontoinhaber:in, IBAN, Bank): IBAN wird geprüft
+  (Modulo-97) und die **Bank automatisch aus der IBAN** ermittelt; das SEPA-Mandat
+  wird damit vorausgefüllt. Mieter:innen können ihre **IBAN im Portal selbst ändern** –
+  dabei wird ein neues, vorausgefülltes SEPA-Mandat zum Herunterladen/Unterschreiben/
+  Hochladen angeboten und die Firma per E-Mail benachrichtigt (bei Änderung und bei
+  Upload des neuen Mandats).
+- **Allgemeinstrom** wird jetzt direkt über die Mietparteien angelegt (neuer
+  „Allgemeinstrom"-Eintrag): Einheit + Vermieter-Mietpartei in einem Schritt, Vermieter
+  inkl. **Adresse vorausgefüllt**, ohne Anschreiben/Ergänzung. Gibt es eine **Wärmepumpe**,
+  wird deren Zähler getrennt ausgewiesen – **eine** Rechnung mit Allgemeinstrom
+  (Grund- + Arbeitspreis) und Wärmepumpe (nur Arbeitspreis).
+- **Neuanlage über ein +-Menü** oben rechts am Seitentitel (Objekte, Mietparteien,
+  Rechnungen) – im Nuola-Rahmen mit Plus-Symbol.
+- **Sammel-PDF**: alle Onboarding-Briefe einer Mietpartei als **ein** PDF.
+- **Interessent:innen ohne E-Mail** anlegbar; der **Abschlag** wird beim Anlegen
+  automatisch aus Preisen und Jahresverbrauch vorgeschlagen (überschreibbar).
+- **Zweite Vermieter:in mit eigener Anrede**; **einheitliche Dateinamen** für
+  hochgeladene Scans (`<Kundennummer>_<Name>_<Art>_<Datum>`); Ablage nach
+  **Kundennummer** im Ordner `data/kunden`.
+- Im **dunklen Design** wird das invertierte Nuola-Solar-Logo verwendet.
+
 ## Persönliches Anschreiben & editierbare Texte im Server-Dateisystem
 
 - **Zweites, persönlicheres Anschreiben** zusätzlich zum formalen – im Admin unter
