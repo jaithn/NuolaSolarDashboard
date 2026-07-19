@@ -62,6 +62,7 @@ export function OnboardingPanel({
   status,
   anschreibenVariante,
   braucheErgaenzung,
+  istAllgemeinstrom = false,
   vertragVersionen,
   dokumente,
 }: {
@@ -69,6 +70,8 @@ export function OnboardingPanel({
   status: Status;
   anschreibenVariante: string;
   braucheErgaenzung: boolean;
+  // Allgemeinstrom: kein Anschreiben, keine Ergaenzung/Onboarding-Optionen.
+  istAllgemeinstrom?: boolean;
   vertragVersionen: VertragVersion[];
   dokumente: Dokument[];
 }) {
@@ -90,7 +93,7 @@ export function OnboardingPanel({
   const anschreibenLabel =
     anschreibenVariante === "persoenlich" ? "Anschreiben (persönlich)" : "Anschreiben (formal)";
   const pdfLinks: { dok: string; label: string }[] = [
-    { dok: anschreibenDok, label: anschreibenLabel },
+    ...(istAllgemeinstrom ? [] : [{ dok: anschreibenDok, label: anschreibenLabel }]),
     { dok: "vertrag-eigenstaendig", label: "Stromliefervertrag" },
     ...(braucheErgaenzung ? [{ dok: "vertrag-ergaenzung", label: "Ergänzung zum Mietvertrag" }] : []),
     { dok: "sepa", label: "SEPA-Lastschriftmandat" },
@@ -99,40 +102,44 @@ export function OnboardingPanel({
   return (
     <div>
       {/* 0) Onboarding-Optionen: Anschreiben-Variante + Ergaenzungs-Bedarf,
-         auch nachtraeglich aenderbar. */}
-      <h3 style={{ marginTop: 0 }}>Onboarding-Optionen</h3>
-      {optionenState.error && <div className="form-error">{optionenState.error}</div>}
-      {optionenState.success && (
-        <div className="form-notice" role="status">
-          {optionenState.success}
-        </div>
+         auch nachtraeglich aenderbar. Bei Allgemeinstrom entfaellt dieser Block. */}
+      {!istAllgemeinstrom && (
+        <>
+          <h3 style={{ marginTop: 0 }}>Onboarding-Optionen</h3>
+          {optionenState.error && <div className="form-error">{optionenState.error}</div>}
+          {optionenState.success && (
+            <div className="form-notice" role="status">
+              {optionenState.success}
+            </div>
+          )}
+          <form action={optionenAction} style={{ display: "flex", gap: "1rem", alignItems: "flex-end", flexWrap: "wrap" }}>
+            <input type="hidden" name="mietparteiId" value={mietparteiId} />
+            <div className="field" style={{ margin: 0 }}>
+              <label htmlFor="opt-anschreiben">Anschreiben</label>
+              <select
+                id="opt-anschreiben"
+                name="anschreibenVariante"
+                className="select-inline"
+                defaultValue={anschreibenVariante === "persoenlich" ? "persoenlich" : "formal"}
+              >
+                <option value="formal">Formal</option>
+                <option value="persoenlich">Persönlich</option>
+              </select>
+            </div>
+            <div className="field" style={{ margin: 0 }}>
+              <label>
+                <input type="checkbox" name="braucheErgaenzung" defaultChecked={braucheErgaenzung} /> Ergänzung zum
+                Mietvertrag erforderlich
+              </label>
+            </div>
+            <button className="btn-small" type="submit" disabled={optionenPending}>
+              {optionenPending ? "…" : "Optionen speichern"}
+            </button>
+          </form>
+        </>
       )}
-      <form action={optionenAction} style={{ display: "flex", gap: "1rem", alignItems: "flex-end", flexWrap: "wrap" }}>
-        <input type="hidden" name="mietparteiId" value={mietparteiId} />
-        <div className="field" style={{ margin: 0 }}>
-          <label htmlFor="opt-anschreiben">Anschreiben</label>
-          <select
-            id="opt-anschreiben"
-            name="anschreibenVariante"
-            className="select-inline"
-            defaultValue={anschreibenVariante === "persoenlich" ? "persoenlich" : "formal"}
-          >
-            <option value="formal">Formal</option>
-            <option value="persoenlich">Persönlich</option>
-          </select>
-        </div>
-        <div className="field" style={{ margin: 0 }}>
-          <label>
-            <input type="checkbox" name="braucheErgaenzung" defaultChecked={braucheErgaenzung} /> Ergänzung zum
-            Mietvertrag erforderlich
-          </label>
-        </div>
-        <button className="btn-small" type="submit" disabled={optionenPending}>
-          {optionenPending ? "…" : "Optionen speichern"}
-        </button>
-      </form>
 
-      <h3 style={{ marginTop: "1.5rem" }}>Verträge</h3>
+      <h3 style={{ marginTop: istAllgemeinstrom ? 0 : "1.5rem" }}>Verträge</h3>
       <ul style={{ marginTop: 0 }}>
         {(braucheErgaenzung
           ? (["EIGENSTAENDIG", "ERGAENZUNG"] as VertragArt[])

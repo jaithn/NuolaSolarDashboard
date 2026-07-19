@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import crypto from "node:crypto";
 import { prisma } from "@/lib/db";
-import { verbrauchKwhFuerEinheit, zaehlerstaendeFuerEinheit } from "@/lib/billing/consumption";
+import { verbrauchKwhFuerEinheit, verbrauchKwhGeteilt, zaehlerstaendeFuerEinheit } from "@/lib/billing/consumption";
 
 describe("verbrauchKwhFuerEinheit", () => {
   const suffix = crypto.randomUUID();
@@ -152,6 +152,41 @@ describe("verbrauchKwhFuerEinheit", () => {
     const verbrauchY = await verbrauchKwhFuerEinheit(einheitY.id, { von, bis });
     expect(verbrauchX).toBeCloseTo(0.8, 3); // 900 - 100 = 800 Wh
     expect(verbrauchY).toBeCloseTo(0.6, 3); // 700 - 100 = 600 Wh
+  });
+
+  it("teilt den Verbrauch in Allgemeinstrom und Wärmepumpe auf (getrennter Zähler)", async () => {
+    const einheitWp = await prisma.einheit.create({
+      data: { objektId, bezeichnung: "Allgemeinstrom", typ: "ALLGEMEINSTROM" },
+    });
+    const allgemein = await prisma.shellyGeraet.create({
+      data: { objektId, deviceId: `dev-${suffix}-wp-allg`, serverHost: "shelly-test.shelly.cloud", bezeichnung: "Allgemeinstrom" },
+    });
+    const waermepumpe = await prisma.shellyGeraet.create({
+      data: { objektId, deviceId: `dev-${suffix}-wp-pumpe`, serverHost: "shelly-test.shelly.cloud", bezeichnung: "Wärmepumpe" },
+    });
+    await prisma.geraetZuordnung.createMany({
+      data: [
+        { einheitId: einheitWp.id, shellyGeraetId: allgemein.id, modus: "ADDIEREN", istWaermepumpe: false },
+        { einheitId: einheitWp.id, shellyGeraetId: waermepumpe.id, modus: "ADDIEREN", istWaermepumpe: true },
+      ],
+    });
+
+    const von = new Date("2026-07-01T00:00:00.000Z");
+    const bis = new Date("2026-07-31T23:59:59.000Z");
+    await prisma.messwert.createMany({
+      data: [
+        { geraetId: allgemein.id, phase: "a", timestamp: von, energyWh: 0 },
+        { geraetId: allgemein.id, phase: "a", timestamp: bis, energyWh: 400 }, // 0.4 kWh Allgemeinstrom
+        { geraetId: waermepumpe.id, phase: "a", timestamp: von, energyWh: 0 },
+        { geraetId: waermepumpe.id, phase: "a", timestamp: bis, energyWh: 1000 }, // 1.0 kWh Wärmepumpe
+      ],
+    });
+
+    const geteilt = await verbrauchKwhGeteilt(einheitWp.id, { von, bis });
+    expect(geteilt.hatWaermepumpe).toBe(true);
+    expect(geteilt.waermepumpeKwh).toBeCloseTo(1.0, 3);
+    expect(geteilt.allgemeinKwh).toBeCloseTo(0.4, 3);
+    expect(geteilt.gesamtKwh).toBeCloseTo(1.4, 3);
   });
 
   it("schneidet das Ergebnis bei 0 ab, falls die Subtraktion rechnerisch negativ würde", async () => {

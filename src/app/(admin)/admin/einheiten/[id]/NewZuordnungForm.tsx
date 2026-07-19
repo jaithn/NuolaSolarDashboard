@@ -11,7 +11,15 @@ interface GeraetOption {
   deviceId: string;
 }
 
-export function NewZuordnungForm({ einheitId, geraete }: { einheitId: string; geraete: GeraetOption[] }) {
+export function NewZuordnungForm({
+  einheitId,
+  geraete,
+  zeigeWaermepumpe = false,
+}: {
+  einheitId: string;
+  geraete: GeraetOption[];
+  zeigeWaermepumpe?: boolean;
+}) {
   const [state, formAction, pending] = useActionState(createZuordnungAction, initialState);
 
   return (
@@ -38,6 +46,19 @@ export function NewZuordnungForm({ einheitId, geraete }: { einheitId: string; ge
           </select>
         </div>
       </div>
+
+      {/* Nur bei Allgemeinstrom: Zaehler als Waermepumpe markieren -> getrennter
+         Rechnungsausweis (nur Arbeitspreis). */}
+      {zeigeWaermepumpe && (
+        <div className="field">
+          <label>
+            <input type="checkbox" name="istWaermepumpe" /> Dieser Zähler ist die Wärmepumpe
+          </label>
+          <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", margin: "0.2rem 0 0" }}>
+            Der Verbrauch wird in der Rechnung getrennt ausgewiesen (nur Arbeitspreis, kein Grundpreis).
+          </p>
+        </div>
+      )}
 
       <button className="btn" type="submit" disabled={pending} style={{ maxWidth: "16rem" }}>
         {pending ? "Wird gespeichert…" : "Zuordnung anlegen"}

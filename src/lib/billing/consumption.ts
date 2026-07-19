@@ -92,25 +92,54 @@ async function allePhasenDesGeraets(shellyGeraetId: string): Promise<string[]> {
   return vorhanden.map((p) => p.phase);
 }
 
+export interface VerbrauchGeteilt {
+  // Gesamtverbrauch der Einheit (kWh).
+  gesamtKwh: number;
+  // Anteil der als Waermepumpe markierten Zaehler (kWh).
+  waermepumpeKwh: number;
+  // Uebriger Verbrauch (Gesamt - Waermepumpe), z.B. der eigentliche Allgemeinstrom (kWh).
+  allgemeinKwh: number;
+  // true, wenn der Einheit mindestens ein Waermepumpen-Zaehler zugeordnet ist.
+  hatWaermepumpe: boolean;
+}
+
 /**
- * Gesamtverbrauch (kWh) einer Einheit im Zeitraum: summiert ueber alle ihr
- * zugeordneten Geraete (ADDIEREN) abzueglich aller als SUBTRAHIEREN
- * zugeordneten Geraete. Ergebnis bei 0 abgeschnitten.
+ * Verbrauch (kWh) einer Einheit im Zeitraum, aufgeteilt in Waermepumpe und
+ * uebrigen (Allgemein-)Strom. Summiert ueber alle ADDIEREN-Zaehler abzueglich
+ * aller SUBTRAHIEREN-Zaehler; die als Waermepumpe markierten ADDIEREN-Zaehler
+ * werden zusaetzlich getrennt ausgewiesen (fuer den getrennten Rechnungsausweis
+ * Allgemeinstrom vs. Waermepumpe). Ergebnisse bei 0 abgeschnitten.
  */
-export async function verbrauchKwhFuerEinheit(einheitId: string, zeitraum: Zeitraum): Promise<number> {
+export async function verbrauchKwhGeteilt(einheitId: string, zeitraum: Zeitraum): Promise<VerbrauchGeteilt> {
   const zuordnungen = await prisma.geraetZuordnung.findMany({ where: { einheitId } });
 
   let totalWh = 0;
+  let wpWh = 0;
+  let hatWaermepumpe = false;
   for (const zuordnung of zuordnungen) {
+    if (zuordnung.istWaermepumpe) hatWaermepumpe = true;
     const phasen = await allePhasenDesGeraets(zuordnung.shellyGeraetId);
     let geraetWh = 0;
     for (const phase of phasen) {
       geraetWh += await phasenVerbrauchWh(zuordnung.shellyGeraetId, phase, zeitraum);
     }
     totalWh += zuordnung.modus === "SUBTRAHIEREN" ? -geraetWh : geraetWh;
+    if (zuordnung.istWaermepumpe && zuordnung.modus === "ADDIEREN") wpWh += geraetWh;
   }
 
-  return Math.max(0, totalWh) / 1000;
+  const gesamtKwh = Math.max(0, totalWh) / 1000;
+  const waermepumpeKwh = wpWh / 1000;
+  const allgemeinKwh = Math.max(0, gesamtKwh - waermepumpeKwh);
+  return { gesamtKwh, waermepumpeKwh, allgemeinKwh, hatWaermepumpe };
+}
+
+/**
+ * Gesamtverbrauch (kWh) einer Einheit im Zeitraum: summiert ueber alle ihr
+ * zugeordneten Geraete (ADDIEREN) abzueglich aller als SUBTRAHIEREN
+ * zugeordneten Geraete. Ergebnis bei 0 abgeschnitten.
+ */
+export async function verbrauchKwhFuerEinheit(einheitId: string, zeitraum: Zeitraum): Promise<number> {
+  return (await verbrauchKwhGeteilt(einheitId, zeitraum)).gesamtKwh;
 }
 
 export interface Zaehlerstaende {

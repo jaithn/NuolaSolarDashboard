@@ -69,7 +69,14 @@ export default async function EinheitDetailPage({ params }: { params: Promise<{ 
                 <td>
                   <Link href={`/admin/geraete/${z.shellyGeraet.id}`}>{z.shellyGeraet.bezeichnung}</Link>
                 </td>
-                <td>{z.modus === "SUBTRAHIEREN" ? "Subtrahieren (Allgemeinstrom)" : "Addieren"}</td>
+                <td>
+                  {z.modus === "SUBTRAHIEREN" ? "Subtrahieren (Allgemeinstrom)" : "Addieren"}
+                  {z.istWaermepumpe && (
+                    <span className="status-badge interessent" style={{ marginLeft: "0.4rem" }}>
+                      Wärmepumpe
+                    </span>
+                  )}
+                </td>
                 <td>
                   <form action={deleteZuordnungAction}>
                     <input type="hidden" name="id" value={z.id} />
@@ -93,7 +100,11 @@ export default async function EinheitDetailPage({ params }: { params: Promise<{ 
           {geraeteImObjekt.length === 0 ? (
             <p>Es sind noch keine Geräte in diesem Objekt angelegt.</p>
           ) : (
-            <NewZuordnungForm einheitId={einheit.id} geraete={geraeteImObjekt} />
+            <NewZuordnungForm
+              einheitId={einheit.id}
+              geraete={geraeteImObjekt}
+              zeigeWaermepumpe={einheit.typ === "ALLGEMEINSTROM"}
+            />
           )}
         </div>
       </div>

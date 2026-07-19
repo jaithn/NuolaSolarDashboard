@@ -17,6 +17,9 @@ export async function createZuordnungAction(
   const einheitId = String(formData.get("einheitId") ?? "");
   const shellyGeraetId = String(formData.get("shellyGeraetId") ?? "");
   const modus = String(formData.get("modus") ?? "ADDIEREN") as "ADDIEREN" | "SUBTRAHIEREN";
+  // Nur bei Allgemeinstrom relevant: markiert den Zaehler als Waermepumpe (getrennter
+  // Rechnungsausweis - nur Arbeitspreis). Ein SUBTRAHIEREN-Zaehler ist nie WP.
+  const istWaermepumpe = formData.get("istWaermepumpe") === "on" && modus === "ADDIEREN";
 
   if (!einheitId || !shellyGeraetId) {
     return { error: "Bitte ein Gerät auswählen." };
@@ -24,7 +27,7 @@ export async function createZuordnungAction(
 
   try {
     await prisma.geraetZuordnung.create({
-      data: { einheitId, shellyGeraetId, modus },
+      data: { einheitId, shellyGeraetId, modus, istWaermepumpe },
     });
   } catch {
     return { error: "Dieses Gerät ist dieser Einheit bereits zugeordnet." };

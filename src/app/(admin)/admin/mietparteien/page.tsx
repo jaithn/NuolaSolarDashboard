@@ -4,7 +4,7 @@ import { MietparteiAnlegenPanel } from "./MietparteiAnlegenPanel";
 import { mietparteiAnzeigeName } from "@/lib/mietpartei";
 
 export default async function MietparteienPage() {
-  const [mietparteien, einheiten, steuersaetze] = await Promise.all([
+  const [mietparteien, einheiten, objekte, steuersaetze] = await Promise.all([
     prisma.mietpartei.findMany({
       // Primaer nach Objektname, dann nach Nachname (Firmen nach firma-Feld).
       orderBy: [
@@ -16,6 +16,7 @@ export default async function MietparteienPage() {
       include: { einheit: { include: { objekt: true } } },
     }),
     prisma.einheit.findMany({ include: { objekt: true }, orderBy: { bezeichnung: "asc" } }),
+    prisma.objekt.findMany({ orderBy: { name: "asc" } }),
     prisma.steuersatz.findMany({ orderBy: { gueltigAb: "desc" } }),
   ]);
 
@@ -27,9 +28,22 @@ export default async function MietparteienPage() {
     ort: e.objekt.ort,
   }));
 
+  // Objekte mit Vermieter-Daten fuer die Allgemeinstrom-Maske (Vorbelegung).
+  const objektOptions = objekte.map((o) => ({
+    id: o.id,
+    name: o.name,
+    vermieterName: o.vermieterName,
+    vermieterName2: o.vermieterName2,
+    vermieterAnrede: o.vermieterAnrede,
+    vermieterFirma: o.vermieterFirma,
+    vermieterAnschrift: o.vermieterAnschrift,
+    vermieterPlz: o.vermieterPlz,
+    vermieterOrt: o.vermieterOrt,
+  }));
+
   return (
     <div>
-      <MietparteiAnlegenPanel einheiten={einheitOptions} steuersaetze={steuersaetze} />
+      <MietparteiAnlegenPanel einheiten={einheitOptions} objekte={objektOptions} steuersaetze={steuersaetze} />
 
       <div className="section">
         <table className="data-table">

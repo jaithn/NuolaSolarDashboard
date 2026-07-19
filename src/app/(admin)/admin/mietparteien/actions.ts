@@ -368,6 +368,104 @@ export async function createMietparteiAction(
   redirect(`/admin/mietparteien/${neueMietparteiId}`);
 }
 
+/**
+ * Legt Allgemeinstrom an: erzeugt in einem Schritt die Einheit (Typ
+ * ALLGEMEINSTROM, feste Bezeichnung „Allgemeinstrom") UND die zugehoerige
+ * Mietpartei = Vermieter:in (mit deren Anschrift, vorbelegt aus dem Objekt).
+ * Kein Anschreiben, keine Ergaenzung. Optional wird am Objekt vermerkt, dass es
+ * eine Waermepumpe gibt (deren Zaehler wird spaeter an der Einheit als
+ * „Waermepumpe" markiert -> getrennter Rechnungsausweis).
+ */
+export async function createAllgemeinstromAction(
+  _prevState: MietparteiFormState,
+  formData: FormData,
+): Promise<MietparteiFormState> {
+  await requireAdmin();
+
+  const objektId = String(formData.get("objektId") ?? "");
+  const anredeRaw = String(formData.get("anrede") ?? "").trim();
+  const anrede: Anrede = ["HERR", "FRAU", "FAMILIE", "FIRMA"].includes(anredeRaw) ? (anredeRaw as Anrede) : null;
+  const istFirma = anrede === "FIRMA";
+  const name = String(formData.get("name") ?? "").trim();
+  const firma = String(formData.get("firma") ?? "").trim();
+  const anschrift = String(formData.get("anschrift") ?? "").trim();
+  const anschriftPlz = String(formData.get("anschriftPlz") ?? "").trim();
+  const anschriftOrt = String(formData.get("anschriftOrt") ?? "").trim();
+  const einzugsdatumRaw = String(formData.get("einzugsdatum") ?? "");
+  const arbeitspreisNetto = Number(formData.get("arbeitspreisNetto"));
+  const arbeitspreisSteuersatzId = String(formData.get("arbeitspreisSteuersatzId") ?? "");
+  const hatGrundpreis = formData.get("hatGrundpreis") === "on";
+  const grundpreisNetto = Number(formData.get("grundpreisNetto"));
+  const grundpreisSteuersatzId = String(formData.get("grundpreisSteuersatzId") ?? "");
+  const hatWaermepumpe = formData.get("hatWaermepumpe") === "on";
+
+  if (!objektId || !einzugsdatumRaw || !arbeitspreisSteuersatzId) {
+    return { error: "Bitte Objekt, Lieferbeginn und Arbeitspreis angeben." };
+  }
+  if (istFirma ? !firma : !name) {
+    return { error: istFirma ? "Bitte den Firmennamen angeben." : "Bitte den Namen der Vermieter:in angeben." };
+  }
+  if (!Number.isFinite(arbeitspreisNetto) || arbeitspreisNetto < 0) {
+    return { error: "Der Arbeitspreis ist ungültig." };
+  }
+
+  // Optionaler Abschlag (brutto).
+  const abschlagBrutto = Number(formData.get("abschlagBrutto"));
+  const abschlagSteuersatzId = String(formData.get("abschlagSteuersatzId") ?? "");
+  const abschlagGueltigAbRaw = String(formData.get("abschlagGueltigAb") ?? "");
+  const legeAbschlagAn = Number.isFinite(abschlagBrutto) && abschlagBrutto > 0 && Boolean(abschlagSteuersatzId);
+  const abschlagSatz = legeAbschlagAn
+    ? await prisma.steuersatz.findUnique({ where: { id: abschlagSteuersatzId } })
+    : null;
+
+  const einzugsdatum = new Date(einzugsdatumRaw);
+
+  const neueMietparteiId = await prisma.$transaction(async (tx) => {
+    const einheit = await tx.einheit.create({
+      data: { objektId, bezeichnung: "Allgemeinstrom", typ: "ALLGEMEINSTROM" },
+    });
+    const mietpartei = await tx.mietpartei.create({
+      data: {
+        einheitId: einheit.id,
+        anrede,
+        name: istFirma ? "" : name,
+        firma: istFirma ? firma : null,
+        anschrift: anschrift || null,
+        anschriftPlz,
+        anschriftOrt,
+        einzugsdatum,
+        status: "AKTIV",
+        // Allgemeinstrom: kein Anschreiben-/Ergaenzungsbedarf.
+        braucheErgaenzung: false,
+        arbeitspreisNetto,
+        arbeitspreisSteuersatzId,
+        grundpreisNetto: hatGrundpreis && Number.isFinite(grundpreisNetto) ? grundpreisNetto : null,
+        grundpreisSteuersatzId: hatGrundpreis && grundpreisSteuersatzId ? grundpreisSteuersatzId : null,
+      },
+    });
+    if (legeAbschlagAn && abschlagSatz) {
+      await tx.abschlag.create({
+        data: {
+          mietparteiId: mietpartei.id,
+          bruttoBetrag: abschlagBrutto,
+          nettoBetrag: berechneNettoAusBrutto(abschlagBrutto, abschlagSatz.prozentsatz),
+          steuersatzId: abschlagSteuersatzId,
+          gueltigAb: abschlagGueltigAbRaw ? new Date(abschlagGueltigAbRaw) : einzugsdatum,
+        },
+      });
+    }
+    if (hatWaermepumpe) {
+      await tx.objekt.update({ where: { id: objektId }, data: { hatWaermepumpe: true } });
+    }
+    return mietpartei.id;
+  });
+
+  await vergibKundennummerFallsNoetig(neueMietparteiId);
+  revalidatePath("/admin/mietparteien");
+  revalidatePath("/admin/objekte");
+  redirect(`/admin/mietparteien/${neueMietparteiId}`);
+}
+
 export async function updateMietparteiAction(
   _prevState: MietparteiFormState,
   formData: FormData,

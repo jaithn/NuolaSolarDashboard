@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { verbrauchKwhFuerEinheit, zaehlerstaendeFuerEinheit } from "./consumption";
+import { verbrauchKwhGeteilt, zaehlerstaendeFuerEinheit } from "./consumption";
 import { splitteNachSteuersatz, tageZwischen, type RechnungspositionEntwurf, type Zeitraum } from "./taxSplit";
 import { berechneBrutto } from "@/lib/steuer";
 import { generateAndStoreInvoicePdf } from "@/lib/pdf/renderInvoicePdf";
@@ -102,21 +102,44 @@ export async function erstelleRechnungsentwurf(
     await pruefeKeineUeberschneidung(mietpartei.einheitId, zeitraum);
   }
 
-  const verbrauchKwh = await verbrauchKwhFuerEinheit(mietpartei.einheitId, zeitraum);
+  const { gesamtKwh: verbrauchKwh, allgemeinKwh, waermepumpeKwh, hatWaermepumpe } = await verbrauchKwhGeteilt(
+    mietpartei.einheitId,
+    zeitraum,
+  );
   const { anfangKwh, endeKwh, geschaetzt: verbrauchGeschaetzt } = await zaehlerstaendeFuerEinheit(
     mietpartei.einheitId,
     zeitraum,
   );
-  const arbeitspreisGesamtNetto = Math.round(verbrauchKwh * mietpartei.arbeitspreisNetto * 100) / 100;
+  const ap = mietpartei.arbeitspreisNetto;
+  const arbeitsNetto = (kwh: number) => Math.round(kwh * ap * 100) / 100;
 
-  const positionenEntwurf: RechnungspositionEntwurf[] = [
-    ...splitteNachSteuersatz(
-      `Stromverbrauch (${verbrauchKwh.toFixed(2)} kWh × ${mietpartei.arbeitspreisNetto.toFixed(4)} €/kWh Arbeitspreis)`,
-      arbeitspreisGesamtNetto,
-      zeitraum,
-      steuersaetze,
-    ),
-  ];
+  // Bei Waermepumpen-Zaehlern wird der Arbeitspreis-Anteil getrennt ausgewiesen:
+  // Allgemeinstrom (Grundpreis + Arbeitspreis, unten) und Waermepumpe (NUR
+  // Arbeitspreis) - beide in EINER Rechnung. Ohne Waermepumpe eine einzige
+  // Stromverbrauchs-Position wie bisher.
+  const positionenEntwurf: RechnungspositionEntwurf[] = hatWaermepumpe
+    ? [
+        ...splitteNachSteuersatz(
+          `Stromverbrauch Allgemeinstrom (${allgemeinKwh.toFixed(2)} kWh × ${ap.toFixed(4)} €/kWh Arbeitspreis)`,
+          arbeitsNetto(allgemeinKwh),
+          zeitraum,
+          steuersaetze,
+        ),
+        ...splitteNachSteuersatz(
+          `Stromverbrauch Wärmepumpe (${waermepumpeKwh.toFixed(2)} kWh × ${ap.toFixed(4)} €/kWh Arbeitspreis)`,
+          arbeitsNetto(waermepumpeKwh),
+          zeitraum,
+          steuersaetze,
+        ),
+      ]
+    : [
+        ...splitteNachSteuersatz(
+          `Stromverbrauch (${verbrauchKwh.toFixed(2)} kWh × ${ap.toFixed(4)} €/kWh Arbeitspreis)`,
+          arbeitsNetto(verbrauchKwh),
+          zeitraum,
+          steuersaetze,
+        ),
+      ];
 
   if (mietpartei.grundpreisNetto) {
     const monate = anzahlMonate(zeitraum.von, zeitraum.bis);

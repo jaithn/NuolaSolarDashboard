@@ -159,6 +159,7 @@ export default async function MietparteiDetailPage({ params }: { params: Promise
           status={mietpartei.status}
           anschreibenVariante={mietpartei.anschreibenVariante}
           braucheErgaenzung={mietpartei.braucheErgaenzung}
+          istAllgemeinstrom={mietpartei.einheit.typ === "ALLGEMEINSTROM"}
           vertragVersionen={vertragVersionen.map((v) => ({
             id: v.id,
             art: v.art,
