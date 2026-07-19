@@ -49,16 +49,16 @@ export default async function EinheitDetailPage({ params }: { params: Promise<{ 
       </div>
 
       <div className="section">
-        <h2>Geräte-Zuordnungen</h2>
+        <h2>Zähler-Zuordnungen</h2>
         <p>
-          Ein Gerät kann mehreren Einheiten zugeordnet sein. Mit &quot;Subtrahieren&quot; lässt sich z.B. ein
+          Ein Zähler kann mehreren Einheiten zugeordnet sein. Mit &quot;Subtrahieren&quot; lässt sich z.B. ein
           Allgemeinstrom-Zwischenzähler abbilden, der im Stromkreis dieser Einheit hängt - die Mietpartei
           zahlt dann nur die Differenz aus ihrem Zähler abzüglich des Allgemeinstrom-Zählers.
         </p>
         <table className="data-table">
           <thead>
             <tr>
-              <th>Gerät</th>
+              <th>Zähler</th>
               <th>Modus</th>
               <th></th>
             </tr>
@@ -90,7 +90,7 @@ export default async function EinheitDetailPage({ params }: { params: Promise<{ 
             ))}
             {einheit.geraetZuordnungen.length === 0 && (
               <tr>
-                <td colSpan={3}>Noch keine Geräte zugeordnet.</td>
+                <td colSpan={3}>Noch keine Zähler zugeordnet.</td>
               </tr>
             )}
           </tbody>
@@ -98,7 +98,7 @@ export default async function EinheitDetailPage({ params }: { params: Promise<{ 
 
         <div style={{ marginTop: "1rem" }}>
           {geraeteImObjekt.length === 0 ? (
-            <p>Es sind noch keine Geräte in diesem Objekt angelegt.</p>
+            <p>Es sind noch keine Zähler in diesem Objekt angelegt.</p>
           ) : (
             <NewZuordnungForm
               einheitId={einheit.id}

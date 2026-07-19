@@ -32,7 +32,9 @@ const VERTRAGSART_LABEL: Record<VertragArt, string> = {
 interface Dokument {
   id: string;
   typ: DokTyp;
-  dateiname: string;
+  // Automatisch vergebener, einheitlicher Dateiname (Kundennummer_Name_TYP_Datum) -
+  // wird angezeigt; der Original-Upload-Name ist bewusst nicht die Anzeige.
+  pfad: string;
   groesseBytes: number;
   hochgeladenAm: string; // ISO
 }
@@ -81,7 +83,9 @@ export function OnboardingPanel({
   const [deleteState, deleteAction, deletePending] = useActionState(deleteDokumentAction, initialState);
 
   const istAktiv = status === "AKTIV";
-  const andereStatus = (["INTERESSENT", "AKTIV", "INAKTIV"] as Status[]).filter((s) => s !== status);
+  // „Interessent:in" wird als Zielstatus nicht mehr angeboten (kein Zurück,
+  // sobald aktiviert) - nur Aktiv/Inaktiv.
+  const andereStatus = (["AKTIV", "INAKTIV"] as Status[]).filter((s) => s !== status);
 
   // Aktuell gültige Version je Vertragsart.
   const aktiveVersion = (art: VertragArt) =>
@@ -102,8 +106,10 @@ export function OnboardingPanel({
   return (
     <div>
       {/* 0) Onboarding-Optionen: Anschreiben-Variante + Ergaenzungs-Bedarf,
-         auch nachtraeglich aenderbar. Bei Allgemeinstrom entfaellt dieser Block. */}
-      {!istAllgemeinstrom && (
+         waehrend der Interessenten-Phase aenderbar. Sobald die Partei aktiv ist
+         (oder bei Allgemeinstrom) entfaellt dieser Block – die zuletzt gewaehlten
+         Optionen bleiben gespeichert und steuern weiterhin die PDF-Erzeugung. */}
+      {!istAllgemeinstrom && !istAktiv && (
         <>
           <h3 style={{ marginTop: 0 }}>Onboarding-Optionen</h3>
           {optionenState.error && <div className="form-error">{optionenState.error}</div>}
@@ -139,7 +145,7 @@ export function OnboardingPanel({
         </>
       )}
 
-      <h3 style={{ marginTop: istAllgemeinstrom ? 0 : "1.5rem" }}>Verträge</h3>
+      <h3 style={{ marginTop: istAllgemeinstrom || istAktiv ? 0 : "1.5rem" }}>Verträge</h3>
       <ul style={{ marginTop: 0 }}>
         {(braucheErgaenzung
           ? (["EIGENSTAENDIG", "ERGAENZUNG"] as VertragArt[])
@@ -246,7 +252,7 @@ export function OnboardingPanel({
                     target="_blank"
                     rel="noreferrer"
                   >
-                    {d.dateiname}
+                    {d.pfad}
                   </a>
                 </td>
                 <td>{fmtGroesse(d.groesseBytes)}</td>

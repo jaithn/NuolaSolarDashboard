@@ -22,7 +22,7 @@ export async function createZuordnungAction(
   const istWaermepumpe = formData.get("istWaermepumpe") === "on" && modus === "ADDIEREN";
 
   if (!einheitId || !shellyGeraetId) {
-    return { error: "Bitte ein Gerät auswählen." };
+    return { error: "Bitte einen Zähler auswählen." };
   }
 
   try {
@@ -30,7 +30,7 @@ export async function createZuordnungAction(
       data: { einheitId, shellyGeraetId, modus, istWaermepumpe },
     });
   } catch {
-    return { error: "Dieses Gerät ist dieser Einheit bereits zugeordnet." };
+    return { error: "Dieser Zähler ist dieser Einheit bereits zugeordnet." };
   }
 
   revalidatePath(`/admin/einheiten/${einheitId}`);

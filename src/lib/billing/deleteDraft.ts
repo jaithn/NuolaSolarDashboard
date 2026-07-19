@@ -1,6 +1,6 @@
 import { unlink } from "node:fs/promises";
 import { prisma } from "@/lib/db";
-import { resolvePdfFilePath } from "@/lib/pdf/renderInvoicePdf";
+import { resolveRechnungsPdfPfad } from "@/lib/pdf/renderInvoicePdf";
 
 /**
  * Loescht einen Rechnungsentwurf vollstaendig. Nur im Status ENTWURF erlaubt -
@@ -17,7 +17,7 @@ export async function loescheRechnungsentwurf(rechnungId: string): Promise<void>
 
   if (rechnung.pdfPfad) {
     try {
-      await unlink(resolvePdfFilePath(rechnung.pdfPfad));
+      await unlink(await resolveRechnungsPdfPfad(rechnung.mietparteiId, rechnung.pdfPfad));
     } catch {
       // PDF evtl. nicht (mehr) vorhanden - Loeschen der Rechnung trotzdem fortsetzen.
     }

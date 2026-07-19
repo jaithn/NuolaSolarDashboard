@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { prisma } from "@/lib/db";
 import { vergibNaechsteRechnungsnummer } from "./invoiceNumber";
-import { generateAndStoreInvoicePdf, resolvePdfFilePath } from "@/lib/pdf/renderInvoicePdf";
+import { generateAndStoreInvoicePdf, resolveRechnungsPdfPfad } from "@/lib/pdf/renderInvoicePdf";
 import { sendMail } from "@/lib/mail/mailer";
 import { invoiceSentEmailHtml } from "@/lib/mail/templates";
 import { getAppBaseUrl } from "@/lib/appBaseUrl";
@@ -91,7 +91,7 @@ export async function storniereRechnung(originalId: string): Promise<{ stornoRec
       include: { mietpartei: true },
     });
     if (mitPdf.pdfPfad) {
-      const pdfBuffer = await readFile(resolvePdfFilePath(mitPdf.pdfPfad));
+      const pdfBuffer = await readFile(await resolveRechnungsPdfPfad(mitPdf.mietparteiId, mitPdf.pdfPfad));
       const loginUrl = `${await getAppBaseUrl()}/login`;
       await sendMail({
         to: mitPdf.mietpartei.email,

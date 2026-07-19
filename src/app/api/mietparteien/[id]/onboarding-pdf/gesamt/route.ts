@@ -3,6 +3,8 @@ import { PDFDocument } from "pdf-lib";
 import { getSession } from "@/lib/auth/getSession";
 import { prisma } from "@/lib/db";
 import { renderOnboardingPdf, type OnboardingDokumentTyp } from "@/lib/pdf/renderOnboardingPdfs";
+import { mietparteiAnzeigeName } from "@/lib/mietpartei";
+import { slugName } from "@/lib/dokumente";
 
 // Liefert ALLE fuer diese Mietpartei relevanten Onboarding-Briefe als EIN
 // zusammengefuehrtes PDF (in der Versand-Reihenfolge). Welche Dokumente enthalten
@@ -21,7 +23,17 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const mietpartei = await prisma.mietpartei.findUnique({
     where: { id },
-    select: { anschreibenVariante: true, braucheErgaenzung: true },
+    select: {
+      anschreibenVariante: true,
+      braucheErgaenzung: true,
+      kundennummer: true,
+      anrede: true,
+      vorname: true,
+      name: true,
+      firma: true,
+      vorname2: true,
+      name2: true,
+    },
   });
   if (!mietpartei) return NextResponse.json({ error: "Mietpartei nicht gefunden." }, { status: 404 });
 
@@ -41,10 +53,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   }
   const bytes = await gesamt.save();
 
+  // Dateiname nach Schema: <Kundennummer>_<Name>_Onboarding-Unterlagen_<Datum>.pdf
+  const kundennrTeil = mietpartei.kundennummer != null ? String(mietpartei.kundennummer) : "kunde";
+  const nameTeil = slugName(mietparteiAnzeigeName(mietpartei));
+  const datum = new Date().toISOString().slice(0, 10);
+  const dateiname = `${kundennrTeil}_${nameTeil}_Onboarding-Unterlagen_${datum}.pdf`;
+
   return new NextResponse(new Uint8Array(bytes), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": 'inline; filename="Onboarding-Unterlagen.pdf"',
+      "Content-Disposition": `inline; filename="${dateiname}"`,
     },
   });
 }

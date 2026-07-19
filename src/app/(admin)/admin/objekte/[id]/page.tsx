@@ -67,7 +67,7 @@ export default async function ObjektDetailPage({
             <tr>
               <th>Bezeichnung</th>
               <th>Mietparteien</th>
-              <th>Geräte</th>
+              <th>Zähler</th>
               <th></th>
             </tr>
           </thead>

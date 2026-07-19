@@ -33,15 +33,35 @@ export async function createEinheitManualMesswertAction(formData: FormData): Pro
     where: { einheitId, modus: "ADDIEREN" },
     orderBy: { createdAt: "asc" },
   });
-  if (!zuordnung) {
-    redirect(
-      `${zurueckUrl}${zurueckUrl.includes("?") ? "&" : "?"}fehler=${encodeURIComponent(
-        "Der Einheit ist kein (addierendes) Gerät zugeordnet - manueller Wert nicht möglich.",
-      )}`,
-    );
-  }
 
-  const geraetId = zuordnung.shellyGeraetId;
+  let geraetId: string;
+  if (zuordnung) {
+    geraetId = zuordnung.shellyGeraetId;
+  } else {
+    // Kein Zaehler zugeordnet -> automatisch einen virtuellen „Manueller Zähler"
+    // anlegen und der Einheit zuordnen. Nicht pollbar (serverHost leer, aktiv=false),
+    // damit der Worker ihn ignoriert; die Verbrauchsberechnung liest die Messwerte
+    // dennoch. So sind manuelle Zaehlerstaende auch ohne echtes Geraet moeglich.
+    const einheit = await prisma.einheit.findUniqueOrThrow({ where: { id: einheitId }, select: { objektId: true } });
+    const geraet = await prisma.shellyGeraet.upsert({
+      where: { deviceId_serverHost: { deviceId: `manuell-${einheitId}`, serverHost: "" } },
+      update: {},
+      create: {
+        objektId: einheit.objektId,
+        deviceId: `manuell-${einheitId}`,
+        serverHost: "",
+        bezeichnung: "Manueller Zähler",
+        aktiv: false,
+      },
+    });
+    const bereitsZugeordnet = await prisma.geraetZuordnung.findFirst({
+      where: { einheitId, shellyGeraetId: geraet.id },
+    });
+    if (!bereitsZugeordnet) {
+      await prisma.geraetZuordnung.create({ data: { einheitId, shellyGeraetId: geraet.id, modus: "ADDIEREN" } });
+    }
+    geraetId = geraet.id;
+  }
   const vorhandenePhase = await prisma.messwert.findFirst({
     where: { geraetId },
     select: { phase: true },

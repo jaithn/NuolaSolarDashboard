@@ -54,7 +54,7 @@ export function istErlaubteDatei(name: string): boolean {
 }
 
 /** Namensbestandteil aus Personen-/Firmenname (Umlaut-Transliteration, nur [A-Za-z0-9-]). */
-function slugName(s: string): string {
+export function slugName(s: string): string {
   const slug = s
     .replace(/ä/g, "ae")
     .replace(/ö/g, "oe")

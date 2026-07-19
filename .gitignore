@@ -21,5 +21,8 @@ CLAUDE.md
 # Session-Interna & lokale Vorlagen (nicht ins Repo). "03 Vorlagen/" enthaelt
 # Vertragsvorlagen mit potenziell personenbezogenen Daten -> nie committen.
 HANDOFF.md
+# Dauerhafte Backlog-Liste offener Aufgaben (Session-Interna, bleibt lokal).
+# Unerledigte Punkte darin nicht loeschen (siehe Kopf der Datei).
+BACKLOG.md
 02 commands/
 03 Vorlagen/

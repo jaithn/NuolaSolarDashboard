@@ -10,7 +10,7 @@ const LABELS: Record<string, string> = {
   dashboard: "Verbrauch",
   objekte: "Objekte",
   einheiten: "Einheiten",
-  geraete: "Geräte",
+  geraete: "Zähler",
   mietparteien: "Mietparteien",
   rechnungen: "Rechnungen",
   einstellungen: "Einstellungen",
@@ -20,7 +20,7 @@ const LABELS: Record<string, string> = {
 const DETAIL: Record<string, string> = {
   objekte: "Objekt",
   einheiten: "Einheit",
-  geraete: "Gerät",
+  geraete: "Zähler",
   mietparteien: "Mietpartei",
   rechnungen: "Rechnung",
 };

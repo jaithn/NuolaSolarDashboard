@@ -58,6 +58,31 @@ async function main() {
   }
 
   console.log(`Fertig. ${migriert} Kundenordner migriert.`);
+
+  // Zusaetzlich: bestehende Rechnungs-PDFs aus data/rechnungen/<id>.pdf in den
+  // jeweiligen Kundenordner data/kunden/<kundennummer>/rechnungen/ verschieben.
+  const ALT_RECHNUNGEN = path.join(process.cwd(), "data", "rechnungen");
+  if (existsSync(ALT_RECHNUNGEN)) {
+    const rechnungen = await prisma.rechnung.findMany({
+      where: { pdfPfad: { not: null } },
+      select: { pdfPfad: true, mietpartei: { select: { id: true, kundennummer: true } } },
+    });
+    let rMigriert = 0;
+    for (const r of rechnungen) {
+      if (!r.pdfPfad) continue;
+      const quelle = path.join(ALT_RECHNUNGEN, r.pdfPfad);
+      if (!existsSync(quelle)) continue;
+      const ordner = r.mietpartei.kundennummer != null ? String(r.mietpartei.kundennummer) : r.mietpartei.id;
+      const zielDir = path.join(NEU_BASIS, ordner, "rechnungen");
+      const ziel = path.join(zielDir, r.pdfPfad);
+      if (existsSync(ziel)) continue;
+      await mkdir(zielDir, { recursive: true });
+      await rename(quelle, ziel);
+      rMigriert++;
+    }
+    if (rMigriert > 0) console.log(`Rechnungs-PDFs migriert: ${rMigriert}.`);
+  }
+
   await prisma.$disconnect();
 }
 

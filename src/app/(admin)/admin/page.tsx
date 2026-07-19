@@ -33,7 +33,9 @@ export default async function AdminHomePage({
   const [objekte, geraete] = await Promise.all([
     prisma.objekt.findMany({ orderBy: { name: "asc" } }),
     prisma.shellyGeraet.findMany({
-      where: sp.objektId ? { objektId: sp.objektId } : undefined,
+      // Virtuelle „Manueller Zähler" (serverHost leer) gehören nicht in die
+      // Live-Status-Liste - sie werden nicht gepollt.
+      where: { serverHost: { not: "" }, ...(sp.objektId ? { objektId: sp.objektId } : {}) },
       include: { objekt: true, zuordnungen: { include: { einheit: true } } },
       orderBy: [{ objekt: { name: "asc" } }, { bezeichnung: "asc" }],
     }),
@@ -82,8 +84,13 @@ export default async function AdminHomePage({
   const verbrauchProEinheit = await Promise.all(
     einheiten.map(async (e) => ({
       einheit: e,
-      // Aktuell aktive Mietpartei der Einheit (fuer die Anzeige des Mieternamens).
-      mieter: e.mietparteien.find((m) => isMietparteiEffectivelyAktiv(m)) ?? null,
+      // Anzuzeigende Mietpartei: bevorzugt die aktuell aktive; ist keine aktiv
+      // (z.B. nur Interessent:in oder zukuenftiger Lieferbeginn), fällt die
+      // Anzeige auf die jüngste Mietpartei zurück - sonst stünde nur "–".
+      mieter:
+        e.mietparteien.find((m) => isMietparteiEffectivelyAktiv(m)) ??
+        [...e.mietparteien].sort((a, b) => b.einzugsdatum.getTime() - a.einzugsdatum.getTime())[0] ??
+        null,
       hatGeraet: e.geraetZuordnungen.length > 0,
       verbrauchKwh: await verbrauchKwhFuerEinheit(e.id, { von, bis }),
     })),
@@ -94,11 +101,11 @@ export default async function AdminHomePage({
       <h1>Admin-Übersicht</h1>
 
       <div className="section">
-        <h2>Live-Status der Geräte</h2>
+        <h2>Live-Status der Zähler</h2>
         <table className="data-table">
           <thead>
             <tr>
-              <th>Gerät</th>
+              <th>Zähler</th>
               <th>Einheit</th>
               <th>Letzter Messwert</th>
               <th>Status</th>
@@ -138,7 +145,7 @@ export default async function AdminHomePage({
             ))}
             {geraeteMitStatus.length === 0 && (
               <tr>
-                <td colSpan={4}>Keine Geräte gefunden.</td>
+                <td colSpan={4}>Keine Zähler gefunden.</td>
               </tr>
             )}
           </tbody>
@@ -204,36 +211,39 @@ export default async function AdminHomePage({
                 </td>
                 <td>{verbrauchKwh.toFixed(2)}</td>
                 <td>
-                  {hatGeraet ? (
-                    <form action={createEinheitManualMesswertAction} style={{ display: "flex", gap: "0.4rem", alignItems: "center", flexWrap: "wrap" }}>
-                      <input type="hidden" name="einheitId" value={einheit.id} />
-                      <input type="hidden" name="zurueck" value={zurueckUrl} />
-                      <input
-                        className="text-input"
-                        name="datum"
-                        type="date"
-                        required
-                        defaultValue={toDateInputValue(now)}
-                        aria-label={`Datum des Zählerstands für ${einheit.bezeichnung}`}
-                        style={{ maxWidth: "9rem" }}
-                      />
-                      <input
-                        className="text-input"
-                        name="kwh"
-                        type="number"
-                        step="0.001"
-                        min={0}
-                        required
-                        aria-label={`Manueller Zählerstand (kWh) für ${einheit.bezeichnung}`}
-                        placeholder="kWh"
-                        style={{ maxWidth: "8rem" }}
-                      />
-                      <button className="btn-small" type="submit">
-                        Eintragen
-                      </button>
-                    </form>
-                  ) : (
-                    <span style={{ color: "var(--color-muted)", fontSize: "0.8rem" }}>kein Gerät</span>
+                  {/* Manueller Zählerstand ist immer möglich - fehlt ein Zähler,
+                     legt die Action automatisch einen „Manueller Zähler" an. */}
+                  <form action={createEinheitManualMesswertAction} style={{ display: "flex", gap: "0.4rem", alignItems: "center", flexWrap: "wrap" }}>
+                    <input type="hidden" name="einheitId" value={einheit.id} />
+                    <input type="hidden" name="zurueck" value={zurueckUrl} />
+                    <input
+                      className="text-input"
+                      name="datum"
+                      type="date"
+                      required
+                      defaultValue={toDateInputValue(now)}
+                      aria-label={`Datum des Zählerstands für ${einheit.bezeichnung}`}
+                      style={{ maxWidth: "9rem" }}
+                    />
+                    <input
+                      className="text-input"
+                      name="kwh"
+                      type="number"
+                      step="0.001"
+                      min={0}
+                      required
+                      aria-label={`Manueller Zählerstand (kWh) für ${einheit.bezeichnung}`}
+                      placeholder="kWh"
+                      style={{ maxWidth: "8rem" }}
+                    />
+                    <button className="btn-small" type="submit">
+                      Eintragen
+                    </button>
+                  </form>
+                  {!hatGeraet && (
+                    <span style={{ color: "var(--color-muted)", fontSize: "0.75rem" }}>
+                      Ohne Zähler – legt beim ersten Wert einen manuellen Zähler an.
+                    </span>
                   )}
                 </td>
               </tr>

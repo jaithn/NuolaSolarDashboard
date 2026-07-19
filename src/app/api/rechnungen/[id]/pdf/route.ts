@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { readFile } from "node:fs/promises";
 import { getSession } from "@/lib/auth/getSession";
 import { prisma } from "@/lib/db";
-import { resolvePdfFilePath } from "@/lib/pdf/renderInvoicePdf";
+import { resolveRechnungsPdfPfad } from "@/lib/pdf/renderInvoicePdf";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -28,7 +28,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Kein Zugriff." }, { status: 403 });
   }
 
-  const buffer = await readFile(resolvePdfFilePath(rechnung.pdfPfad));
+  const buffer = await readFile(await resolveRechnungsPdfPfad(rechnung.mietparteiId, rechnung.pdfPfad));
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",

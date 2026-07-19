@@ -71,7 +71,7 @@ export default async function ObjektePage({
               <tr>
                 <th>Bezeichnung</th>
                 <th>Mietparteien</th>
-                <th>Geräte</th>
+                <th>Zähler</th>
                 <th></th>
               </tr>
             </thead>
@@ -107,7 +107,7 @@ export default async function ObjektePage({
             </tbody>
           </table>
 
-          <h3 style={{ marginBottom: "0.4rem", marginTop: "1.25rem" }}>Geräte ({o.shellyGeraete.length})</h3>
+          <h3 style={{ marginBottom: "0.4rem", marginTop: "1.25rem" }}>Zähler ({o.shellyGeraete.length})</h3>
           <table className="data-table">
             <thead>
               <tr>
@@ -145,7 +145,7 @@ export default async function ObjektePage({
               ))}
               {o.shellyGeraete.length === 0 && (
                 <tr>
-                  <td colSpan={6}>Noch keine Geräte.</td>
+                  <td colSpan={6}>Noch keine Zähler.</td>
                 </tr>
               )}
             </tbody>

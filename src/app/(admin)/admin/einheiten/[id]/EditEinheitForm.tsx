@@ -41,8 +41,12 @@ export function EditEinheitForm({
   const zeigeVermieter = vermieterProEinheit && istVermietbareEinheit(typ);
 
   return (
-    <form action={formAction}>
+    // key mit savedNonce: erzwingt nach dem Speichern einen Remount, damit das
+    // kontrollierte Typ-<select> nicht durch den React-19-Formular-Reset auf den
+    // ersten Wert zurueckspringt (Anzeige = gespeicherter Wert).
+    <form action={formAction} key={state.savedNonce ?? "form"}>
       {state.error && <div className="form-error">{state.error}</div>}
+      {state.savedNonce && <div className="form-notice" role="status">Änderungen gespeichert.</div>}
       <input type="hidden" name="id" value={id} />
       <div className="form-grid">
         <div className="field">

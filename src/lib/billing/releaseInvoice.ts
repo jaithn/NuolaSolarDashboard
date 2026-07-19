@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { prisma } from "@/lib/db";
-import { generateAndStoreInvoicePdf, resolvePdfFilePath } from "@/lib/pdf/renderInvoicePdf";
+import { generateAndStoreInvoicePdf, resolveRechnungsPdfPfad } from "@/lib/pdf/renderInvoicePdf";
 import { sendMail } from "@/lib/mail/mailer";
 import { invoiceSentEmailHtml } from "@/lib/mail/templates";
 import { getAppBaseUrl } from "@/lib/appBaseUrl";
@@ -24,7 +24,7 @@ async function versendePerMail(rechnungId: string): Promise<void> {
   }
 
   try {
-    const pdfBuffer = await readFile(resolvePdfFilePath(rechnung.pdfPfad));
+    const pdfBuffer = await readFile(await resolveRechnungsPdfPfad(rechnung.mietparteiId, rechnung.pdfPfad));
     const loginUrl = `${await getAppBaseUrl()}/login`;
     await sendMail({
       to: rechnung.mietpartei.email,

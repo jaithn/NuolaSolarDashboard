@@ -87,19 +87,19 @@ export function GeraetForm({ objekte, mode, geraet }: GeraetFormProps) {
             aria-describedby="intervall-hilfe"
           />
           <p id="intervall-hilfe" className="price-breakdown">
-            Wie oft dieses Gerät abgefragt wird. Standard: alle 15 Minuten.
+            Wie oft dieser Zähler abgefragt wird. Standard: alle 15 Minuten.
           </p>
         </div>
       </div>
 
       <p style={{ fontSize: "0.85rem", color: "#475569" }}>
-        Welchen Einheiten dieses Gerät zugeordnet ist (und ob es addiert oder als
+        Welchen Einheiten dieser Zähler zugeordnet ist (und ob er addiert oder als
         Allgemeinstrom-Zwischenzähler subtrahiert wird), wird auf der jeweiligen Einheiten-Seite
         gepflegt.
       </p>
 
       <button className="btn" type="submit" disabled={pending} style={{ maxWidth: "16rem" }}>
-        {pending ? "Wird gespeichert…" : mode === "create" ? "Gerät anlegen" : "Speichern"}
+        {pending ? "Wird gespeichert…" : mode === "create" ? "Zähler anlegen" : "Speichern"}
       </button>
     </form>
   );

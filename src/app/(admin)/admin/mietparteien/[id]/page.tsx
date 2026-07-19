@@ -171,7 +171,7 @@ export default async function MietparteiDetailPage({ params }: { params: Promise
           dokumente={dokumente.map((d) => ({
             id: d.id,
             typ: d.typ,
-            dateiname: d.dateiname,
+            pfad: d.pfad,
             groesseBytes: d.groesseBytes,
             hochgeladenAm: d.hochgeladenAm.toISOString(),
           }))}

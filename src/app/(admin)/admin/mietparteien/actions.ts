@@ -61,8 +61,6 @@ function collectValues(formData: FormData): Record<string, string> {
     "einzugsdatum",
     "auszugsdatum",
     "status",
-    "anschreibenVariante",
-    "braucheErgaenzung",
     "arbeitspreisNetto",
     "arbeitspreisSteuersatzId",
     "hatGrundpreis",
@@ -113,9 +111,6 @@ type ParsedMietpartei = {
   einzugsdatum: Date;
   auszugsdatum: Date | null;
   status: "INTERESSENT" | "AKTIV" | "INAKTIV";
-  // Anschreiben-Variante ("formal" | "persoenlich") und Ergaenzungs-Bedarf.
-  anschreibenVariante: "formal" | "persoenlich";
-  braucheErgaenzung: boolean;
   arbeitspreisNetto: number;
   arbeitspreisSteuersatzId: string;
   grundpreisNetto: number | null;
@@ -153,10 +148,6 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
     | "INTERESSENT"
     | "AKTIV"
     | "INAKTIV";
-  const anschreibenVariante = formData.get("anschreibenVariante") === "persoenlich" ? "persoenlich" : "formal";
-  // Checkbox: "on" wenn angehakt. Beim Bearbeiten wird zusaetzlich ein Hidden-
-  // Feld gesendet, damit ein abgehaktes Feld sicher als false ankommt.
-  const braucheErgaenzung = formData.get("braucheErgaenzung") === "on";
   const arbeitspreisNetto = Number(formData.get("arbeitspreisNetto"));
   const arbeitspreisSteuersatzId = String(formData.get("arbeitspreisSteuersatzId") ?? "");
   const hatGrundpreis = formData.get("hatGrundpreis") === "on";
@@ -239,8 +230,10 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
       einzugsdatum: new Date(einzugsdatumRaw),
       auszugsdatum: auszugsdatumRaw ? new Date(auszugsdatumRaw) : null,
       status,
-      anschreibenVariante,
-      braucheErgaenzung,
+      // Anschreiben-Variante + Ergaenzungs-Bedarf werden NICHT hier gesetzt,
+      // sondern ausschliesslich unten bei den Vertragsunterlagen (OnboardingPanel,
+      // setOnboardingOptionenAction) - beim Anlegen greifen die Schema-Defaults
+      // (formal / Ergaenzung erforderlich).
       arbeitspreisNetto,
       arbeitspreisSteuersatzId,
       grundpreisNetto: hatGrundpreis && Number.isFinite(grundpreisNetto) ? grundpreisNetto : null,

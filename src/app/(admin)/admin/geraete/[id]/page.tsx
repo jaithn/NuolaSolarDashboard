@@ -176,7 +176,7 @@ export default async function GeraetDetailPage({ params }: { params: Promise<{ i
           {geraet.deaktiviertAb && ` seit ${geraet.deaktiviertAb.toLocaleDateString("de-DE")}`}
         </p>
         <p>
-          Ein deaktiviertes Gerät wird vom Worker nicht mehr abgefragt, bereits erfasste Messwerte
+          Ein deaktivierter Zähler wird vom Worker nicht mehr abgefragt, bereits erfasste Messwerte
           bleiben aber vollständig erhalten.
         </p>
         <form action={toggleGeraetAktivAction}>

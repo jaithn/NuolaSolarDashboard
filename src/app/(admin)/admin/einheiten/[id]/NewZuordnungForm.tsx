@@ -29,7 +29,7 @@ export function NewZuordnungForm({
 
       <div className="form-grid">
         <div className="field">
-          <label htmlFor="shellyGeraetId">Gerät</label>
+          <label htmlFor="shellyGeraetId">Zähler</label>
           <select id="shellyGeraetId" name="shellyGeraetId" className="select-inline" required>
             {geraete.map((g) => (
               <option key={g.id} value={g.id}>

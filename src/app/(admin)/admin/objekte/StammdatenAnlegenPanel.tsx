@@ -36,7 +36,7 @@ export function StammdatenAnlegenPanel({ objekte }: { objekte: ObjektOption[] })
         items={[
           { key: "objekt", label: "Neues Objekt" },
           { key: "einheit", label: "Neue Einheit", disabled: keineObjekte },
-          { key: "geraet", label: "Neues Gerät", disabled: keineObjekte },
+          { key: "geraet", label: "Neuer Zähler", disabled: keineObjekte },
         ]}
       />
 
@@ -56,7 +56,7 @@ export function StammdatenAnlegenPanel({ objekte }: { objekte: ObjektOption[] })
           )}
           {offen === "geraet" && (
             <>
-              <h2 style={{ marginTop: 0 }}>Neues Gerät</h2>
+              <h2 style={{ marginTop: 0 }}>Neuer Zähler</h2>
               <GeraetForm mode="create" objekte={objekte} />
             </>
           )}

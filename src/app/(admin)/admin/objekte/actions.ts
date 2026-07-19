@@ -9,6 +9,11 @@ import type { Anrede } from "@prisma/client";
 
 export interface ObjektFormState {
   error?: string;
+  // Wechselt bei jedem erfolgreichen Speichern (Edit). Fliesst in den Form-key
+  // ein, damit kontrollierte Felder (z.B. das Typ-<select>) nach dem
+  // React-19-Formular-Reset neu gemountet und mit dem gespeicherten Wert befuellt
+  // werden - sonst springt die Anzeige auf den ersten Options-Wert zurueck.
+  savedNonce?: string;
 }
 
 // Anrede-Formularwert lesen (fuer Vermieter:in). Leer/ungueltig -> null.
@@ -241,7 +246,7 @@ export async function updateEinheitAction(
   revalidatePath(`/admin/einheiten/${id}`);
   revalidatePath(`/admin/objekte/${einheit.objektId}`);
   revalidatePath("/admin/objekte");
-  return {};
+  return { savedNonce: Date.now().toString() };
 }
 
 export async function deleteEinheitAction(formData: FormData): Promise<void> {

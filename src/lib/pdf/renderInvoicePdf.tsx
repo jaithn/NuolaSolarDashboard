@@ -3,24 +3,24 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { prisma } from "@/lib/db";
 import { mietparteiAnzeigeName, anredeSatz, empfaengerAnredeKurz, mietparteiPostanschrift } from "@/lib/mietpartei";
+import { kundenOrdner } from "@/lib/dokumente";
 import { InvoiceDocument } from "./invoiceDocument";
 import type { FirmaBriefData } from "./letterLayout";
 
 // Bewusst NICHT unter public/ - Rechnungs-PDFs duerfen nur dem jeweiligen
 // Mieter bzw. dem Admin zugaenglich sein (siehe /api/rechnungen/[id]/pdf),
-// nicht oeffentlich unter einer statischen URL. Liegt im selben Volume wie
-// die SQLite-Datenbank, bleibt also ueber Neustarts hinweg erhalten.
-const PDF_STORAGE_DIR = path.join(process.cwd(), "data", "rechnungen");
-
-export function resolvePdfFilePath(filename: string): string {
+// nicht oeffentlich unter einer statischen URL. Ablage im data-Volume beim
+// jeweiligen Kunden (nach Kundennummer), damit alle Unterlagen einer Kundin/
+// eines Kunden beisammenliegen: data/kunden/<kundennummer>/rechnungen/<id>.pdf.
+export async function resolveRechnungsPdfPfad(mietparteiId: string, filename: string): Promise<string> {
   // Defense in Depth: pdfPfad stammt zwar ausschliesslich aus serverseitig
-  // erzeugten Rechnungsnummern, trotzdem strikt auf einen einfachen
-  // PDF-Dateinamen ohne Pfadbestandteile beschraenken (kein Path Traversal,
-  // selbst wenn der DB-Wert manipuliert wuerde).
+  // erzeugten Rechnungs-IDs, trotzdem strikt auf einen einfachen PDF-Dateinamen
+  // ohne Pfadbestandteile beschraenken (kein Path Traversal).
   if (filename !== path.basename(filename) || !/^[A-Za-z0-9._-]+\.pdf$/.test(filename)) {
     throw new Error(`Unzulässiger PDF-Dateiname: ${filename}`);
   }
-  return path.join(PDF_STORAGE_DIR, filename);
+  const ordner = await kundenOrdner(mietparteiId); // Kundennummer (Fallback ID), [A-Za-z0-9_-]
+  return path.join(process.cwd(), "data", "kunden", ordner, "rechnungen", filename);
 }
 
 /** Rendert das Rechnungs-PDF, speichert es und aktualisiert den pdfPfad der Rechnung. */
@@ -98,12 +98,13 @@ export async function generateAndStoreInvoicePdf(rechnungId: string): Promise<st
     />,
   );
 
-  await mkdir(PDF_STORAGE_DIR, { recursive: true });
   // Dateiname bewusst ueber die (stabile) Rechnungs-ID statt der Nummer:
   // Entwuerfe haben noch keine Nummer, und die ID bleibt auch nach Vergabe der
   // Nummer bei Freigabe unveraendert (kein Umbenennen der Datei noetig).
   const filename = `${rechnung.id}.pdf`;
-  await writeFile(resolvePdfFilePath(filename), buffer);
+  const zielPfad = await resolveRechnungsPdfPfad(rechnung.mietparteiId, filename);
+  await mkdir(path.dirname(zielPfad), { recursive: true });
+  await writeFile(zielPfad, buffer);
 
   await prisma.rechnung.update({ where: { id: rechnungId }, data: { pdfPfad: filename } });
   return filename;
