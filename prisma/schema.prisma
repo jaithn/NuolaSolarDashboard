@@ -37,6 +37,8 @@ model Objekt {
   // Anrede der Vermieter:in (steuert im Anschreiben die Formulierung "Ihrem
   // Vermieter"/"Ihrer Vermieterin"/"der {Firma}"). Optional.
   vermieterAnrede    Anrede?
+  // Anrede der optionalen zweiten Vermieter:in (zu vermieterName2). Optional.
+  vermieterAnrede2   Anrede?
   // Optionaler Firmenname der Vermieter:in (juristische Person). Bei Anrede FIRMA
   // wird dieser statt des Personennamens verwendet.
   vermieterFirma     String?
@@ -110,6 +112,8 @@ model Einheit {
   // Anrede + optionaler Firmenname der Vermieter:in (analog Objekt), nur bei
   // vermieterModus = PRO_EINHEIT verwendet.
   vermieterAnrede    Anrede?
+  // Anrede der optionalen zweiten Vermieter:in (zu vermieterName2).
+  vermieterAnrede2   Anrede?
   vermieterFirma     String?
   vermieterAnschrift String?
   vermieterPlz       String  @default("")
@@ -170,6 +174,10 @@ model GeraetZuordnung {
   einheitId      String
   shellyGeraetId String
   modus          ZuordnungModus @default(ADDIEREN)
+  // Nur bei Allgemeinstrom-Einheiten relevant: markiert einen der Einheit
+  // zugeordneten Zaehler als Waermepumpen-Zaehler. Dessen Verbrauch wird in der
+  // (einen) Rechnung getrennt ausgewiesen - nur mit Arbeitspreis, ohne Grundpreis.
+  istWaermepumpe Boolean        @default(false)
   createdAt      DateTime       @default(now())
 
   einheit      Einheit      @relation(fields: [einheitId], references: [id], onDelete: Cascade)
@@ -302,7 +310,10 @@ model Mietpartei {
   // Firmenname (juristische Person). Wenn gesetzt, darf "name" leer sein.
   firma         String?
   anrede        Anrede?
-  email         String
+  // E-Mail-Adresse. Optional (Default ""): Interessent:innen liegen anfangs oft
+  // ohne E-Mail vor. Fuer Login/Zugang und Mailversand ist eine gueltige Adresse
+  // noetig; die betroffenen Aktionen behandeln eine leere Adresse als "keine".
+  email         String   @default("")
   // E-Mail bestaetigt? Vom Admin angelegte Adressen gelten als bestaetigt
   // (@default(true)); vom Mieter selbst geaenderte muessen per Link bestaetigt
   // werden (dann bis zur Bestaetigung false, neue Adresse in emailPending).
@@ -315,6 +326,17 @@ model Mietpartei {
   anschrift     String?
   anschriftPlz  String   @default("")
   anschriftOrt  String   @default("")
+
+  // Bankverbindung fuer den SEPA-Lastschrifteinzug. Optional (wird im Onboarding
+  // bzw. spaeter erfasst). kontoinhaber = Vor- und Nachname des Kontoinhabers
+  // (kann von der Mietpartei abweichen). bankName/bicOderBlz werden - wenn moeglich -
+  // aus der IBAN abgeleitet (lib/bank/iban.ts), bleiben aber manuell ueberschreibbar.
+  // Aenderung der IBAN erfordert ein neues SEPA-Mandat (Portal-Flow).
+  kontoinhaber  String   @default("")
+  iban          String?
+  bankName      String?
+  bicOderBlz    String?
+
   einzugsdatum  DateTime
   auszugsdatum  DateTime?
   status        MietverhaeltnisStatus @default(AKTIV)
