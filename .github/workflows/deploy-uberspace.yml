@@ -1,0 +1,110 @@
+name: Deploy auf Uberspace
+
+# Alternativer Betriebsweg NEBEN dem Docker-Image (docker-publish.yml):
+# Baut die App in GitHub Actions und spielt sie per rsync auf einen Uberspace-8-
+# Host. Die plattformspezifischen Prisma-Engines werden bewusst NICHT in CI,
+# sondern nach dem Transfer auf dem Host erzeugt (prisma generate), damit die
+# zur Uberspace-Plattform passende Query-Engine verwendet wird.
+#
+# Einrichtung/Details: siehe deploy/uberspace/README.md
+#
+# Benoetigte GitHub-Secrets (Repo → Settings → Secrets and variables → Actions):
+#   UBERSPACE_SSH_KEY  privater SSH-Schluessel (ganze Datei, inkl. Header/Footer)
+#   UBERSPACE_HOST     z.B. "andromeda.uberspace.de"
+#   UBERSPACE_USER     der Uberspace-Benutzername
+#   UBERSPACE_PATH     Ziel-Verzeichnis auf dem Host, z.B. "/home/isabell/nuola"
+
+on:
+  # Bewusst NUR manuell bzw. per Tag ausloesbar, damit nicht jeder main-Push
+  # gleichzeitig Docker UND Uberspace deployt. Wer bei jedem Push deployen will,
+  # kann den push-Trigger unten einkommentieren.
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+
+concurrency:
+  group: deploy-uberspace
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # volle Historie fuer `git describe` (Anzeige-Version)
+
+      - name: Node einrichten
+        uses: actions/setup-node@v4
+        with:
+          # Sollte der auf dem Uberspace eingestellten Node-Hauptversion
+          # entsprechen (siehe README, `uberspace tools version use node`).
+          node-version: "22"
+          cache: "npm"
+
+      - name: Abhaengigkeiten installieren
+        # --legacy-peer-deps: wie im Dockerfile (recharts listet React 19 noch
+        # nicht in peerDependencies).
+        run: npm ci --legacy-peer-deps
+
+      - name: Prisma-Client generieren (fuer den Build)
+        run: npx prisma generate
+
+      - name: Anzeige-Version ermitteln
+        id: version
+        run: |
+          echo "app_version=$(git describe --tags --always --dirty)" >> "$GITHUB_OUTPUT"
+          echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Next.js-Build
+        env:
+          NEXT_PUBLIC_APP_VERSION: ${{ steps.version.outputs.app_version }}
+          NEXT_PUBLIC_GIT_SHA: ${{ github.sha }}
+          NEXT_PUBLIC_BUILD_DATE: ${{ steps.version.outputs.build_date }}
+        run: npm run build
+
+      - name: SSH-Key laden
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.UBERSPACE_SSH_KEY }}
+
+      - name: Host-Key vertrauen
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          ssh-keyscan -H "${{ secrets.UBERSPACE_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Code uebertragen (rsync)
+        # Anker (fuehrender /) beziehen sich auf das Transfer-Wurzelverzeichnis.
+        # --delete raeumt geloeschte Dateien auf dem Host auf; die Ausschluesse
+        # schuetzen Laufzeit-/Kundendaten (data/ = SQLite + Rechnungs-PDFs),
+        # die lokale .env und die hochgeladenen Logos (public/uploads).
+        run: |
+          rsync -az --delete \
+            --exclude='/.git' \
+            --exclude='/.github' \
+            --exclude='/data' \
+            --exclude='/.env' \
+            --exclude='/public/uploads' \
+            --exclude='/.next/cache' \
+            --exclude='/tests' \
+            --exclude='/coverage' \
+            ./ "${{ secrets.UBERSPACE_USER }}@${{ secrets.UBERSPACE_HOST }}:${{ secrets.UBERSPACE_PATH }}/"
+
+      - name: Migration, Textsync & Neustart auf dem Host
+        # prisma generate laeuft HIER (nicht in CI), damit die Query-Engine zur
+        # Uberspace-Plattform passt. db push wendet Schemaaenderungen an (bewusst
+        # ohne --accept-data-loss). Danach Vertrags-/Brieftexte einlesen und die
+        # supervisord-Dienste neu starten.
+        run: |
+          ssh "${{ secrets.UBERSPACE_USER }}@${{ secrets.UBERSPACE_HOST }}" bash -s <<'REMOTE'
+          set -euo pipefail
+          cd "${{ secrets.UBERSPACE_PATH }}"
+          set -a; [ -f .env ] && . ./.env; set +a
+          ./node_modules/.bin/prisma generate
+          ./node_modules/.bin/prisma db push --skip-generate
+          ./node_modules/.bin/tsx scripts/sync-dokumente.ts || true
+          supervisorctl restart nuola-web nuola-worker
+          supervisorctl status nuola-web nuola-worker
+          REMOTE
