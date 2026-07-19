@@ -75,15 +75,27 @@ export function kombiniereNamen(name1?: string | null, name2?: string | null): s
   return teile.length ? teile.join(" und ") : null;
 }
 
+/** Einzelne Vermieter:in-Nennung je Anrede (z.B. „Ihrer Vermieterin Anna Müller"). */
+function vermieterEinzelPhrase(anrede: Anrede | undefined, name: string | undefined): string {
+  if (anrede === "FRAU") return name ? `Ihrer Vermieterin ${name}` : "Ihrer Vermieterin";
+  if (anrede === "HERR") return name ? `Ihrem Vermieter ${name}` : "Ihrem Vermieter";
+  if (anrede === "FAMILIE") return name ? `Ihren Vermietern ${name}` : "Ihren Vermietern";
+  return name || "Ihrer Vermieterin bzw. Ihrem Vermieter";
+}
+
 /**
  * Formuliert die Vermieter:in-Nennung fuer das Anschreiben abhaengig von der
  * Anrede, z.B. „Ihrer Vermieterin Anna Müller", „Ihrem Vermieter …", bei Firma
- * „der {Firma}". Ohne Anrede: nur der Name; ohne alles ein neutraler Fallback.
+ * „der {Firma}". Bei zwei Vermieter:innen wird jede mit ihrer eigenen Anrede
+ * genannt und mit „ und " verbunden („Ihrer Vermieterin A und Ihrem Vermieter B").
+ * Ohne Anrede: nur der Name; ohne alles ein neutraler Fallback.
  */
 export function vermieterAnredePhrase(v: {
   anrede?: Anrede;
   name?: string | null;
   firma?: string | null;
+  anrede2?: Anrede;
+  name2?: string | null;
 }): string {
   const name = v.name?.trim();
   const firma = v.firma?.trim();
@@ -91,10 +103,11 @@ export function vermieterAnredePhrase(v: {
     const bez = firma || name;
     return bez ? `der ${bez}` : "Ihrer Vermietergesellschaft";
   }
-  if (v.anrede === "FRAU") return name ? `Ihrer Vermieterin ${name}` : "Ihrer Vermieterin";
-  if (v.anrede === "HERR") return name ? `Ihrem Vermieter ${name}` : "Ihrem Vermieter";
-  if (v.anrede === "FAMILIE") return name ? `Ihren Vermietern ${name}` : "Ihren Vermietern";
-  return name || "Ihrer Vermieterin bzw. Ihrem Vermieter";
+  const name2 = v.name2?.trim();
+  if (name2) {
+    return `${vermieterEinzelPhrase(v.anrede, name)} und ${vermieterEinzelPhrase(v.anrede2, name2)}`;
+  }
+  return vermieterEinzelPhrase(v.anrede, name);
 }
 
 /** Anrede-Text (z.B. "Sehr geehrte Familie …"). Leer, wenn keine Anrede. */

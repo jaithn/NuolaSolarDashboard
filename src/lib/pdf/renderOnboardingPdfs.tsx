@@ -192,7 +192,13 @@ export async function renderOnboardingPdf(
         anredeSatz={anredeSatz(mietpartei)}
         lieferterminText={objekt.geplanterLiefertermin ? fmtDate(objekt.geplanterLiefertermin) : ""}
         vermieterText={(vermieter.anrede === "FIRMA" ? vermieter.firma : vermieter.name) || undefined}
-        vermieterMitAnredeText={vermieterAnredePhrase(vermieter)}
+        vermieterMitAnredeText={vermieterAnredePhrase({
+          anrede: vq.vermieterAnrede ?? undefined,
+          name: vq.vermieterName,
+          firma: vq.vermieterFirma,
+          anrede2: vq.vermieterAnrede2 ?? undefined,
+          name2: vq.vermieterName2,
+        })}
         verbrauchsstelleTyp={verbrauchsstelleBezeichnung(mietpartei.einheit.typ as EinheitTyp)}
         objektadresseText={objekt.adresse || undefined}
         verbrauchText={

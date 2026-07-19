@@ -17,6 +17,7 @@ export function EditEinheitForm({
   vermieterName,
   vermieterName2,
   vermieterAnrede,
+  vermieterAnrede2,
   vermieterFirma,
   vermieterAnschrift,
   vermieterPlz,
@@ -29,6 +30,7 @@ export function EditEinheitForm({
   vermieterName: string | null;
   vermieterName2: string | null;
   vermieterAnrede: string | null;
+  vermieterAnrede2: string | null;
   vermieterFirma: string | null;
   vermieterAnschrift: string | null;
   vermieterPlz: string;
@@ -76,7 +78,11 @@ export function EditEinheitForm({
               <label htmlFor="vermieterOrt">Vermieter:in (Ort)</label>
               <input id="vermieterOrt" name="vermieterOrt" type="text" defaultValue={vermieterOrt} />
             </div>
-            <VermieterAnredeFirma anredeDefault={vermieterAnrede ?? ""} firmaDefault={vermieterFirma ?? ""} />
+            <VermieterAnredeFirma
+              anredeDefault={vermieterAnrede ?? ""}
+              anrede2Default={vermieterAnrede2 ?? ""}
+              firmaDefault={vermieterFirma ?? ""}
+            />
           </>
         )}
       </div>

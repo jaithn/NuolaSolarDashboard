@@ -56,6 +56,19 @@ describe("vermieterAnredePhrase", () => {
   it("ohne alles -> neutraler Fallback", () => {
     expect(vermieterAnredePhrase({})).toBe("Ihrer Vermieterin bzw. Ihrem Vermieter");
   });
+  it("zwei Vermieter:innen -> je eigene Anrede, mit 'und' verbunden", () => {
+    expect(
+      vermieterAnredePhrase({ anrede: "FRAU", name: "Anna Müller", anrede2: "HERR", name2: "Max Müller" }),
+    ).toBe("Ihrer Vermieterin Anna Müller und Ihrem Vermieter Max Müller");
+  });
+  it("zweiter Vermieter ohne Anrede -> nur Name im zweiten Teil", () => {
+    expect(vermieterAnredePhrase({ anrede: "HERR", name: "Peter Klein", name2: "Sabine Klein" })).toBe(
+      "Ihrem Vermieter Peter Klein und Sabine Klein",
+    );
+  });
+  it("Firma ignoriert zweite Person", () => {
+    expect(vermieterAnredePhrase({ anrede: "FIRMA", firma: "Immo GmbH", name2: "Ignoriert" })).toBe("der Immo GmbH");
+  });
 });
 
 describe("verbrauchsstelleBezeichnung", () => {

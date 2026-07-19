@@ -90,6 +90,7 @@ function parseEinheitVermieter(formData: FormData, typ: EinheitTyp) {
     vermieterName: aktiv ? String(formData.get("vermieterName") ?? "").trim() || null : null,
     vermieterName2: aktiv ? String(formData.get("vermieterName2") ?? "").trim() || null : null,
     vermieterAnrede: aktiv ? parseAnrede(formData.get("vermieterAnrede")) : null,
+    vermieterAnrede2: aktiv ? parseAnrede(formData.get("vermieterAnrede2")) : null,
     vermieterFirma: aktiv ? String(formData.get("vermieterFirma") ?? "").trim() || null : null,
     vermieterAnschrift: aktiv ? String(formData.get("vermieterAnschrift") ?? "").trim() || null : null,
     vermieterPlz: aktiv ? String(formData.get("vermieterPlz") ?? "").trim() : "",
@@ -104,6 +105,7 @@ function parseVermieter(formData: FormData): {
   vermieterName: string | null;
   vermieterName2: string | null;
   vermieterAnrede: Anrede | null;
+  vermieterAnrede2: Anrede | null;
   vermieterFirma: string | null;
   vermieterAnschrift: string | null;
   vermieterPlz: string;
@@ -117,6 +119,7 @@ function parseVermieter(formData: FormData): {
       vermieterName: null,
       vermieterName2: null,
       vermieterAnrede: null,
+      vermieterAnrede2: null,
       vermieterFirma: null,
       vermieterAnschrift: null,
       vermieterPlz: "",
@@ -134,6 +137,7 @@ function parseVermieter(formData: FormData): {
     vermieterName: vermieterName || null,
     vermieterName2: vermieterName2 || null,
     vermieterAnrede: parseAnrede(formData.get("vermieterAnrede")),
+    vermieterAnrede2: parseAnrede(formData.get("vermieterAnrede2")),
     vermieterFirma: vermieterFirma || null,
     vermieterAnschrift: vermieterAnschrift || null,
     vermieterPlz,
