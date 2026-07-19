@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/getSession";
 import { logoutAction } from "@/app/login/actions";
 import { AutoBreadcrumbs } from "@/components/AutoBreadcrumbs";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
@@ -17,8 +18,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       </a>
       <header className="app-header">
         <Link href="/admin" aria-label="Zur Übersicht">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="brand-logo" src="/nuola-solar-logo.png" alt="Nuola Solar" />
+          <BrandLogo />
         </Link>
         <nav>
           <Link href="/admin">Übersicht</Link>

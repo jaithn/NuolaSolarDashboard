@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 485.1875 160" width="485.1875" height="160">
+  <g transform="translate(0, 32)">
+    <svg width="96" height="96" viewBox="0 0 64 64">
+      <rect x="8" y="8" width="48" height="48" rx="12" fill="none" stroke="#F1F5F9" stroke-width="3"></rect>
+
+    <line x1="18.5" y1="40" x2="45.5" y2="40" stroke="#D9A441" stroke-width="3" stroke-linecap="round"></line>
+    <path d="M23 40 A9 9 0 0 1 41 40" stroke="#D9A441" stroke-width="3" fill="none"></path>
+    <line x1="21.6" y1="32" x2="17.1" y2="29.4" stroke="#D9A441" stroke-width="2.6" stroke-linecap="round"></line>
+    <line x1="26" y1="27.6" x2="23.4" y2="23.1" stroke="#D9A441" stroke-width="2.6" stroke-linecap="round"></line>
+    <line x1="32" y1="26" x2="32" y2="20.8" stroke="#D9A441" stroke-width="2.6" stroke-linecap="round"></line>
+    <line x1="38" y1="27.6" x2="40.6" y2="23.1" stroke="#D9A441" stroke-width="2.6" stroke-linecap="round"></line>
+    <line x1="42.4" y1="32" x2="46.9" y2="29.4" stroke="#D9A441" stroke-width="2.6" stroke-linecap="round"></line>
+    </svg>
+  </g>
+  <text x="122" y="100.48" font-family="'IBM Plex Sans', Arial, sans-serif" font-weight="700" font-size="64" letter-spacing="-1" fill="#F1F5F9">Nuola</text>
+  <text x="311.78125" y="100.48" font-family="'IBM Plex Sans', Arial, sans-serif" font-weight="500" font-size="64" fill="#D9A441">Solar</text>
+</svg>

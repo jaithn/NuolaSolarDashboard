@@ -29,7 +29,7 @@ export default async function MietparteienPage() {
 
   return (
     <div>
-      <h1>Mietparteien</h1>
+      <MietparteiAnlegenPanel einheiten={einheitOptions} steuersaetze={steuersaetze} />
 
       <div className="section">
         <table className="data-table">
@@ -80,17 +80,6 @@ export default async function MietparteienPage() {
             )}
           </tbody>
         </table>
-      </div>
-
-      <div className="section">
-        <h2>Neue Mietpartei / Interessent:in anlegen</h2>
-        {einheitOptions.length === 0 ? (
-          <p>Bitte zuerst ein Objekt mit Einheit anlegen.</p>
-        ) : steuersaetze.length === 0 ? (
-          <p>Bitte zuerst einen Steuersatz anlegen.</p>
-        ) : (
-          <MietparteiAnlegenPanel einheiten={einheitOptions} steuersaetze={steuersaetze} />
-        )}
       </div>
     </div>
   );

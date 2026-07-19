@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { logoutAction } from "@/app/login/actions";
 import { isMietparteiEffectivelyAktiv } from "@/lib/mietpartei";
 import { AutoBreadcrumbs } from "@/components/AutoBreadcrumbs";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export default async function TenantLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
@@ -38,8 +39,7 @@ export default async function TenantLayout({ children }: { children: React.React
       </a>
       <header className="app-header">
         <Link href="/dashboard" aria-label="Zur Übersicht">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="brand-logo" src="/nuola-solar-logo.png" alt="Nuola Solar" />
+          <BrandLogo />
         </Link>
         <nav>
           <Link href="/dashboard">Verbrauch</Link>

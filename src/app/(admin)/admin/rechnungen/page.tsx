@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { mietparteiAnzeigeName } from "@/lib/mietpartei";
-import { NewRechnungForm } from "./NewRechnungForm";
-import { BatchEntwuerfeForm } from "./BatchEntwuerfeForm";
+import { RechnungAnlegenPanel } from "./RechnungAnlegenPanel";
 
 const STATUS_LABEL: Record<string, string> = {
   ENTWURF: "Entwurf",
@@ -37,7 +36,7 @@ export default async function RechnungenPage({
 
   return (
     <div>
-      <h1>Rechnungen</h1>
+      <RechnungAnlegenPanel mietparteien={mietparteiOptions} />
 
       {geloescht === "ok" && <div className="form-notice">Entwurf wurde gelöscht.</div>}
 
@@ -77,25 +76,6 @@ export default async function RechnungenPage({
             )}
           </tbody>
         </table>
-      </div>
-
-      <div className="section">
-        <h2>Neue Abrechnung erstellen</h2>
-        {mietparteiOptions.length === 0 ? (
-          <p>Bitte zuerst eine Mietpartei anlegen.</p>
-        ) : (
-          <NewRechnungForm mietparteien={mietparteiOptions} />
-        )}
-      </div>
-
-      <div className="section">
-        <h2>Entwürfe für alle aktiven Einheiten erzeugen</h2>
-        <p>
-          Erstellt in einem Schwung <strong>Jahresabrechnungs</strong>-Entwürfe für alle im Zeitraum aktiven
-          Mietparteien. Einheiten mit bereits bestehender, überschneidender Rechnung werden übersprungen.
-          Schlussrechnungen werden hier nicht erzeugt – sie entstehen einzeln beim Auszug/Mieterwechsel.
-        </p>
-        <BatchEntwuerfeForm />
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import { istVermietbareEinheit } from "./einheitTyp";
 import { createEinheitAction, type ObjektFormState } from "./actions";
 import { ZweiterNameFeld } from "@/components/ZweiterNameFeld";
 import { VermieterAnredeFirma } from "@/components/VermieterAnredeFirma";
+import { SeitentitelAnlegen } from "@/components/SeitentitelAnlegen";
 
 interface ObjektOption {
   id: string;
@@ -18,64 +19,47 @@ interface ObjektOption {
 const initialState: ObjektFormState = {};
 
 /**
- * Zwischenschritt zum Anlegen: statt drei dauerhaft offener Formulare gibt es
- * drei Buttons (Objekt / Einheit / Gerät), die das jeweilige Formular
- * ein-/ausklappen. So bleibt die Objekt-Übersicht darüber übersichtlich.
+ * Seitentitel „Objekte" mit +-Anlege-Menü. Die Auswahl (Objekt / Einheit / Gerät)
+ * klappt das jeweilige Formular direkt unter dem Titel auf. Ersetzt das frühere
+ * dauerhafte „Neu anlegen"-Panel am Seitenende.
  */
 export function StammdatenAnlegenPanel({ objekte }: { objekte: ObjektOption[] }) {
-  const [offen, setOffen] = useState<null | "objekt" | "einheit" | "geraet">(null);
-  const toggle = (w: "objekt" | "einheit" | "geraet") => setOffen((cur) => (cur === w ? null : w));
+  const [offen, setOffen] = useState<string | null>(null);
+  const keineObjekte = objekte.length === 0;
 
   return (
-    <div className="section">
-      <h2>Neu anlegen</h2>
-      <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginBottom: offen ? "1.25rem" : 0 }}>
-        <button
-          type="button"
-          className="btn-small"
-          aria-expanded={offen === "objekt"}
-          onClick={() => toggle("objekt")}
-        >
-          + Neues Objekt
-        </button>
-        <button
-          type="button"
-          className="btn-small"
-          aria-expanded={offen === "einheit"}
-          onClick={() => toggle("einheit")}
-          disabled={objekte.length === 0}
-        >
-          + Neue Einheit
-        </button>
-        <button
-          type="button"
-          className="btn-small"
-          aria-expanded={offen === "geraet"}
-          onClick={() => toggle("geraet")}
-          disabled={objekte.length === 0}
-        >
-          + Neues Gerät
-        </button>
-      </div>
+    <div>
+      <SeitentitelAnlegen
+        titel="Objekte"
+        offen={offen}
+        onSelect={setOffen}
+        items={[
+          { key: "objekt", label: "Neues Objekt" },
+          { key: "einheit", label: "Neue Einheit", disabled: keineObjekte },
+          { key: "geraet", label: "Neues Gerät", disabled: keineObjekte },
+        ]}
+      />
 
-      {offen === "objekt" && (
-        <div>
-          <h3 style={{ marginTop: 0 }}>Neues Objekt</h3>
-          <NewObjektForm />
-        </div>
-      )}
-
-      {offen === "einheit" && (
-        <div>
-          <h3 style={{ marginTop: 0 }}>Neue Einheit</h3>
-          <NewEinheitMitAuswahl objekte={objekte} />
-        </div>
-      )}
-
-      {offen === "geraet" && (
-        <div>
-          <h3 style={{ marginTop: 0 }}>Neues Gerät</h3>
-          <GeraetForm mode="create" objekte={objekte} />
+      {offen && (
+        <div className="section">
+          {offen === "objekt" && (
+            <>
+              <h2 style={{ marginTop: 0 }}>Neues Objekt</h2>
+              <NewObjektForm />
+            </>
+          )}
+          {offen === "einheit" && (
+            <>
+              <h2 style={{ marginTop: 0 }}>Neue Einheit</h2>
+              <NewEinheitMitAuswahl objekte={objekte} />
+            </>
+          )}
+          {offen === "geraet" && (
+            <>
+              <h2 style={{ marginTop: 0 }}>Neues Gerät</h2>
+              <GeraetForm mode="create" objekte={objekte} />
+            </>
+          )}
         </div>
       )}
     </div>

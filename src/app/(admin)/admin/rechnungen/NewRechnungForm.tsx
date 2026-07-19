@@ -11,7 +11,13 @@ interface MietparteiOption {
   label: string;
 }
 
-export function NewRechnungForm({ mietparteien }: { mietparteien: MietparteiOption[] }) {
+export function NewRechnungForm({
+  mietparteien,
+  initialTyp = "JAHRESABRECHNUNG",
+}: {
+  mietparteien: MietparteiOption[];
+  initialTyp?: "JAHRESABRECHNUNG" | "SCHLUSSRECHNUNG";
+}) {
   const [state, formAction, pending] = useActionState(createRechnungsentwurfAction, initialState);
   const jetzt = new Date();
   const jahresanfang = `${jetzt.getFullYear()}-01-01`;
@@ -66,7 +72,7 @@ export function NewRechnungForm({ mietparteien }: { mietparteien: MietparteiOpti
         </div>
         <div className="field">
           <label htmlFor="typ">Typ</label>
-          <select id="typ" name="typ" className="select-inline" defaultValue="JAHRESABRECHNUNG">
+          <select id="typ" name="typ" className="select-inline" defaultValue={initialTyp}>
             <option value="JAHRESABRECHNUNG">Jahresabrechnung</option>
             <option value="SCHLUSSRECHNUNG">Schlussrechnung</option>
           </select>

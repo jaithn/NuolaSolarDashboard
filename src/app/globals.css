@@ -15,8 +15,6 @@
   --color-surface: #ffffff; /* Karten/Header/Tabellen-Hintergrund */
   --color-border: #e2e8f0;
   --color-focus: #1c1c21; /* Fokus-Ring (WCAG 2.2 Sichtbarkeit) */
-  --logo-bg: transparent;
-  --logo-pad: 0;
 
   --font-sans: var(--font-plex-sans), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -35,8 +33,6 @@
     --color-border: #2d323c;
     --color-primary-tint: #33280f;
     --color-focus: #d9a441;
-    --logo-bg: #ffffff;
-    --logo-pad: 4px 10px;
   }
 }
 :root[data-theme="dark"] {
@@ -48,8 +44,6 @@
   --color-border: #2d323c;
   --color-primary-tint: #33280f;
   --color-focus: #d9a441;
-  --logo-bg: #ffffff;
-  --logo-pad: 4px 10px;
 }
 
 * {
@@ -75,20 +69,116 @@ a {
   color: var(--color-primary-dark);
 }
 
-/* Offizielles Nuola Solar Logo (keine eigene Textwortmarke). */
+/* Offizielles Nuola Solar Logo (keine eigene Textwortmarke). Es gibt zwei
+   Fassungen (normal + invertiert, siehe components/BrandLogo.tsx): im hellen
+   Design das normale, im dunklen das invertierte Logo. */
 .brand-logo {
   display: block;
   height: 68px;
   width: auto;
-  /* Im dunklen Design bekommt das (dunkle) Wortmarken-Logo einen hellen Chip,
-     damit es lesbar bleibt (Variablen werden von :root[data-theme] gesetzt). */
-  background: var(--logo-bg);
-  border-radius: 8px;
-  padding: var(--logo-pad);
+}
+/* Umschaltung hell/dunkel: Standard = helles Design -> invertiertes Logo aus. */
+.brand-logo--dark {
+  display: none;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .brand-logo--light {
+    display: none;
+  }
+  :root:not([data-theme="light"]) .brand-logo--dark {
+    display: block;
+  }
+}
+:root[data-theme="dark"] .brand-logo--light {
+  display: none;
+}
+:root[data-theme="dark"] .brand-logo--dark {
+  display: block;
+}
+/* Explizit helles Design gewinnt immer (überschreibt die Media-Query). */
+:root[data-theme="light"] .brand-logo--light {
+  display: block;
+}
+:root[data-theme="light"] .brand-logo--dark {
+  display: none;
 }
 .brand-logo--login {
   height: 52px;
   margin: 0 auto 1.5rem;
+}
+
+/* Seitentitel mit +-Anlegen-Menü oben rechts (components/SeitentitelAnlegen.tsx). */
+.seitentitel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.anlegen-menu {
+  position: relative;
+  flex-shrink: 0;
+}
+.anlegen-plus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.anlegen-plus:hover {
+  border-color: var(--color-focus);
+}
+.anlegen-plus:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.anlegen-liste {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  margin: 0;
+  padding: 0.35rem;
+  min-width: 17rem;
+  list-style: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+.anlegen-eintrag {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.55rem 0.7rem;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+.anlegen-eintrag:hover:not(:disabled) {
+  background: var(--color-bg);
+}
+.anlegen-eintrag[aria-current="true"] {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+.anlegen-eintrag:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+.anlegen-eintrag:disabled {
+  color: var(--color-muted);
+  cursor: not-allowed;
 }
 
 .auth-shell {

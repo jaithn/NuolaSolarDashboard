@@ -33,9 +33,9 @@ export default async function ObjektePage({
 
   return (
     <div>
-      <h1>Objekte</h1>
-      <p style={{ color: "var(--color-muted)", marginTop: "-0.5rem" }}>
-        Übersicht aller Objekte mit ihren Einheiten und Geräten. Neues anlegen unten.
+      <StammdatenAnlegenPanel objekte={objektOptions} />
+      <p style={{ color: "var(--color-muted)", marginTop: "-0.25rem" }}>
+        Übersicht aller Objekte mit ihren Einheiten und Geräten. Neues über das +-Menü oben rechts.
       </p>
       {fehler && <div className="form-error" role="alert">{fehler}</div>}
 
@@ -152,8 +152,6 @@ export default async function ObjektePage({
           </table>
         </div>
       ))}
-
-      <StammdatenAnlegenPanel objekte={objektOptions} />
     </div>
   );
 }
