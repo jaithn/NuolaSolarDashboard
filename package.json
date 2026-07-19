@@ -33,6 +33,7 @@
     "next": "^15.5.18",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.16",
+    "pdf-lib": "^1.17.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^2.15.0",

@@ -172,6 +172,19 @@ export function OnboardingPanel({
           </a>
         ))}
       </div>
+      {/* Alle relevanten Briefe (gemäß Optionen) in EINEM PDF - praktisch zum
+         Ausdrucken/Versenden des kompletten Onboarding-Pakets. */}
+      <div style={{ marginTop: "0.75rem" }}>
+        <a
+          className="btn"
+          href={`/api/mietparteien/${mietparteiId}/onboarding-pdf/gesamt`}
+          target="_blank"
+          rel="noreferrer"
+          style={{ display: "inline-block", maxWidth: "22rem" }}
+        >
+          Alle Unterlagen als ein PDF öffnen
+        </a>
+      </div>
 
       {/* 2) Status wechseln - bei aktiven Kunden entfällt der Block (Status wird
          in den Stammdaten oben angezeigt/geändert). */}

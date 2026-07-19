@@ -79,13 +79,18 @@ interface GrossPriceInputProps {
   defaultSteuersatzId?: string | null;
   steuersaetze: SteuersatzOption[];
   required?: boolean;
+  // Optionaler kontrollierter Modus: wird `value` gesetzt, steuert die
+  // umgebende Komponente den Brutto-Betrag (z.B. Abschlags-Autovorschlag), und
+  // jede Nutzereingabe wird zusaetzlich ueber onValueChange gemeldet.
+  value?: number;
+  onValueChange?: (brutto: number) => void;
 }
 
 /**
  * Preiseingabe als BRUTTO-Betrag (inkl. MwSt.) + Steuersatz-Auswahl - fuer
  * Betraege, die brutto erfasst werden (z.B. der monatliche Abschlag, der genau
  * so per SEPA eingezogen und im Vertrag genannt wird). Netto/MwSt. werden live
- * abgeleitet und angezeigt.
+ * abgeleitet und angezeigt. Optional kontrolliert (value/onValueChange).
  */
 export function GrossPriceInput({
   label,
@@ -95,9 +100,17 @@ export function GrossPriceInput({
   defaultSteuersatzId,
   steuersaetze,
   required,
+  value,
+  onValueChange,
 }: GrossPriceInputProps) {
-  const [brutto, setBrutto] = useState(defaultBrutto ?? 0);
+  const [internalBrutto, setInternalBrutto] = useState(defaultBrutto ?? 0);
   const [steuersatzId, setSteuersatzId] = useState(defaultSteuersatzId || steuersaetze[0]?.id || "");
+  // Kontrolliert (value gesetzt) oder unkontrolliert (interner State).
+  const brutto = value !== undefined ? value : internalBrutto;
+  const setBrutto = (n: number) => {
+    if (value === undefined) setInternalBrutto(n);
+    onValueChange?.(n);
+  };
 
   const prozentsatz = steuersaetze.find((s) => s.id === steuersatzId)?.prozentsatz ?? 0;
   const bruttoWert = Number.isFinite(brutto) ? brutto : 0;

@@ -157,7 +157,10 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
   const gvArbeit = Number(formData.get("grundversorgerArbeitspreisBrutto"));
   const angenommenerVerbrauch = Number(formData.get("angenommenerJahresverbrauchKwh"));
 
-  if (!einheitId || !email || !einzugsdatumRaw || !arbeitspreisSteuersatzId) {
+  // E-Mail ist bewusst optional: Interessent:innen liegen anfangs oft ohne
+  // E-Mail vor. Fuer Login/Zugang und Mailversand ist spaeter eine gueltige
+  // Adresse noetig (dort wird das separat geprueft).
+  if (!einheitId || !einzugsdatumRaw || !arbeitspreisSteuersatzId) {
     return { error: "Bitte alle Pflichtfelder ausfüllen." };
   }
 
@@ -180,10 +183,10 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
     return { error: "Bitte für die zweite Person mindestens einen Namen angeben (oder das Feld ausblenden)." };
   }
 
-  // Strikte E-Mail-Validierung: verhindert u.a. Zeilenumbrueche/Sonderzeichen
-  // in der Empfaengeradresse (SMTP-Header-Injection) bei Onboarding- und
-  // Rechnungsmails.
-  if (!z.string().email().max(254).safeParse(email).success) {
+  // Strikte E-Mail-Validierung NUR wenn eine Adresse angegeben wurde (optional):
+  // verhindert u.a. Zeilenumbrueche/Sonderzeichen in der Empfaengeradresse
+  // (SMTP-Header-Injection) bei Onboarding- und Rechnungsmails.
+  if (email && !z.string().email().max(254).safeParse(email).success) {
     return { error: "Die E-Mail-Adresse ist ungültig." };
   }
   if (!Number.isFinite(arbeitspreisNetto) || arbeitspreisNetto < 0) {

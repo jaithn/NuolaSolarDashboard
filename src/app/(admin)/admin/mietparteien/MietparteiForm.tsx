@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { PriceInput, GrossPriceInput, type SteuersatzOption } from "@/components/PriceInput";
+import { berechneBrutto } from "@/lib/steuer";
 import { createMietparteiAction, updateMietparteiAction, type MietparteiFormState } from "./actions";
 
 const initialState: MietparteiFormState = {};
@@ -120,9 +121,48 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
   // nicht manuell abweichend gesetzt.
   const [abschlagGueltigAb, setAbschlagGueltigAb] = useState(val("abschlagGueltigAb") || einzugsdatum);
 
+  // Monatlicher Abschlag (nur Anlege-Modus): wird automatisch aus Arbeits-/
+  // Grundpreis und angenommenem Jahresverbrauch vorgeschlagen, bleibt aber manuell
+  // ueberschreibbar. Sobald der Nutzer den Betrag selbst aendert (abschlagManuell),
+  // wird der Vorschlag nicht mehr ueberschrieben.
+  const [abschlagBrutto, setAbschlagBrutto] = useState<number>(Number(val("abschlagBrutto")) || 0);
+  const [abschlagManuell, setAbschlagManuell] = useState<boolean>(Boolean(state.values?.abschlagBrutto));
+
+  const satzProzent = (id: string | undefined | null) =>
+    steuersaetze.find((s) => s.id === id)?.prozentsatz ?? 0;
+
+  // Abschlagsvorschlag aus den aktuellen Formularwerten (brutto/Monat):
+  //   Grundpreis(brutto) + Arbeitspreis(brutto) * Jahresverbrauch / 12.
+  const berechneAbschlagVorschlag = (form: HTMLFormElement) => {
+    const num = (n: string) => {
+      const el = form.elements.namedItem(n) as HTMLInputElement | null;
+      const v = Number(el?.value);
+      return Number.isFinite(v) ? v : 0;
+    };
+    const sel = (n: string) => (form.elements.namedItem(n) as HTMLSelectElement | null)?.value ?? "";
+    const apBrutto = berechneBrutto(num("arbeitspreisNetto"), satzProzent(sel("arbeitspreisSteuersatzId"))).bruttoBetrag;
+    const gpBrutto = hatGrundpreis
+      ? berechneBrutto(num("grundpreisNetto"), satzProzent(sel("grundpreisSteuersatzId"))).bruttoBetrag
+      : 0;
+    const verbrauch = num("angenommenerJahresverbrauchKwh");
+    return Math.round((gpBrutto + (apBrutto * verbrauch) / 12) * 100) / 100;
+  };
+
+  // Bei jeder Eingabe: den Abschlag neu vorschlagen – ausser der Nutzer hat den
+  // Abschlag selbst angefasst (dann bleibt sein Wert stehen).
+  const onFormInput = (e: React.FormEvent<HTMLFormElement>) => {
+    const target = e.target as HTMLInputElement | HTMLSelectElement;
+    if (target.name === "abschlagBrutto") {
+      setAbschlagManuell(true);
+      return;
+    }
+    if (!abschlagManuell) setAbschlagBrutto(berechneAbschlagVorschlag(e.currentTarget));
+  };
+
   return (
     <form
       action={formAction}
+      onInput={onFormInput}
       key={`${mietpartei?.id ?? "create"}-${state.confirmUmzug ? "confirm" : state.savedNonce ?? "form"}`}
     >
       {state.error && <div className="form-error">{state.error}</div>}
@@ -271,8 +311,17 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
           </>
         )}
         <div className="field">
-          <label htmlFor="email">E-Mail</label>
-          <input id="email" name="email" type="email" required defaultValue={val("email", mietpartei?.email ?? "")} />
+          <label htmlFor="email">E-Mail (optional)</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            defaultValue={val("email", mietpartei?.email ?? "")}
+            aria-describedby="email-hinweis"
+          />
+          <p id="email-hinweis" style={{ fontSize: "0.8rem", color: "var(--color-muted)", margin: "0.2rem 0 0" }}>
+            Kann bei Interessent:innen zunächst leer bleiben. Für Login-Zugang und Rechnungsversand später nötig.
+          </p>
         </div>
         <div className="field">
           <label htmlFor="telefon">Telefon</label>
@@ -508,9 +557,13 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
             label="Abschlag (€/Monat, inkl. MwSt.)"
             bruttoName="abschlagBrutto"
             steuersatzName="abschlagSteuersatzId"
-            defaultBrutto={valNum("abschlagBrutto", 0)}
             defaultSteuersatzId={val("abschlagSteuersatzId", "")}
             steuersaetze={steuersaetze}
+            value={abschlagBrutto}
+            onValueChange={(n) => {
+              setAbschlagBrutto(n);
+              setAbschlagManuell(true);
+            }}
           />
           <div className="field">
             <label htmlFor="abschlagGueltigAb">Abschlag gültig ab</label>
@@ -523,6 +576,7 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
             />
           </div>
           <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", margin: 0 }}>
+            {abschlagManuell ? "Manuell gesetzt. " : "Automatisch vorgeschlagen aus Preisen und Jahresverbrauch – überschreibbar. "}
             Wird bei Betrag 0 nicht angelegt. Standard-Beginn ist der Beginn der Stromlieferung.
           </p>
         </div>
