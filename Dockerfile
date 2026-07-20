@@ -62,7 +62,7 @@ RUN chmod +x ./docker-entrypoint.sh
 # auf Unraid z.B. 99:100) heruntergeschaltet, sodass die App unprivilegiert
 # laeuft. Ohne diese Laufzeit-Anpassung scheitert SQLite auf Unraid mit
 # "attempt to write a readonly database".
-RUN mkdir -p /app/data /app/public/uploads
+RUN mkdir -p /app/data
 
 EXPOSE 3000
 ENTRYPOINT ["./docker-entrypoint.sh"]

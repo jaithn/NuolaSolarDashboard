@@ -11,8 +11,8 @@ PGID="${PGID:-1000}"
 # Ordner dem Ziel-User uebereignen, damit SQLite und Logo-Uploads schreibbar
 # sind, dann per gosu unprivilegiert dasselbe Skript erneut ausfuehren.
 if [ "$(id -u)" = "0" ]; then
-  chown -R "$PUID:$PGID" /app/data /app/public/uploads 2>/dev/null || \
-    echo "[entrypoint] WARN: konnte /app/data bzw. /app/public/uploads nicht chownen"
+  chown -R "$PUID:$PGID" /app/data 2>/dev/null || \
+    echo "[entrypoint] WARN: konnte /app/data nicht chownen"
   exec gosu "$PUID:$PGID" "$0" "$@"
 fi
 

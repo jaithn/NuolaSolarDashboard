@@ -6,8 +6,6 @@ dist/
 # (data/rechnungen/*.pdf enthalten personenbezogene Daten) - nie ins Repo.
 data/
 prisma/data/
-public/uploads/*
-!public/uploads/.gitkeep
 .env
 *.log
 coverage/
