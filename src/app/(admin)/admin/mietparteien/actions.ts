@@ -396,6 +396,13 @@ export async function createAllgemeinstromAction(
   const grundpreisSteuersatzId = String(formData.get("grundpreisSteuersatzId") ?? "");
   const hatWaermepumpe = formData.get("hatWaermepumpe") === "on";
 
+  // Optionale Zähler-Zuordnung direkt beim Anlegen: Allgemeinstrom-Zähler und -
+  // falls Wärmepumpe - ein WP-Zähler (jeweils ADDIEREN/SUBTRAHIEREN).
+  const allgemeinZaehlerId = String(formData.get("allgemeinZaehlerId") ?? "").trim();
+  const allgemeinModus = String(formData.get("allgemeinModus") ?? "ADDIEREN") === "SUBTRAHIEREN" ? "SUBTRAHIEREN" : "ADDIEREN";
+  const wpZaehlerId = hatWaermepumpe ? String(formData.get("wpZaehlerId") ?? "").trim() : "";
+  const wpModus = String(formData.get("wpModus") ?? "ADDIEREN") === "SUBTRAHIEREN" ? "SUBTRAHIEREN" : "ADDIEREN";
+
   if (!objektId || !einzugsdatumRaw || !arbeitspreisSteuersatzId) {
     return { error: "Bitte Objekt, Lieferbeginn und Arbeitspreis angeben." };
   }
@@ -454,6 +461,20 @@ export async function createAllgemeinstromAction(
     if (hatWaermepumpe) {
       await tx.objekt.update({ where: { id: objektId }, data: { hatWaermepumpe: true } });
     }
+    // Zähler-Zuordnungen: nur Geräte des gewählten Objekts zulassen (Defense in Depth).
+    const gueltigeGeraetIds = new Set(
+      (await tx.shellyGeraet.findMany({ where: { objektId }, select: { id: true } })).map((g) => g.id),
+    );
+    if (allgemeinZaehlerId && gueltigeGeraetIds.has(allgemeinZaehlerId)) {
+      await tx.geraetZuordnung.create({
+        data: { einheitId: einheit.id, shellyGeraetId: allgemeinZaehlerId, modus: allgemeinModus, istWaermepumpe: false },
+      });
+    }
+    if (hatWaermepumpe && wpZaehlerId && gueltigeGeraetIds.has(wpZaehlerId) && wpZaehlerId !== allgemeinZaehlerId) {
+      await tx.geraetZuordnung.create({
+        data: { einheitId: einheit.id, shellyGeraetId: wpZaehlerId, modus: wpModus, istWaermepumpe: true },
+      });
+    }
     return mietpartei.id;
   });
 
@@ -480,6 +501,194 @@ export async function updateMietparteiAction(
   // Formular), damit die Anzeige nach dem React-19-Formular-Reset den frisch
   // gespeicherten Werten entspricht.
   return { success: "Änderungen gespeichert.", savedNonce: Date.now().toString() };
+}
+
+// ---------------------------------------------------------------------------
+// Fokussierte Teil-Updates (fuer die neu gestaltete Mietpartei-Detailseite:
+// Anzeige in Read-only-Abschnitten, Bearbeiten je Aspekt ueber das +-Menue).
+// Jede Action aktualisiert nur ihren Teilbereich (kein Ueberschreiben fremder
+// Felder) und liefert `savedNonce` fuer den Formular-Remount.
+// ---------------------------------------------------------------------------
+
+/** Stammdaten: Einheit, Status, Liefer-Zeitraum und Kontaktangaben. */
+export async function updateStammdatenAction(
+  _prevState: MietparteiFormState,
+  formData: FormData,
+): Promise<MietparteiFormState> {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  const einheitId = String(formData.get("einheitId") ?? "");
+  const email = String(formData.get("email") ?? "").trim();
+  const telefon = String(formData.get("telefon") ?? "").trim();
+  const anschrift = String(formData.get("anschrift") ?? "").trim();
+  const anschriftPlz = String(formData.get("anschriftPlz") ?? "").trim();
+  const anschriftOrt = String(formData.get("anschriftOrt") ?? "").trim();
+  const einzugsdatumRaw = String(formData.get("einzugsdatum") ?? "");
+  const auszugsdatumRaw = String(formData.get("auszugsdatum") ?? "");
+  const statusRaw = String(formData.get("status") ?? "AKTIV");
+  const status = (["INTERESSENT", "AKTIV", "INAKTIV"].includes(statusRaw) ? statusRaw : "AKTIV") as
+    | "INTERESSENT"
+    | "AKTIV"
+    | "INAKTIV";
+
+  if (!id || !einheitId || !einzugsdatumRaw) {
+    return { error: "Bitte Einheit und Beginn der Stromlieferung angeben.", values: collectValues(formData) };
+  }
+
+  await prisma.mietpartei.update({
+    where: { id },
+    data: {
+      einheitId,
+      email,
+      telefon: telefon || null,
+      anschrift: anschrift || null,
+      anschriftPlz,
+      anschriftOrt,
+      einzugsdatum: new Date(einzugsdatumRaw),
+      auszugsdatum: auszugsdatumRaw ? new Date(auszugsdatumRaw) : null,
+      status,
+    },
+  });
+  revalidatePath("/admin/mietparteien");
+  revalidatePath(`/admin/mietparteien/${id}`);
+  return { success: "Stammdaten gespeichert.", savedNonce: Date.now().toString() };
+}
+
+/** Personen: Hauptperson (Anrede + Name/Firma) und beliebig viele weitere Personen. */
+export async function updatePersonenAction(
+  _prevState: MietparteiFormState,
+  formData: FormData,
+): Promise<MietparteiFormState> {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  const anredeRaw = String(formData.get("anrede") ?? "").trim();
+  const anrede: Anrede = ["HERR", "FRAU", "FAMILIE", "FIRMA"].includes(anredeRaw) ? (anredeRaw as Anrede) : null;
+  const istFirma = anrede === "FIRMA";
+  const vorname = String(formData.get("vorname") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+  const firma = String(formData.get("firma") ?? "").trim();
+  const weiterePersonen = istFirma ? [] : parseWeiterePersonenForm(formData.get("weiterePersonen"));
+
+  if (!id) return { error: "Mietpartei fehlt." };
+  if (istFirma ? !firma : !name) {
+    return {
+      error: istFirma ? "Bitte den Firmennamen angeben." : "Bitte den Namen angeben.",
+      values: collectValues(formData),
+    };
+  }
+
+  await prisma.mietpartei.update({
+    where: { id },
+    data: {
+      anrede,
+      vorname,
+      name: istFirma ? "" : name,
+      firma: istFirma ? firma : null,
+      weiterePersonen,
+      vorname2: "",
+      name2: "",
+      anrede2: null,
+    },
+  });
+  revalidatePath("/admin/mietparteien");
+  revalidatePath(`/admin/mietparteien/${id}`);
+  return { success: "Personen gespeichert.", savedNonce: Date.now().toString() };
+}
+
+/** Stromkosten: Arbeits-/Grundpreis und optional zugleich ein neuer Abschlag. */
+export async function updateStromkostenAction(
+  _prevState: MietparteiFormState,
+  formData: FormData,
+): Promise<MietparteiFormState> {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  const arbeitspreisNetto = Number(formData.get("arbeitspreisNetto"));
+  const arbeitspreisSteuersatzId = String(formData.get("arbeitspreisSteuersatzId") ?? "");
+  const hatGrundpreis = formData.get("hatGrundpreis") === "on";
+  const grundpreisNetto = Number(formData.get("grundpreisNetto"));
+  const grundpreisSteuersatzId = String(formData.get("grundpreisSteuersatzId") ?? "");
+
+  if (!id || !arbeitspreisSteuersatzId || !Number.isFinite(arbeitspreisNetto) || arbeitspreisNetto < 0) {
+    return { error: "Bitte einen gültigen Arbeitspreis und Steuersatz angeben.", values: collectValues(formData) };
+  }
+
+  // Optionaler neuer Abschlag (brutto) - loest den bisherigen ab (wie createAbschlagAction).
+  const abschlagBrutto = Number(formData.get("abschlagBrutto"));
+  const abschlagSteuersatzId = String(formData.get("abschlagSteuersatzId") ?? "");
+  const abschlagGueltigAbRaw = String(formData.get("abschlagGueltigAb") ?? "");
+  const legeAbschlagAn =
+    Number.isFinite(abschlagBrutto) && abschlagBrutto > 0 && Boolean(abschlagSteuersatzId) && Boolean(abschlagGueltigAbRaw);
+  const abschlagSatz = legeAbschlagAn
+    ? await prisma.steuersatz.findUnique({ where: { id: abschlagSteuersatzId } })
+    : null;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.mietpartei.update({
+      where: { id },
+      data: {
+        arbeitspreisNetto,
+        arbeitspreisSteuersatzId,
+        grundpreisNetto: hatGrundpreis && Number.isFinite(grundpreisNetto) ? grundpreisNetto : null,
+        grundpreisSteuersatzId: hatGrundpreis && grundpreisSteuersatzId ? grundpreisSteuersatzId : null,
+      },
+    });
+    if (legeAbschlagAn && abschlagSatz) {
+      const gueltigAb = new Date(abschlagGueltigAbRaw);
+      const tagVorNeu = new Date(gueltigAb);
+      tagVorNeu.setDate(tagVorNeu.getDate() - 1);
+      await tx.abschlag.updateMany({
+        where: { mietparteiId: id, gueltigAb: { lt: gueltigAb }, OR: [{ gueltigBis: null }, { gueltigBis: { gte: gueltigAb } }] },
+        data: { gueltigBis: tagVorNeu },
+      });
+      await tx.abschlag.create({
+        data: {
+          mietparteiId: id,
+          bruttoBetrag: abschlagBrutto,
+          nettoBetrag: berechneNettoAusBrutto(abschlagBrutto, abschlagSatz.prozentsatz),
+          steuersatzId: abschlagSteuersatzId,
+          gueltigAb,
+        },
+      });
+    }
+  });
+
+  revalidatePath(`/admin/mietparteien/${id}`);
+  return { success: "Stromkosten gespeichert.", savedNonce: Date.now().toString() };
+}
+
+/** Bankverbindung: Kontoinhaber:in, IBAN (validiert) und daraus abgeleitete Bank/BIC. */
+export async function updateBankverbindungAction(
+  _prevState: MietparteiFormState,
+  formData: FormData,
+): Promise<MietparteiFormState> {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  const kontoinhaber = String(formData.get("kontoinhaber") ?? "").trim();
+  const ibanRaw = String(formData.get("iban") ?? "").trim();
+  const bankNameManuell = String(formData.get("bankName") ?? "").trim();
+  const iban = ibanRaw ? normalisiereIban(ibanRaw) : "";
+
+  if (!id) return { error: "Mietpartei fehlt." };
+  if (iban && !istGueltigeIban(iban)) {
+    return { error: "Die IBAN ist ungültig (Prüfziffer stimmt nicht).", values: collectValues(formData) };
+  }
+  const bank = iban ? bankAusIban(iban) : null;
+
+  await prisma.mietpartei.update({
+    where: { id },
+    data: {
+      kontoinhaber,
+      iban: iban || null,
+      bankName: bank?.bankName || bankNameManuell || null,
+      bicOderBlz: bank?.bic || null,
+    },
+  });
+  revalidatePath(`/admin/mietparteien/${id}`);
+  return { success: "Bankverbindung gespeichert.", savedNonce: Date.now().toString() };
 }
 
 /**

@@ -16,7 +16,13 @@ export default async function MietparteienPage() {
       include: { einheit: { include: { objekt: true } } },
     }),
     prisma.einheit.findMany({ include: { objekt: true }, orderBy: { bezeichnung: "asc" } }),
-    prisma.objekt.findMany({ orderBy: { name: "asc" } }),
+    prisma.objekt.findMany({
+      orderBy: { name: "asc" },
+      // Zähler des Objekts für die Allgemeinstrom-Maske (Zuordnung von
+      // Allgemeinstrom- und Wärmepumpen-Zähler direkt beim Anlegen). Virtuelle
+      // „Manueller Zähler" (serverHost leer) sind hier bewusst mit dabei.
+      include: { shellyGeraete: { orderBy: { bezeichnung: "asc" }, select: { id: true, bezeichnung: true } } },
+    }),
     prisma.steuersatz.findMany({ orderBy: { gueltigAb: "desc" } }),
   ]);
 
@@ -39,6 +45,7 @@ export default async function MietparteienPage() {
     vermieterAnschrift: o.vermieterAnschrift,
     vermieterPlz: o.vermieterPlz,
     vermieterOrt: o.vermieterOrt,
+    geraete: o.shellyGeraete.map((g) => ({ id: g.id, bezeichnung: g.bezeichnung })),
   }));
 
   return (

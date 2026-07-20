@@ -5,9 +5,13 @@ import { type EinheitTyp } from "./einheitTyp";
 export type { EinheitTyp };
 
 /**
- * Auswahl des Einheiten-Typs (Wohneinheit / Allgemeinstrom / Wärmepumpe).
- * Für Allgemeinstrom/Wärmepumpe entfällt die Mietvertrags-Ergänzung; Partei ist
- * i. d. R. der Vermieter (eigenständiger Stromliefervertrag).
+ * Auswahl des Einheiten-Typs (Wohneinheit / Gewerbeeinheit / Allgemeinstrom).
+ * Für Allgemeinstrom entfällt die Mietvertrags-Ergänzung; Partei ist i. d. R. der
+ * Vermieter (eigenständiger Stromliefervertrag). Den Typ „Wärmepumpe" gibt es
+ * bewusst NICHT (mehr) als eigene Einheit: eine Wärmepumpe ist ein als solcher
+ * markierter Zähler der Allgemeinstrom-Einheit (nur Allgemeinstrom ODER
+ * Allgemeinstrom + Wärmepumpe). Der Enum-Wert WAERMEPUMPE bleibt nur für die
+ * Anzeige evtl. bereits bestehender Alt-Einheiten erhalten.
  */
 export function EinheitTypFeld({
   typ,
@@ -32,7 +36,8 @@ export function EinheitTypFeld({
         <option value="WOHNEINHEIT">Wohneinheit</option>
         <option value="GEWERBEEINHEIT">Gewerbeeinheit</option>
         <option value="ALLGEMEINSTROM">Allgemeinstrom (Vermieter:in)</option>
-        <option value="WAERMEPUMPE">Wärmepumpe</option>
+        {/* Alt-Einheiten vom Typ Wärmepumpe weiterhin auswählbar halten, aber nicht neu anbieten. */}
+        {typ === "WAERMEPUMPE" && <option value="WAERMEPUMPE">Wärmepumpe (veraltet)</option>}
       </select>
       {typ !== "WOHNEINHEIT" && typ !== "GEWERBEEINHEIT" && (
         <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", margin: "0.25rem 0 0" }}>

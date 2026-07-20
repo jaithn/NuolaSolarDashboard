@@ -7,6 +7,22 @@ gebaut; gepinnte Releases über Git-Tags `vX.Y.Z` (siehe CLAUDE.md → „Versio
 Die jeweils oberste Sektion dieser Datei wird beim Image-Build als „Neu in dieser
 Version" in die Image-Beschreibung (`org.opencontainers.image.description`) übernommen.
 
+## Schlanke Mietpartei-Seite (+-Menü), Wärmepumpe direkt beim Allgemeinstrom
+
+- **Mietpartei-Detailseite neu gestaltet**: Alle Informationen erscheinen jetzt in
+  übersichtlichen **Anzeige-Abschnitten** (Stammdaten, Personen, Stromkosten,
+  Bankverbindung, Zugang, Abschläge, Verbräuche) – nicht mehr als ein großes
+  Bearbeitungsformular. Bearbeitet wird gezielt über einen **+-Button** oben rechts
+  (gleiches Design wie bei Objekten/Rechnungen) mit den Aktionen: neue Stammdaten,
+  neue Person, neue Stromkosten, neuer Abschlag, neue Bankverbindung, neue Rechnung,
+  neuer Dashboard-Zugang, neuer manueller Zählerwert, neuer Dokumenten-Upload.
+- **Wärmepumpe direkt in der Allgemeinstrom-Maske**: Beim Anlegen lassen sich der
+  Allgemeinstrom-Zähler und – falls vorhanden – der Wärmepumpen-Zähler gleich
+  zuordnen (je Addieren/Subtrahieren). Es gibt nur „Allgemeinstrom" oder
+  „Allgemeinstrom + Wärmepumpe" – der Einheiten-Typ „Wärmepumpe" entfällt.
+- **Einheitliche Personen-Kacheln**: Auch die 1. Person steht jetzt in derselben
+  Box wie weitere Personen.
+
 ## Grundversorger je Objekt, mehrere Personen & Wärmepumpen-Zähler
 
 - **Grundversorger-Vergleich pro Objekt**: Der Vergleich für das Anschreiben („Ihr

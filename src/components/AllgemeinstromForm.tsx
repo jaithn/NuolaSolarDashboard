@@ -15,6 +15,8 @@ export interface AllgemeinstromObjektOption {
   vermieterAnschrift: string | null;
   vermieterPlz: string;
   vermieterOrt: string;
+  // Zähler des Objekts (für die direkte Zuordnung von Allgemeinstrom-/WP-Zähler).
+  geraete: { id: string; bezeichnung: string }[];
 }
 
 const initialState: MietparteiFormState = {};
@@ -54,7 +56,9 @@ export function AllgemeinstromForm({
   const istFirma = v.anrede === "FIRMA";
 
   const [hatGrundpreis, setHatGrundpreis] = useState(true);
+  const [hatWp, setHatWp] = useState(false);
   const heute = new Date().toISOString().slice(0, 10);
+  const geraete = gewaehlt?.geraete ?? [];
 
   return (
     <form action={formAction}>
@@ -169,14 +173,75 @@ export function AllgemeinstromForm({
         <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", margin: 0 }}>Wird bei Betrag 0 nicht angelegt.</p>
       </div>
 
-      <div className="field" style={{ marginTop: "1rem" }}>
-        <label>
-          <input type="checkbox" name="hatWaermepumpe" /> Es gibt eine Wärmepumpe
-        </label>
-        <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", margin: "0.2rem 0 0" }}>
-          Anschließend auf der Einheit-Detailseite den Wärmepumpen-Zähler zuordnen und als „Wärmepumpe“
-          markieren – er wird dann in der Rechnung getrennt (nur Arbeitspreis) ausgewiesen.
-        </p>
+      <div className="section" style={{ marginTop: "1rem" }}>
+        <h3 style={{ marginTop: 0 }}>Zähler-Zuordnung</h3>
+        {geraete.length === 0 ? (
+          <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", margin: 0 }}>
+            Für dieses Objekt sind noch keine Zähler angelegt – Sie können sie später auf der
+            Einheit-Detailseite zuordnen.
+          </p>
+        ) : (
+          <>
+            <div className="form-grid">
+              <div className="field">
+                <label htmlFor="as-allg-zaehler">Allgemeinstrom-Zähler</label>
+                <select id="as-allg-zaehler" name="allgemeinZaehlerId" className="select-inline" defaultValue="">
+                  <option value="">— später zuordnen —</option>
+                  {geraete.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.bezeichnung}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="as-allg-modus">Verrechnung</label>
+                <select id="as-allg-modus" name="allgemeinModus" className="select-inline" defaultValue="ADDIEREN">
+                  <option value="ADDIEREN">Addieren</option>
+                  <option value="SUBTRAHIEREN">Subtrahieren (Zwischenzähler)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="field">
+              <label>
+                <input
+                  type="checkbox"
+                  name="hatWaermepumpe"
+                  checked={hatWp}
+                  onChange={(e) => setHatWp(e.target.checked)}
+                />{" "}
+                Es gibt eine Wärmepumpe
+              </label>
+              <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", margin: "0.2rem 0 0" }}>
+                Allgemeinstrom und Wärmepumpe bleiben <strong>eine</strong> Partei; der
+                Wärmepumpen-Verbrauch wird in der Rechnung nur getrennt (nur Arbeitspreis) ausgewiesen.
+              </p>
+            </div>
+            {hatWp && (
+              <div className="form-grid">
+                <div className="field">
+                  <label htmlFor="as-wp-zaehler">Wärmepumpen-Zähler</label>
+                  <select id="as-wp-zaehler" name="wpZaehlerId" className="select-inline" defaultValue="">
+                    <option value="">— später zuordnen —</option>
+                    {geraete.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.bezeichnung}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="field">
+                  <label htmlFor="as-wp-modus">Verrechnung</label>
+                  <select id="as-wp-modus" name="wpModus" className="select-inline" defaultValue="ADDIEREN">
+                    <option value="ADDIEREN">Addieren</option>
+                    <option value="SUBTRAHIEREN">Subtrahieren (Zwischenzähler)</option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       <button className="btn" type="submit" disabled={pending} style={{ maxWidth: "18rem", marginTop: "1rem" }}>

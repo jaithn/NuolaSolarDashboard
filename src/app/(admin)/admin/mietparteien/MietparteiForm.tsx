@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, type CSSProperties } from "react";
 import { PriceInput, GrossPriceInput, type SteuersatzOption } from "@/components/PriceInput";
 import { berechneBrutto } from "@/lib/steuer";
 import { createMietparteiAction, updateMietparteiAction, bankAusIbanAction, type MietparteiFormState } from "./actions";
@@ -12,6 +12,16 @@ interface WeiterePerson {
   vorname: string;
   name: string;
 }
+
+// Einheitliche Karten-Optik für alle Personen (1. Person wie weitere Personen).
+const personBoxStyle: CSSProperties = {
+  border: "1px solid var(--color-border)",
+  borderRadius: "0.5rem",
+  padding: "0.5rem 1rem 0.75rem",
+  marginBottom: "0.75rem",
+  maxWidth: "26rem",
+};
+const personLegendStyle: CSSProperties = { fontSize: "0.85rem", fontWeight: 600, padding: "0 0.4rem" };
 
 const initialState: MietparteiFormState = {};
 
@@ -258,50 +268,55 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
             ))}
           </select>
         </div>
-        <div className="field">
-          <label htmlFor="anrede">Anrede</label>
-          <select
-            id="anrede"
-            name="anrede"
-            className="select-inline"
-            value={anrede}
-            onChange={(e) => setAnrede(e.target.value)}
-          >
-            <option value="">— keine —</option>
-            <option value="HERR">Herr</option>
-            <option value="FRAU">Frau</option>
-            <option value="FAMILIE">Familie</option>
-            <option value="FIRMA">Firma</option>
-          </select>
-        </div>
-        {/* Firma-Feld nur bei Anrede „Firma" (bei Personen ausgeblendet). */}
-        {istFirma && (
+        {/* 1. Person in derselben Karten-Optik wie die weiteren Personen (einheitlich). */}
+        <fieldset style={{ ...personBoxStyle, gridColumn: "1 / -1" }}>
+          <legend style={personLegendStyle}>{istFirma ? "Firma" : "1. Person"}</legend>
           <div className="field">
-            <label htmlFor="firma">Firma</label>
-            <input id="firma" name="firma" type="text" defaultValue={val("firma", mietpartei?.firma ?? "")} required />
+            <label htmlFor="anrede">Anrede</label>
+            <select
+              id="anrede"
+              name="anrede"
+              className="select-inline"
+              style={{ width: "100%" }}
+              value={anrede}
+              onChange={(e) => setAnrede(e.target.value)}
+            >
+              <option value="">— keine —</option>
+              <option value="HERR">Herr</option>
+              <option value="FRAU">Frau</option>
+              <option value="FAMILIE">Familie</option>
+              <option value="FIRMA">Firma</option>
+            </select>
           </div>
-        )}
-        {/* Bei Firma sind Vor-/Nachname als optionaler Ansprechpartner nutzbar
-           (Briefe adressieren weiterhin die Firma). */}
-        <div className="field">
-          <label htmlFor="vorname">{istFirma ? "Vorname (Ansprechpartner:in, optional)" : "Vorname"}</label>
-          <input
-            id="vorname"
-            name="vorname"
-            type="text"
-            defaultValue={val("vorname", mietpartei?.vorname ?? "")}
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="name">{istFirma ? "Name (Ansprechpartner:in, optional)" : "Name"}</label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            defaultValue={val("name", mietpartei?.name ?? "")}
-            required={!istFirma}
-          />
-        </div>
+          {/* Firma-Feld nur bei Anrede „Firma" (bei Personen ausgeblendet). */}
+          {istFirma && (
+            <div className="field">
+              <label htmlFor="firma">Firma</label>
+              <input id="firma" name="firma" type="text" defaultValue={val("firma", mietpartei?.firma ?? "")} required />
+            </div>
+          )}
+          {/* Bei Firma sind Vor-/Nachname als optionaler Ansprechpartner nutzbar
+             (Briefe adressieren weiterhin die Firma). */}
+          <div className="field">
+            <label htmlFor="vorname">{istFirma ? "Vorname (Ansprechpartner:in, optional)" : "Vorname"}</label>
+            <input
+              id="vorname"
+              name="vorname"
+              type="text"
+              defaultValue={val("vorname", mietpartei?.vorname ?? "")}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="name">{istFirma ? "Name (Ansprechpartner:in, optional)" : "Name"}</label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              defaultValue={val("name", mietpartei?.name ?? "")}
+              required={!istFirma}
+            />
+          </div>
+        </fieldset>
         {/* Weitere Personen (ab Person 2): beliebig viele, je Anrede + Vor-/Nachname
            untereinander in einer eigenen Karte. Bei Firma ausgeblendet. Der Zustand
            wird als JSON in einem versteckten Feld an den Server uebergeben. */}
@@ -309,19 +324,8 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
           <div style={{ gridColumn: "1 / -1" }}>
             <input type="hidden" name="weiterePersonen" value={JSON.stringify(weiterePersonen)} />
             {weiterePersonen.map((p, i) => (
-              <fieldset
-                key={i}
-                style={{
-                  border: "1px solid var(--color-border)",
-                  borderRadius: "0.5rem",
-                  padding: "0.5rem 1rem 0.75rem",
-                  marginBottom: "0.75rem",
-                  maxWidth: "26rem",
-                }}
-              >
-                <legend style={{ fontSize: "0.85rem", fontWeight: 600, padding: "0 0.4rem" }}>
-                  {i + 2}. Person
-                </legend>
+              <fieldset key={i} style={personBoxStyle}>
+                <legend style={personLegendStyle}>{i + 2}. Person</legend>
                 {/* Anrede, Vorname und Name untereinander (gestapelt), je Person klar gruppiert. */}
                 <div className="field">
                   <label htmlFor={`wp-anrede-${i}`}>Anrede</label>
