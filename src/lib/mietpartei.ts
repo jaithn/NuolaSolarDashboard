@@ -26,42 +26,100 @@ function personName(vorname?: string | null, name?: string | null): string {
   return [vorname?.trim(), name?.trim()].filter(Boolean).join(" ");
 }
 
-/** Gibt es eine zweite Person (Vorname2 oder Name2 gesetzt)? */
-function hatZweitePerson(m: { vorname2?: string | null; name2?: string | null }): boolean {
-  return Boolean(m.vorname2?.trim() || m.name2?.trim());
+/** Eine Person der Mietpartei (Hauptperson oder eine der weiteren Personen). */
+export interface MietparteiPerson {
+  anrede: Anrede;
+  vorname: string;
+  name: string;
 }
 
-/** Tragen beide Personen denselben Nachnamen? (Grundlage fuer die Zusammenfassung.) */
-function gleicherNachname(m: { name?: string | null; name2?: string | null }): boolean {
-  const n1 = m.name?.trim();
-  const n2 = m.name2?.trim();
-  return Boolean(n1 && n2 && n1.toLowerCase() === n2.toLowerCase());
+/** Verbindet Teile natuerlichsprachlich: "A", "A und B", "A, B und C". */
+function joinUnd(teile: string[]): string {
+  const t = teile.filter(Boolean);
+  if (t.length <= 1) return t[0] ?? "";
+  return `${t.slice(0, -1).join(", ")} und ${t[t.length - 1]}`;
 }
 
-export function mietparteiAnzeigeName(m: {
+/** Anrede-Rohwert (z.B. aus JSON) auf einen gueltigen Anrede-Wert normalisieren. */
+function normAnrede(v: unknown): Anrede {
+  return v === "HERR" || v === "FRAU" || v === "FAMILIE" || v === "FIRMA" ? v : null;
+}
+
+// Eingabeform fuer die Namens-/Anredelogik: Hauptperson (anrede/vorname/name)
+// plus weitere Personen. Neue Daten stehen in `weiterePersonen` (JSON-Array);
+// die Legacy-Felder vorname2/name2/anrede2 werden nur als Fallback gelesen.
+export interface MietparteiPersonenInput {
+  anrede?: Anrede;
   vorname?: string | null;
   name?: string | null;
   firma?: string | null;
   vorname2?: string | null;
   name2?: string | null;
-}): string {
+  anrede2?: Anrede;
+  weiterePersonen?: unknown;
+}
+
+/** JSON-Array `weiterePersonen` robust in typisierte Personen wandeln. */
+function parseWeiterePersonen(w: unknown): MietparteiPerson[] {
+  if (!Array.isArray(w)) return [];
+  return w
+    .map((p) => {
+      const o = (p ?? {}) as Record<string, unknown>;
+      return {
+        anrede: normAnrede(o.anrede),
+        vorname: String(o.vorname ?? "").trim(),
+        name: String(o.name ?? "").trim(),
+      };
+    })
+    .filter((p) => p.vorname || p.name);
+}
+
+/**
+ * Weitere Personen (ab Person 2) einer Mietpartei als typisierte Liste. Bevorzugt
+ * das JSON-Feld `weiterePersonen`; ist es leer, greift der Legacy-Fallback auf die
+ * einzelne zweite Person (vorname2/name2/anrede2).
+ */
+export function weiterePersonenDerMietpartei(m: MietparteiPersonenInput): MietparteiPerson[] {
+  const ausJson = parseWeiterePersonen(m.weiterePersonen);
+  if (ausJson.length > 0) return ausJson;
+  if (m.vorname2?.trim() || m.name2?.trim()) {
+    return [{ anrede: m.anrede2 ?? null, vorname: m.vorname2?.trim() ?? "", name: m.name2?.trim() ?? "" }];
+  }
+  return [];
+}
+
+/** Alle natuerlichen Personen der Mietpartei (Hauptperson zuerst, dann weitere). */
+function alleNatuerlichenPersonen(m: MietparteiPersonenInput): MietparteiPerson[] {
+  const p1: MietparteiPerson = {
+    anrede: m.anrede ?? null,
+    vorname: m.vorname?.trim() ?? "",
+    name: m.name?.trim() ?? "",
+  };
+  return [p1, ...weiterePersonenDerMietpartei(m)];
+}
+
+/** Tragen ALLE Personen denselben (nicht-leeren) Nachnamen? -> Zusammenfassung als „Familie". */
+function alleGleicherNachname(personen: MietparteiPerson[]): boolean {
+  const namen = personen.map((p) => p.name.trim().toLowerCase()).filter(Boolean);
+  if (namen.length < 2 || namen.length !== personen.length) return false;
+  return namen.every((n) => n === namen[0]);
+}
+
+export function mietparteiAnzeigeName(m: MietparteiPersonenInput): string {
   const firma = m.firma?.trim();
   // Firmen werden in Briefen ueber den Firmennamen gefuehrt; ein optionaler
   // Ansprechpartner-Name (m.name/m.vorname) wird bewusst NICHT in den Adressaten
   // aufgenommen.
   if (firma) return firma;
+  const personen = alleNatuerlichenPersonen(m);
   let person: string;
-  if (hatZweitePerson(m)) {
-    if (gleicherNachname(m)) {
-      // Gleicher Nachname -> "Vorname1 und Vorname2 Nachname".
-      const vornamen = [m.vorname?.trim(), m.vorname2?.trim()].filter(Boolean).join(" und ");
-      person = [vornamen, m.name?.trim()].filter(Boolean).join(" ");
-    } else {
-      // Unterschiedlicher Nachname -> "Vorname1 Name1 und Vorname2 Name2".
-      person = [personName(m.vorname, m.name), personName(m.vorname2, m.name2)].filter(Boolean).join(" und ");
-    }
+  if (personen.length > 1 && alleGleicherNachname(personen)) {
+    // Gleicher Nachname -> "Vorname1, Vorname2 und Vorname3 Nachname".
+    const vornamen = joinUnd(personen.map((p) => p.vorname.trim()).filter(Boolean));
+    person = [vornamen, personen[0]?.name.trim() ?? ""].filter(Boolean).join(" ");
   } else {
-    person = personName(m.vorname, m.name);
+    // Sonst -> "Vorname1 Name1, Vorname2 Name2 und …".
+    person = joinUnd(personen.map((p) => personName(p.vorname, p.name)).filter(Boolean));
   }
   return person || "—";
 }
@@ -152,32 +210,27 @@ function anredeSegment(anrede: Anrede, nachname?: string | null): string {
   return (text ? `${text} ${nm}` : `Guten Tag ${nm}`).trim();
 }
 
-export function anredeSatz(m: {
-  anrede?: Anrede;
-  vorname?: string | null;
-  name?: string | null;
-  firma?: string | null;
-  vorname2?: string | null;
-  name2?: string | null;
-  anrede2?: Anrede;
-}): string {
+export function anredeSatz(m: MietparteiPersonenInput): string {
   if (m.anrede === "FIRMA") return anredeText("FIRMA");
 
-  // Zwei Personen: bei gleichem Nachnamen zusammengefasst als "Familie",
-  // sonst getrennte Anreden (Damen zuerst), die zweite kleingeschrieben
+  const personen = alleNatuerlichenPersonen(m);
+
+  // Mehrere Personen: bei gleichem Nachnamen zusammengefasst als "Familie",
+  // sonst getrennte Anreden (Damen zuerst), die weiteren kleingeschrieben
   // fortgesetzt ("…, sehr geehrter Herr …").
-  if (hatZweitePerson(m)) {
-    if (gleicherNachname(m)) {
-      return `${anredeText("FAMILIE")} ${m.name?.trim()}`;
+  if (personen.length > 1) {
+    if (alleGleicherNachname(personen)) {
+      return `${anredeText("FAMILIE")} ${personen[0]?.name.trim() ?? ""}`;
     }
-    const p1 = { anrede: m.anrede, nachname: m.name };
-    const p2 = { anrede: m.anrede2, nachname: m.name2 };
-    // Damen zuerst: ist NUR die zweite Person eine Frau, wird sie vorangestellt.
-    const [ersteP, zweiteP] = p2.anrede === "FRAU" && p1.anrede !== "FRAU" ? [p2, p1] : [p1, p2];
-    const erste = anredeSegment(ersteP.anrede, ersteP.nachname);
-    const zweiteRoh = anredeSegment(zweiteP.anrede, zweiteP.nachname);
-    const zweite = zweiteRoh.charAt(0).toLowerCase() + zweiteRoh.slice(1);
-    return `${erste}, ${zweite}`;
+    // Damen zuerst (stabil): Frauen behalten ihre Reihenfolge, dann die Uebrigen.
+    const frauen = personen.filter((p) => p.anrede === "FRAU");
+    const uebrige = personen.filter((p) => p.anrede !== "FRAU");
+    const sortiert = [...frauen, ...uebrige];
+    const segmente = sortiert.map((p, i) => {
+      const roh = anredeSegment(p.anrede, p.name);
+      return i === 0 ? roh : roh.charAt(0).toLowerCase() + roh.slice(1);
+    });
+    return segmente.join(", ");
   }
 
   const displayName = mietparteiAnzeigeName(m);
@@ -189,16 +242,12 @@ export function anredeSatz(m: {
 }
 
 /**
- * Kurz-Anrede fuer das Anschriftenfeld (Fensterumschlag). Bei zwei Personen mit
- * gleichem Nachnamen "Familie", sonst die Kurz-Anrede der ersten Person.
+ * Kurz-Anrede fuer das Anschriftenfeld (Fensterumschlag). Bei mehreren Personen
+ * mit gleichem Nachnamen "Familie", sonst die Kurz-Anrede der ersten Person.
  */
-export function empfaengerAnredeKurz(m: {
-  anrede?: Anrede;
-  name?: string | null;
-  vorname2?: string | null;
-  name2?: string | null;
-}): string {
-  if (hatZweitePerson(m) && gleicherNachname(m)) return "Familie";
+export function empfaengerAnredeKurz(m: MietparteiPersonenInput): string {
+  const personen = alleNatuerlichenPersonen(m);
+  if (personen.length > 1 && alleGleicherNachname(personen)) return "Familie";
   return anredeKurz(m.anrede);
 }
 

@@ -189,6 +189,47 @@ describe("verbrauchKwhFuerEinheit", () => {
     expect(geteilt.gesamtKwh).toBeCloseTo(1.4, 3);
   });
 
+  it("rechnet einen als Wärmepumpe markierten SUBTRAHIEREN-Zähler aus dem WP-Topf heraus", async () => {
+    const einheitWp2 = await prisma.einheit.create({
+      data: { objektId, bezeichnung: "Allgemeinstrom + WP (Sub)", typ: "ALLGEMEINSTROM" },
+    });
+    const allgemein = await prisma.shellyGeraet.create({
+      data: { objektId, deviceId: `dev-${suffix}-wp2-allg`, serverHost: "shelly-test.shelly.cloud", bezeichnung: "Allgemeinstrom" },
+    });
+    const wpHaupt = await prisma.shellyGeraet.create({
+      data: { objektId, deviceId: `dev-${suffix}-wp2-haupt`, serverHost: "shelly-test.shelly.cloud", bezeichnung: "WP Hauptzähler" },
+    });
+    const wpZwischen = await prisma.shellyGeraet.create({
+      data: { objektId, deviceId: `dev-${suffix}-wp2-zwisch`, serverHost: "shelly-test.shelly.cloud", bezeichnung: "WP Zwischenzähler" },
+    });
+    await prisma.geraetZuordnung.createMany({
+      data: [
+        { einheitId: einheitWp2.id, shellyGeraetId: allgemein.id, modus: "ADDIEREN", istWaermepumpe: false },
+        { einheitId: einheitWp2.id, shellyGeraetId: wpHaupt.id, modus: "ADDIEREN", istWaermepumpe: true },
+        // WP-Zwischenzähler wird aus dem WP-Topf herausgerechnet (subtrahiert).
+        { einheitId: einheitWp2.id, shellyGeraetId: wpZwischen.id, modus: "SUBTRAHIEREN", istWaermepumpe: true },
+      ],
+    });
+
+    const von = new Date("2026-07-01T00:00:00.000Z");
+    const bis = new Date("2026-07-31T23:59:59.000Z");
+    await prisma.messwert.createMany({
+      data: [
+        { geraetId: allgemein.id, phase: "a", timestamp: von, energyWh: 0 },
+        { geraetId: allgemein.id, phase: "a", timestamp: bis, energyWh: 400 }, // 0.4 kWh Allgemeinstrom
+        { geraetId: wpHaupt.id, phase: "a", timestamp: von, energyWh: 0 },
+        { geraetId: wpHaupt.id, phase: "a", timestamp: bis, energyWh: 1200 },
+        { geraetId: wpZwischen.id, phase: "a", timestamp: von, energyWh: 0 },
+        { geraetId: wpZwischen.id, phase: "a", timestamp: bis, energyWh: 200 },
+      ],
+    });
+
+    const geteilt = await verbrauchKwhGeteilt(einheitWp2.id, { von, bis });
+    expect(geteilt.waermepumpeKwh).toBeCloseTo(1.0, 3); // 1200 - 200 = 1000 Wh
+    expect(geteilt.allgemeinKwh).toBeCloseTo(0.4, 3);
+    expect(geteilt.gesamtKwh).toBeCloseTo(1.4, 3);
+  });
+
   it("schneidet das Ergebnis bei 0 ab, falls die Subtraktion rechnerisch negativ würde", async () => {
     const einheit5 = await prisma.einheit.create({ data: { objektId, bezeichnung: "Testeinheit 5" } });
     const hauptzaehler = await prisma.shellyGeraet.create({

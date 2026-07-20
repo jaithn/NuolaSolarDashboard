@@ -4,6 +4,14 @@ import { useActionState, useState } from "react";
 import { PriceInput, GrossPriceInput, type SteuersatzOption } from "@/components/PriceInput";
 import { berechneBrutto } from "@/lib/steuer";
 import { createMietparteiAction, updateMietparteiAction, bankAusIbanAction, type MietparteiFormState } from "./actions";
+import { weiterePersonenDerMietpartei } from "@/lib/mietpartei";
+
+// Formularmodell einer weiteren Person (Anrede als String, "" = keine).
+interface WeiterePerson {
+  anrede: string;
+  vorname: string;
+  name: string;
+}
 
 const initialState: MietparteiFormState = {};
 
@@ -30,9 +38,12 @@ interface MietparteiFormProps {
     einheitId: string;
     vorname: string;
     name: string;
+    // Legacy-Einzelfelder der zweiten Person (nur noch Fallback beim Vorbelegen).
     vorname2: string;
     name2: string;
     anrede2: "HERR" | "FRAU" | "FAMILIE" | "FIRMA" | null;
+    // Weitere Personen (ab Person 2) als JSON-Array.
+    weiterePersonen: unknown;
     firma: string | null;
     anrede: "HERR" | "FRAU" | "FAMILIE" | "FIRMA" | null;
     email: string;
@@ -50,10 +61,6 @@ interface MietparteiFormProps {
     arbeitspreisSteuersatzId: string;
     grundpreisNetto: number | null;
     grundpreisSteuersatzId: string | null;
-    grundversorgerName: string | null;
-    grundversorgerTarif: string | null;
-    grundversorgerGrundpreisBrutto: number | null;
-    grundversorgerArbeitspreisBrutto: number | null;
     angenommenerJahresverbrauchKwh: number | null;
   };
 }
@@ -78,12 +85,40 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
   const [anrede, setAnrede] = useState(val("anrede", mietpartei?.anrede ?? ""));
   const istFirma = anrede === "FIRMA";
 
-  // Zweite Person (z.B. Ehepaar): per Button ein-/ausblendbar. Vorbelegt sichtbar,
-  // wenn der Datensatz bereits eine zweite Person hat oder nach einem Fehler.
-  const [zweitePerson, setZweitePerson] = useState(
-    state.values?.hatZweitePerson === "on" ||
-      Boolean(mietpartei?.vorname2?.trim() || mietpartei?.name2?.trim()),
-  );
+  // Weitere Personen (ab Person 2, z.B. Ehepaar/WG): beliebig viele, je Anrede +
+  // Vor-/Nachname. Vorbelegen: nach Fehler aus state.values (JSON), sonst aus dem
+  // Datensatz (weiterePersonen bzw. Legacy-Fallback), sonst leer.
+  const [weiterePersonen, setWeiterePersonen] = useState<WeiterePerson[]>(() => {
+    const rohNachFehler = state.values?.weiterePersonen;
+    if (rohNachFehler) {
+      try {
+        const arr = JSON.parse(rohNachFehler);
+        if (Array.isArray(arr)) {
+          return arr.map((p) => ({
+            anrede: String(p?.anrede ?? ""),
+            vorname: String(p?.vorname ?? ""),
+            name: String(p?.name ?? ""),
+          }));
+        }
+      } catch {
+        /* ignorieren, Fallback unten */
+      }
+    }
+    if (mietpartei) {
+      return weiterePersonenDerMietpartei(mietpartei).map((p) => ({
+        anrede: p.anrede ?? "",
+        vorname: p.vorname,
+        name: p.name,
+      }));
+    }
+    return [];
+  });
+
+  const setzePerson = (index: number, feld: keyof WeiterePerson, wert: string) =>
+    setWeiterePersonen((liste) => liste.map((p, i) => (i === index ? { ...p, [feld]: wert } : p)));
+  const entfernePerson = (index: number) =>
+    setWeiterePersonen((liste) => liste.filter((_, i) => i !== index));
+  const fuegePersonHinzu = () => setWeiterePersonen((liste) => [...liste, { anrede: "", vorname: "", name: "" }]);
 
   // Einheit (kontrolliert), damit die Mietpartei-Anschrift der Objektadresse der
   // gewählten Einheit folgen kann (Default, im Formular überschreibbar).
@@ -266,60 +301,70 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
             defaultValue={val("name", mietpartei?.name ?? "")}
             required={!istFirma}
           />
-          {/* Button neben dem Namen: zweite Person hinzufuegen (nur bei Personen). */}
-          {!istFirma && !zweitePerson && (
-            <button
-              type="button"
-              className="btn-small"
-              style={{ marginTop: "0.4rem" }}
-              onClick={() => setZweitePerson(true)}
-            >
-              + Zweite Person
-            </button>
-          )}
         </div>
-        {/* Hidden-Feld: teilt dem Server mit, ob eine zweite Person aktiv ist
-           (die Felder koennen ausgeblendet/leer sein). */}
-        <input type="hidden" name="hatZweitePerson" value={!istFirma && zweitePerson ? "on" : ""} />
-        {/* Zweite Person (z.B. Ehepaar): eigene Anrede + Vor-/Nachname. */}
-        {!istFirma && zweitePerson && (
-          <>
-            <div className="field">
-              <label htmlFor="anrede2">Anrede (2. Person)</label>
-              <select
-                id="anrede2"
-                name="anrede2"
-                className="select-inline"
-                defaultValue={val("anrede2", mietpartei?.anrede2 ?? "")}
+        {/* Weitere Personen (ab Person 2): beliebig viele, je Anrede + Vor-/Nachname
+           untereinander in einer eigenen Karte. Bei Firma ausgeblendet. Der Zustand
+           wird als JSON in einem versteckten Feld an den Server uebergeben. */}
+        {!istFirma && (
+          <div style={{ gridColumn: "1 / -1" }}>
+            <input type="hidden" name="weiterePersonen" value={JSON.stringify(weiterePersonen)} />
+            {weiterePersonen.map((p, i) => (
+              <fieldset
+                key={i}
+                style={{
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "0.5rem",
+                  padding: "0.5rem 1rem 0.75rem",
+                  marginBottom: "0.75rem",
+                  maxWidth: "26rem",
+                }}
               >
-                <option value="">— keine —</option>
-                <option value="HERR">Herr</option>
-                <option value="FRAU">Frau</option>
-                <option value="FAMILIE">Familie</option>
-              </select>
-            </div>
-            <div className="field">
-              <label htmlFor="vorname2">Vorname (2. Person)</label>
-              <input
-                id="vorname2"
-                name="vorname2"
-                type="text"
-                defaultValue={val("vorname2", mietpartei?.vorname2 ?? "")}
-              />
-            </div>
-            <div className="field">
-              <label htmlFor="name2">Name (2. Person)</label>
-              <input id="name2" name="name2" type="text" defaultValue={val("name2", mietpartei?.name2 ?? "")} />
-              <button
-                type="button"
-                className="btn-small btn-danger"
-                style={{ marginTop: "0.4rem" }}
-                onClick={() => setZweitePerson(false)}
-              >
-                Zweite Person entfernen
-              </button>
-            </div>
-          </>
+                <legend style={{ fontSize: "0.85rem", fontWeight: 600, padding: "0 0.4rem" }}>
+                  {i + 2}. Person
+                </legend>
+                {/* Anrede, Vorname und Name untereinander (gestapelt), je Person klar gruppiert. */}
+                <div className="field">
+                  <label htmlFor={`wp-anrede-${i}`}>Anrede</label>
+                  <select
+                    id={`wp-anrede-${i}`}
+                    className="select-inline"
+                    style={{ width: "100%" }}
+                    value={p.anrede}
+                    onChange={(e) => setzePerson(i, "anrede", e.target.value)}
+                  >
+                    <option value="">— keine —</option>
+                    <option value="HERR">Herr</option>
+                    <option value="FRAU">Frau</option>
+                    <option value="FAMILIE">Familie</option>
+                  </select>
+                </div>
+                <div className="field">
+                  <label htmlFor={`wp-vorname-${i}`}>Vorname</label>
+                  <input
+                    id={`wp-vorname-${i}`}
+                    type="text"
+                    value={p.vorname}
+                    onChange={(e) => setzePerson(i, "vorname", e.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor={`wp-name-${i}`}>Name</label>
+                  <input
+                    id={`wp-name-${i}`}
+                    type="text"
+                    value={p.name}
+                    onChange={(e) => setzePerson(i, "name", e.target.value)}
+                  />
+                </div>
+                <button type="button" className="btn-small btn-danger" onClick={() => entfernePerson(i)}>
+                  {i + 2}. Person entfernen
+                </button>
+              </fieldset>
+            ))}
+            <button type="button" className="btn-small" onClick={fuegePersonHinzu}>
+              + Weitere Person
+            </button>
+          </div>
         )}
         <div className="field">
           <label htmlFor="email">E-Mail (optional)</label>
@@ -490,62 +535,12 @@ export function MietparteiForm({ mode, einheiten, steuersaetze, mietpartei }: Mi
       )}
 
       <div className="section" style={{ marginTop: "1rem" }}>
-        <h3 style={{ marginTop: 0 }}>Grundversorger-Vergleich (für das Anschreiben)</h3>
+        <h3 style={{ marginTop: 0 }}>Angenommener Jahresverbrauch</h3>
         <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", marginTop: 0 }}>
-          Optional. Preise <strong>brutto</strong> (inkl. MwSt.), so wie sie auf der Grundversorger-Rechnung
-          stehen. Der prozentuale Vorteil wird im Anschreiben automatisch berechnet.
+          Der Grundversorger-Vergleich für das Anschreiben wird jetzt am <strong>Objekt</strong> gepflegt
+          (gilt für alle Mietparteien) – siehe Objekt-Stammdaten.
         </p>
         <div className="form-grid">
-          <div className="field">
-            <label htmlFor="grundversorgerName">Grundversorger</label>
-            <input
-              id="grundversorgerName"
-              name="grundversorgerName"
-              type="text"
-              defaultValue={val("grundversorgerName", mietpartei?.grundversorgerName ?? "")}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="grundversorgerTarif">Tarifname</label>
-            <input
-              id="grundversorgerTarif"
-              name="grundversorgerTarif"
-              type="text"
-              defaultValue={val("grundversorgerTarif", mietpartei?.grundversorgerTarif ?? "")}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="grundversorgerGrundpreisBrutto">Grundpreis Grundversorger (€/Monat, brutto)</label>
-            <input
-              id="grundversorgerGrundpreisBrutto"
-              name="grundversorgerGrundpreisBrutto"
-              type="number"
-              step="0.01"
-              min="0"
-              defaultValue={val(
-                "grundversorgerGrundpreisBrutto",
-                mietpartei?.grundversorgerGrundpreisBrutto != null
-                  ? String(mietpartei.grundversorgerGrundpreisBrutto)
-                  : "",
-              )}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="grundversorgerArbeitspreisBrutto">Arbeitspreis Grundversorger (€/kWh, brutto)</label>
-            <input
-              id="grundversorgerArbeitspreisBrutto"
-              name="grundversorgerArbeitspreisBrutto"
-              type="number"
-              step="0.0001"
-              min="0"
-              defaultValue={val(
-                "grundversorgerArbeitspreisBrutto",
-                mietpartei?.grundversorgerArbeitspreisBrutto != null
-                  ? String(mietpartei.grundversorgerArbeitspreisBrutto)
-                  : "",
-              )}
-            />
-          </div>
           <div className="field">
             <label htmlFor="angenommenerJahresverbrauchKwh">Angenommener Jahresverbrauch (kWh)</label>
             <input

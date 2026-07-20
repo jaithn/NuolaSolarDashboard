@@ -5,6 +5,7 @@ import { updateObjektAction, type ObjektFormState } from "../actions";
 import { ZweiterNameFeld } from "@/components/ZweiterNameFeld";
 import { VermieterAnredeFirma } from "@/components/VermieterAnredeFirma";
 import { ObjektZusatzFelder } from "@/components/ObjektZusatzFelder";
+import { GrundversorgerFelder } from "@/components/GrundversorgerFelder";
 
 const initialState: ObjektFormState = {};
 
@@ -32,6 +33,11 @@ export function EditObjektForm({
   hausverwaltungTelefon,
   hausverwaltungEmail,
   ergaenzungUnterzeichner,
+  grundversorgerName,
+  grundversorgerTarif,
+  grundversorgerGrundpreisBrutto,
+  grundversorgerArbeitspreisBrutto,
+  grundversorgerStand,
   bearbeiterName,
   geplanterLiefertermin,
   hatWaermepumpe,
@@ -59,6 +65,11 @@ export function EditObjektForm({
   hausverwaltungTelefon: string | null;
   hausverwaltungEmail: string | null;
   ergaenzungUnterzeichner: string;
+  grundversorgerName: string | null;
+  grundversorgerTarif: string | null;
+  grundversorgerGrundpreisBrutto: number | null;
+  grundversorgerArbeitspreisBrutto: number | null;
+  grundversorgerStand: string; // YYYY-MM-DD oder ""
   bearbeiterName: string | null;
   geplanterLiefertermin: string; // YYYY-MM-DD oder ""
   hatWaermepumpe: boolean;
@@ -172,6 +183,14 @@ export function EditObjektForm({
         hausverwaltungTelefon={hausverwaltungTelefon ?? ""}
         hausverwaltungEmail={hausverwaltungEmail ?? ""}
         ergaenzungUnterzeichner={ergaenzungUnterzeichner}
+      />
+
+      <GrundversorgerFelder
+        name={grundversorgerName ?? ""}
+        tarif={grundversorgerTarif ?? ""}
+        grundpreisBrutto={grundversorgerGrundpreisBrutto != null ? String(grundversorgerGrundpreisBrutto) : ""}
+        arbeitspreisBrutto={grundversorgerArbeitspreisBrutto != null ? String(grundversorgerArbeitspreisBrutto) : ""}
+        stand={grundversorgerStand}
       />
 
       <button className="btn" type="submit" disabled={pending} style={{ maxWidth: "16rem" }}>

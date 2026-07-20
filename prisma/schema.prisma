@@ -71,6 +71,15 @@ model Objekt {
   // sollte eine Einheit vom Typ WAERMEPUMPE angelegt werden, damit deren
   // Verbrauch in der Jahresrechnung getrennt vom Allgemeinstrom ausgewiesen wird.
   hatWaermepumpe Boolean @default(false)
+  // Grundversorger-Vergleich fuer das Onboarding-Anschreiben ("Ihr Preisvorteil").
+  // Wird pro OBJEKT gepflegt (gilt fuer alle Mietparteien des Objekts) - Preise
+  // BRUTTO (inkl. MwSt.). grundversorgerStand = Stichtag/Stand des Tarifs, wird
+  // im Anschreiben mit ausgewiesen.
+  grundversorgerName               String?
+  grundversorgerTarif              String?
+  grundversorgerGrundpreisBrutto   Float?
+  grundversorgerArbeitspreisBrutto Float?
+  grundversorgerStand              DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -314,9 +323,16 @@ model Mietpartei {
   // gleichem Nachnamen "Vorname1 und Vorname2 Nachname", sonst "Vorname1 Name1
   // und Vorname2 Name2". Die Briefanrede (anredeSatz) nutzt anrede2 pro Person
   // (gleicher Nachname -> "Sehr geehrte Familie {Nachname}").
+  // Legacy-Felder der genau EINEN zweiten Person (Ehepaar). Werden nur noch als
+  // Fallback gelesen, wenn "weiterePersonen" leer ist; neue Eingaben landen in
+  // "weiterePersonen" (beliebig viele weitere Personen). Nicht mehr aktiv befuellt.
   vorname2      String   @default("")
   name2         String   @default("")
   anrede2       Anrede?
+  // Weitere Personen der Mietpartei (ab Person 2), JSON-Array von
+  // { anrede, vorname, name } in Reihenfolge. Ermoeglicht beliebig viele weitere
+  // Personen. Anzeige-/Anredelogik in lib/mietpartei.ts (personenDerMietpartei()).
+  weiterePersonen Json?
   // Firmenname (juristische Person). Wenn gesetzt, darf "name" leer sein.
   firma         String?
   anrede        Anrede?

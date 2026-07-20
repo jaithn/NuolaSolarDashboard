@@ -481,6 +481,23 @@ table.data-table th.group-row {
   font-size: 0.9rem;
 }
 
+/* Dropdowns nie ueber ihren Container hinaus wachsen lassen: ein <select> nimmt
+   sonst die Breite seiner laengsten Option an (z.B. lange "Mietpartei – Einheit"-
+   Labels) und sprengt Spalte/Layout - auch auf schmalen (mobilen) Viewports.
+   max-width kappt an der Containerbreite, min-width:0 erlaubt das Schrumpfen (sonst
+   dehnt die min-content-Breite den Grid-/Flex-Track), text-overflow kuerzt die
+   angezeigte Auswahl mit Ellipsis. */
+.select-inline {
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  text-overflow: ellipsis;
+}
+/* In Formular-Rastern fuellt das Dropdown wie ein Textfeld die volle Spaltenbreite. */
+.form-grid .select-inline {
+  width: 100%;
+}
+
 /* Native Steuerelemente (Datepicker, Scrollbars) an das Theme koppeln. */
 :root { color-scheme: light; }
 @media (prefers-color-scheme: dark) {

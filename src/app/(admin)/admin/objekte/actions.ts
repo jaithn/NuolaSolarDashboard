@@ -34,6 +34,7 @@ export async function createObjektAction(
   const ort = String(formData.get("ort") ?? "").trim();
   const vermieter = parseVermieter(formData);
   const zusatz = parseObjektZusatz(formData);
+  const grundversorger = parseGrundversorger(formData);
   const bearbeiterName = String(formData.get("bearbeiterName") ?? "").trim() || null;
   const liefertermin = parseDatum(formData.get("geplanterLiefertermin"));
   const hatWaermepumpe = formData.get("hatWaermepumpe") === "on";
@@ -44,6 +45,7 @@ export async function createObjektAction(
       name, adresse, plz, ort,
       ...vermieter,
       ...zusatz,
+      ...grundversorger,
       bearbeiterName, geplanterLiefertermin: liefertermin, hatWaermepumpe,
     },
   });
@@ -82,6 +84,24 @@ function parseObjektZusatz(formData: FormData) {
     hausverwaltungTelefon,
     hausverwaltungEmail,
     ergaenzungUnterzeichner: ergaenzungUnterzeichner as "VERMIETER" | "HAUSVERWALTUNG",
+  };
+}
+
+// Grundversorger-Vergleich (je Objekt) aus dem Formular lesen. Preise brutto;
+// leere Zahlenfelder -> null. grundversorgerStand als Date (oder null).
+function parseGrundversorger(formData: FormData) {
+  const zahl = (v: FormDataEntryValue | null): number | null => {
+    const raw = String(v ?? "").trim().replace(",", ".");
+    if (!raw) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  };
+  return {
+    grundversorgerName: String(formData.get("grundversorgerName") ?? "").trim() || null,
+    grundversorgerTarif: String(formData.get("grundversorgerTarif") ?? "").trim() || null,
+    grundversorgerGrundpreisBrutto: zahl(formData.get("grundversorgerGrundpreisBrutto")),
+    grundversorgerArbeitspreisBrutto: zahl(formData.get("grundversorgerArbeitspreisBrutto")),
+    grundversorgerStand: parseDatum(formData.get("grundversorgerStand")),
   };
 }
 
@@ -169,6 +189,7 @@ export async function updateObjektAction(
   const ort = String(formData.get("ort") ?? "").trim();
   const vermieter = parseVermieter(formData);
   const zusatz = parseObjektZusatz(formData);
+  const grundversorger = parseGrundversorger(formData);
   const bearbeiterName = String(formData.get("bearbeiterName") ?? "").trim() || null;
   const liefertermin = parseDatum(formData.get("geplanterLiefertermin"));
   const hatWaermepumpe = formData.get("hatWaermepumpe") === "on";
@@ -180,6 +201,7 @@ export async function updateObjektAction(
       name, adresse, plz, ort,
       ...vermieter,
       ...zusatz,
+      ...grundversorger,
       bearbeiterName, geplanterLiefertermin: liefertermin, hatWaermepumpe,
     },
   });

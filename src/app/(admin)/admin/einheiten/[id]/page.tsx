@@ -91,8 +91,8 @@ export default async function EinheitDetailPage({ params }: { params: Promise<{ 
                 </td>
                 <td>
                   <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
-                    {/* Wärmepumpe nachträglich an-/abwählen (nur Allgemeinstrom + ADDIEREN-Zähler). */}
-                    {istAllgemeinstrom && z.modus === "ADDIEREN" && (
+                    {/* Wärmepumpe nachträglich an-/abwählen (Allgemeinstrom, beliebiger Modus). */}
+                    {istAllgemeinstrom && (
                       <form action={setZuordnungWaermepumpeAction}>
                         <input type="hidden" name="id" value={z.id} />
                         <input type="hidden" name="einheitId" value={einheit.id} />

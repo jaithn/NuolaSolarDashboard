@@ -7,6 +7,21 @@ gebaut; gepinnte Releases über Git-Tags `vX.Y.Z` (siehe CLAUDE.md → „Versio
 Die jeweils oberste Sektion dieser Datei wird beim Image-Build als „Neu in dieser
 Version" in die Image-Beschreibung (`org.opencontainers.image.description`) übernommen.
 
+## Grundversorger je Objekt, mehrere Personen & Wärmepumpen-Zähler
+
+- **Grundversorger-Vergleich pro Objekt**: Der Vergleich für das Anschreiben („Ihr
+  Preisvorteil") wird jetzt **einmal am Objekt** gepflegt statt bei jeder Mietpartei –
+  inklusive **Datum „Stand des Tarifs"**, das im Anschreiben mit ausgewiesen wird.
+- **Beliebig viele Personen je Mietpartei**: Neben der Hauptperson lassen sich nun
+  **mehrere weitere Personen** hinzufügen (nicht nur eine zweite). Anrede, Vorname und
+  Name stehen je Person übersichtlich untereinander in einer eigenen Karte.
+- **Wärmepumpe an der Allgemeinstrom-Einheit**: Es lassen sich **zwei Zähler** zuordnen –
+  einer für den Allgemeinstrom, einer für die Wärmepumpe; die Wärmepumpe kann dabei auch
+  **subtrahiert** (aus einem Zwischenzähler herausgerechnet) werden. Allgemeinstrom und
+  Wärmepumpe bleiben dieselbe Partei.
+- **Dropdown-Breite**: Lange Einträge (z. B. „Mietpartei – Einheit" bei Rechnungen)
+  sprengen das Auswahlmenü nicht mehr über die Spalte hinaus – auch auf Mobilgeräten.
+
 ## Wärmepumpe nachträglich, manueller Zähler als +-Button & Hausverwaltungs-Kontakt
 
 - **Manueller Zählerstand** auf der Startseite ist jetzt je Mietpartei hinter einem

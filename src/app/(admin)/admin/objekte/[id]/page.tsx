@@ -57,6 +57,11 @@ export default async function ObjektDetailPage({
           hausverwaltungTelefon={objekt.hausverwaltungTelefon}
           hausverwaltungEmail={objekt.hausverwaltungEmail}
           ergaenzungUnterzeichner={objekt.ergaenzungUnterzeichner}
+          grundversorgerName={objekt.grundversorgerName}
+          grundversorgerTarif={objekt.grundversorgerTarif}
+          grundversorgerGrundpreisBrutto={objekt.grundversorgerGrundpreisBrutto}
+          grundversorgerArbeitspreisBrutto={objekt.grundversorgerArbeitspreisBrutto}
+          grundversorgerStand={objekt.grundversorgerStand ? objekt.grundversorgerStand.toISOString().slice(0, 10) : ""}
           bearbeiterName={objekt.bearbeiterName}
           geplanterLiefertermin={objekt.geplanterLiefertermin ? objekt.geplanterLiefertermin.toISOString().slice(0, 10) : ""}
           hatWaermepumpe={objekt.hatWaermepumpe}

@@ -169,12 +169,15 @@ export async function renderOnboardingPdf(
     // teilen sich Layout und Datenbasis, unterscheiden sich nur in den Texten
     // (BriefVorlage-Schluessel = dok).
     const abschnitte = await ladeBriefAbschnitte(dok);
-    const gvArbeit = mietpartei.grundversorgerArbeitspreisBrutto;
-    const gvGrund = mietpartei.grundversorgerGrundpreisBrutto;
-    const vergleich: OnboardingVergleich | null = mietpartei.grundversorgerName
+    // Grundversorger-Vergleich wird pro OBJEKT gepflegt (gilt fuer alle
+    // Mietparteien) - inkl. Stand/Stichtag des Tarifs.
+    const gvArbeit = objekt.grundversorgerArbeitspreisBrutto;
+    const gvGrund = objekt.grundversorgerGrundpreisBrutto;
+    const vergleich: OnboardingVergleich | null = objekt.grundversorgerName
       ? {
-          name: mietpartei.grundversorgerName,
-          tarif: mietpartei.grundversorgerTarif,
+          name: objekt.grundversorgerName,
+          tarif: objekt.grundversorgerTarif,
+          standText: objekt.grundversorgerStand ? fmtDate(objekt.grundversorgerStand) : null,
           grundpreisBrutto: gvGrund,
           arbeitspreisBrutto: gvArbeit,
           vorteilArbeitspreisProzent: vorteilProzent(gvArbeit, konditionen.arbeitspreisBrutto),

@@ -105,15 +105,20 @@ export interface VerbrauchGeteilt {
 
 /**
  * Verbrauch (kWh) einer Einheit im Zeitraum, aufgeteilt in Waermepumpe und
- * uebrigen (Allgemein-)Strom. Summiert ueber alle ADDIEREN-Zaehler abzueglich
- * aller SUBTRAHIEREN-Zaehler; die als Waermepumpe markierten ADDIEREN-Zaehler
- * werden zusaetzlich getrennt ausgewiesen (fuer den getrennten Rechnungsausweis
- * Allgemeinstrom vs. Waermepumpe). Ergebnisse bei 0 abgeschnitten.
+ * uebrigen (Allgemein-)Strom. Waermepumpe und Allgemeinstrom werden je aus ihren
+ * eigenen Zaehlern gebildet (ADDIEREN positiv, SUBTRAHIEREN negativ); die als
+ * Waermepumpe markierten Zaehler bilden den WP-Topf, alle uebrigen den
+ * Allgemeinstrom-Topf. Ergebnisse bei 0 abgeschnitten.
  */
 export async function verbrauchKwhGeteilt(einheitId: string, zeitraum: Zeitraum): Promise<VerbrauchGeteilt> {
   const zuordnungen = await prisma.geraetZuordnung.findMany({ where: { einheitId } });
 
-  let totalWh = 0;
+  // Zwei getrennte "Toepfe": Waermepumpe (alle als WP markierten Zaehler) und
+  // uebriger/Allgemeinstrom (alle NICHT als WP markierten Zaehler). In BEIDEN
+  // Toepfen zaehlen ADDIEREN-Zaehler positiv, SUBTRAHIEREN-Zaehler negativ - so
+  // laesst sich sowohl der Allgemeinstrom als auch die Waermepumpe je aus
+  // (Zwischen-)Zaehlern zusammensetzen bzw. herausrechnen.
+  let allgemeinWh = 0;
   let wpWh = 0;
   let hatWaermepumpe = false;
   for (const zuordnung of zuordnungen) {
@@ -123,13 +128,14 @@ export async function verbrauchKwhGeteilt(einheitId: string, zeitraum: Zeitraum)
     for (const phase of phasen) {
       geraetWh += await phasenVerbrauchWh(zuordnung.shellyGeraetId, phase, zeitraum);
     }
-    totalWh += zuordnung.modus === "SUBTRAHIEREN" ? -geraetWh : geraetWh;
-    if (zuordnung.istWaermepumpe && zuordnung.modus === "ADDIEREN") wpWh += geraetWh;
+    const signiert = zuordnung.modus === "SUBTRAHIEREN" ? -geraetWh : geraetWh;
+    if (zuordnung.istWaermepumpe) wpWh += signiert;
+    else allgemeinWh += signiert;
   }
 
-  const gesamtKwh = Math.max(0, totalWh) / 1000;
-  const waermepumpeKwh = wpWh / 1000;
-  const allgemeinKwh = Math.max(0, gesamtKwh - waermepumpeKwh);
+  const gesamtKwh = Math.max(0, allgemeinWh + wpWh) / 1000;
+  const waermepumpeKwh = Math.max(0, wpWh) / 1000;
+  const allgemeinKwh = Math.max(0, allgemeinWh) / 1000;
   return { gesamtKwh, waermepumpeKwh, allgemeinKwh, hatWaermepumpe };
 }
 

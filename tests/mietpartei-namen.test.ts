@@ -130,3 +130,78 @@ describe("kombiniereNamen (Vermieter)", () => {
     expect(kombiniereNamen("", "  ")).toBeNull();
   });
 });
+
+describe("weiterePersonen (beliebig viele, JSON)", () => {
+  it("drei Personen mit gleichem Nachnamen -> 'V1, V2 und V3 Nachname'", () => {
+    expect(
+      mietparteiAnzeigeName({
+        vorname: "Peter",
+        name: "Klein",
+        weiterePersonen: [
+          { anrede: "FRAU", vorname: "Anna", name: "Klein" },
+          { anrede: "HERR", vorname: "Tim", name: "Klein" },
+        ],
+      }),
+    ).toBe("Peter, Anna und Tim Klein");
+  });
+
+  it("drei Personen, gleicher Nachname -> Familienanrede", () => {
+    expect(
+      anredeSatz({
+        anrede: "HERR",
+        name: "Klein",
+        weiterePersonen: [
+          { anrede: "FRAU", vorname: "Anna", name: "Klein" },
+          { anrede: "HERR", vorname: "Tim", name: "Klein" },
+        ],
+      }),
+    ).toBe("Sehr geehrte Familie Klein");
+  });
+
+  it("drei Personen, verschiedene Nachnamen -> Damen zuerst, weitere kleingeschrieben", () => {
+    expect(
+      anredeSatz({
+        anrede: "HERR",
+        name: "Klein",
+        weiterePersonen: [
+          { anrede: "FRAU", vorname: "Anna", name: "Müller" },
+          { anrede: "HERR", vorname: "Tim", name: "Schmidt" },
+        ],
+      }),
+    ).toBe("Sehr geehrte Frau Müller, sehr geehrter Herr Klein, sehr geehrter Herr Schmidt");
+  });
+
+  it("weiterePersonen hat Vorrang vor Legacy vorname2/name2", () => {
+    expect(
+      mietparteiAnzeigeName({
+        vorname: "Peter",
+        name: "Klein",
+        vorname2: "Legacy",
+        name2: "Alt",
+        weiterePersonen: [{ anrede: "FRAU", vorname: "Anna", name: "Klein" }],
+      }),
+    ).toBe("Peter und Anna Klein");
+  });
+
+  it("leeres weiterePersonen -> Legacy-Fallback greift", () => {
+    expect(
+      mietparteiAnzeigeName({
+        vorname: "Peter",
+        name: "Klein",
+        vorname2: "Anna",
+        name2: "Klein",
+        weiterePersonen: [],
+      }),
+    ).toBe("Peter und Anna Klein");
+  });
+
+  it("Familienname bei mehreren Personen -> empfaengerAnredeKurz 'Familie'", () => {
+    expect(
+      empfaengerAnredeKurz({
+        anrede: "HERR",
+        name: "Klein",
+        weiterePersonen: [{ anrede: "FRAU", vorname: "Anna", name: "Klein" }],
+      }),
+    ).toBe("Familie");
+  });
+});

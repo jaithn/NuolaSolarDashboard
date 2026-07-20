@@ -18,6 +18,9 @@ import { abschnitt, abschnittZeilen } from "@/lib/dokumenteVorlagen";
 export interface OnboardingVergleich {
   name: string;
   tarif: string | null;
+  // Stand/Stichtag des Grundversorger-Tarifs (bereits formatiert, z.B. "01.07.2026").
+  // Null -> keine Stand-Angabe im Anschreiben.
+  standText: string | null;
   grundpreisBrutto: number | null; // €/Monat brutto (Grundversorger)
   arbeitspreisBrutto: number | null; // €/kWh brutto (Grundversorger)
   vorteilGrundpreisProzent: number | null;
@@ -166,7 +169,8 @@ export function OnboardingLetterDocument({
             </Text>
             <Text style={{ fontSize: 9, color: "#334155", marginBottom: 8 }}>
               Grundversorger: {vergleich.name}
-              {vergleich.tarif ? ` – Tarif ${vergleich.tarif}` : ""} (Preise inkl. MwSt.)
+              {vergleich.tarif ? ` – Tarif ${vergleich.tarif}` : ""} (Preise inkl. MwSt.
+              {vergleich.standText ? `, Stand ${vergleich.standText}` : ""})
             </Text>
             <View style={s.vergleichHeadRow}>
               <Text style={[s.colLabel, s.colHead]}></Text>

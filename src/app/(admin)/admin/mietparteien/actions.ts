@@ -45,10 +45,7 @@ function collectValues(formData: FormData): Record<string, string> {
     "anrede",
     "vorname",
     "name",
-    "hatZweitePerson",
-    "anrede2",
-    "vorname2",
-    "name2",
+    "weiterePersonen",
     "firma",
     "email",
     "telefon",
@@ -70,10 +67,6 @@ function collectValues(formData: FormData): Record<string, string> {
     "abschlagSteuersatzId",
     "abschlagGueltigAb",
     "vormieterAuszugsdatum",
-    "grundversorgerName",
-    "grundversorgerTarif",
-    "grundversorgerGrundpreisBrutto",
-    "grundversorgerArbeitspreisBrutto",
     "angenommenerJahresverbrauchKwh",
   ];
   const out: Record<string, string> = {};
@@ -90,7 +83,10 @@ type ParsedMietpartei = {
   // Nachname (natuerliche Person). Leerer String erlaubt, wenn firma gesetzt ist
   // (Schema: name String @default("")).
   name: string;
-  // Optionale zweite Person (z.B. Ehepaar). Leer -> nur eine Person.
+  // Weitere Personen (ab Person 2), beliebig viele. Leeres Array -> nur eine Person.
+  // anrede als String ("" = keine), damit das JSON-Feld kein null enthaelt.
+  weiterePersonen: { anrede: string; vorname: string; name: string }[];
+  // Legacy-Einzelfelder der zweiten Person: werden beim Speichern nur noch geleert.
   vorname2: string;
   name2: string;
   anrede2: Anrede;
@@ -115,22 +111,39 @@ type ParsedMietpartei = {
   arbeitspreisSteuersatzId: string;
   grundpreisNetto: number | null;
   grundpreisSteuersatzId: string | null;
-  // Grundversorger-Vergleich (Onboarding-Anschreiben), Preise brutto.
-  grundversorgerName: string | null;
-  grundversorgerTarif: string | null;
-  grundversorgerGrundpreisBrutto: number | null;
-  grundversorgerArbeitspreisBrutto: number | null;
   angenommenerJahresverbrauchKwh: number | null;
 };
+
+// Weitere Personen (ab Person 2) aus dem versteckten JSON-Formularfeld lesen und
+// robust validieren: nur Personen mit mindestens Vor- ODER Nachname; Anrede auf
+// natuerliche Personen beschraenkt (nie FIRMA).
+function parseWeiterePersonenForm(raw: FormDataEntryValue | null): { anrede: string; vorname: string; name: string }[] {
+  const text = String(raw ?? "").trim();
+  if (!text) return [];
+  let arr: unknown;
+  try {
+    arr = JSON.parse(text);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(arr)) return [];
+  return arr
+    .map((p) => {
+      const o = (p ?? {}) as Record<string, unknown>;
+      const anredeRaw = String(o.anrede ?? "").trim();
+      // Anrede als String speichern ("" = keine) - vermeidet null im JSON-Feld.
+      const anrede = ["HERR", "FRAU", "FAMILIE"].includes(anredeRaw) ? anredeRaw : "";
+      return { anrede, vorname: String(o.vorname ?? "").trim(), name: String(o.name ?? "").trim() };
+    })
+    .filter((p) => p.vorname || p.name);
+}
 
 function parseMietparteiInput(formData: FormData): { error: string } | { data: ParsedMietpartei } {
   const einheitId = String(formData.get("einheitId") ?? "");
   const vorname = String(formData.get("vorname") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
-  const hatZweitePerson = formData.get("hatZweitePerson") === "on";
-  const vorname2 = String(formData.get("vorname2") ?? "").trim();
-  const name2 = String(formData.get("name2") ?? "").trim();
-  const anrede2Raw = String(formData.get("anrede2") ?? "").trim();
+  // Weitere Personen (ab Person 2) kommen als JSON-Array aus dem Formular.
+  const weiterePersonen = parseWeiterePersonenForm(formData.get("weiterePersonen"));
   const firma = String(formData.get("firma") ?? "").trim();
   const anredeRaw = String(formData.get("anrede") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
@@ -154,11 +167,8 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
   const grundpreisNetto = Number(formData.get("grundpreisNetto"));
   const grundpreisSteuersatzId = String(formData.get("grundpreisSteuersatzId") ?? "");
 
-  // Grundversorger-Vergleich (optional, nur fuer das Anschreiben). Preise brutto.
-  const grundversorgerName = String(formData.get("grundversorgerName") ?? "").trim();
-  const grundversorgerTarif = String(formData.get("grundversorgerTarif") ?? "").trim();
-  const gvGrund = Number(formData.get("grundversorgerGrundpreisBrutto"));
-  const gvArbeit = Number(formData.get("grundversorgerArbeitspreisBrutto"));
+  // Grundversorger-Vergleich wird jetzt am OBJEKT gepflegt (nicht mehr je
+  // Mietpartei) - siehe Objekt-Formular / GrundversorgerFelder.
   const angenommenerVerbrauch = Number(formData.get("angenommenerJahresverbrauchKwh"));
 
   // E-Mail ist bewusst optional: Interessent:innen liegen anfangs oft ohne
@@ -173,18 +183,13 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
   // Name/Vorname bleiben leer); HERR/FRAU/FAMILIE/keine -> natuerliche Person
   // (Nachname Pflicht, keine Firma).
   const anrede: Anrede = ["HERR", "FRAU", "FAMILIE", "FIRMA"].includes(anredeRaw) ? (anredeRaw as Anrede) : null;
-  // Anrede der zweiten Person (nie FIRMA - die zweite Person ist stets natuerlich).
-  const anrede2: Anrede = ["HERR", "FRAU", "FAMILIE"].includes(anrede2Raw) ? (anrede2Raw as Anrede) : null;
   const istFirma = anrede === "FIRMA";
-  // Zweite Person nur bei natuerlichen Personen und wenn ausgeklappt/befuellt.
-  const zweitePersonAktiv = !istFirma && hatZweitePerson;
+  // Weitere Personen nur bei natuerlichen Personen; bei Firma verworfen.
+  const weiterePersonenEffektiv = istFirma ? [] : weiterePersonen;
   if (istFirma) {
     if (!firma) return { error: "Bitte den Firmennamen angeben." };
   } else if (!name) {
     return { error: "Bitte den Namen angeben." };
-  }
-  if (zweitePersonAktiv && !vorname2 && !name2) {
-    return { error: "Bitte für die zweite Person mindestens einen Namen angeben (oder das Feld ausblenden)." };
   }
 
   // Strikte E-Mail-Validierung NUR wenn eine Adresse angegeben wurde (optional):
@@ -212,10 +217,13 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
       // aber im Brief wird weiterhin die Firma angeschrieben). Personen haben keine Firma.
       vorname,
       name,
-      // Zweite Person nur bei natuerlichen Personen mit ausgeklapptem Feld.
-      vorname2: zweitePersonAktiv ? vorname2 : "",
-      name2: zweitePersonAktiv ? name2 : "",
-      anrede2: zweitePersonAktiv ? anrede2 : null,
+      // Weitere Personen (ab Person 2) als JSON-Array. Legacy-Einzelfelder werden
+      // beim Speichern geleert, damit sie nicht mit weiterePersonen kollidieren
+      // (sonst taeuchte eine geloeschte zweite Person ueber den Legacy-Fallback wieder auf).
+      weiterePersonen: weiterePersonenEffektiv,
+      vorname2: "",
+      name2: "",
+      anrede2: null,
       firma: istFirma ? firma : null,
       anrede,
       email,
@@ -238,10 +246,6 @@ function parseMietparteiInput(formData: FormData): { error: string } | { data: P
       arbeitspreisSteuersatzId,
       grundpreisNetto: hatGrundpreis && Number.isFinite(grundpreisNetto) ? grundpreisNetto : null,
       grundpreisSteuersatzId: hatGrundpreis && grundpreisSteuersatzId ? grundpreisSteuersatzId : null,
-      grundversorgerName: grundversorgerName || null,
-      grundversorgerTarif: grundversorgerTarif || null,
-      grundversorgerGrundpreisBrutto: Number.isFinite(gvGrund) && gvGrund > 0 ? gvGrund : null,
-      grundversorgerArbeitspreisBrutto: Number.isFinite(gvArbeit) && gvArbeit > 0 ? gvArbeit : null,
       angenommenerJahresverbrauchKwh:
         Number.isFinite(angenommenerVerbrauch) && angenommenerVerbrauch > 0 ? angenommenerVerbrauch : null,
     },

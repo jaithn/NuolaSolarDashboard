@@ -33,6 +33,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       firma: true,
       vorname2: true,
       name2: true,
+      weiterePersonen: true,
     },
   });
   if (!mietpartei) return NextResponse.json({ error: "Mietpartei nicht gefunden." }, { status: 404 });

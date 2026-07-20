@@ -18,8 +18,9 @@ export async function createZuordnungAction(
   const shellyGeraetId = String(formData.get("shellyGeraetId") ?? "");
   const modus = String(formData.get("modus") ?? "ADDIEREN") as "ADDIEREN" | "SUBTRAHIEREN";
   // Nur bei Allgemeinstrom relevant: markiert den Zaehler als Waermepumpe (getrennter
-  // Rechnungsausweis - nur Arbeitspreis). Ein SUBTRAHIEREN-Zaehler ist nie WP.
-  const istWaermepumpe = formData.get("istWaermepumpe") === "on" && modus === "ADDIEREN";
+  // Rechnungsausweis - nur Arbeitspreis). Auch ein SUBTRAHIEREN-Zaehler kann die
+  // Waermepumpe sein (WP-Verbrauch wird dann aus einem Zwischenzaehler herausgerechnet).
+  const istWaermepumpe = formData.get("istWaermepumpe") === "on";
 
   if (!einheitId || !shellyGeraetId) {
     return { error: "Bitte einen Zähler auswählen." };
@@ -41,19 +42,17 @@ export async function createZuordnungAction(
  * Markiert eine bestehende Zähler-Zuordnung nachträglich als Wärmepumpe (bzw.
  * hebt die Markierung wieder auf). So lässt sich bei einer Allgemeinstrom-Einheit
  * die Wärmepumpe jederzeit ergänzen, ohne dass Allgemeinstrom und Wärmepumpe als
- * getrennte Parteien laufen. Nur ADDIEREN-Zähler können Wärmepumpe sein.
+ * getrennte Parteien laufen. WP kann sowohl ein ADDIEREN- als auch ein
+ * SUBTRAHIEREN-Zähler sein (WP-Verbrauch wird dann aus einem Zwischenzähler
+ * herausgerechnet).
  */
 export async function setZuordnungWaermepumpeAction(formData: FormData): Promise<void> {
   await requireAdmin();
 
   const id = String(formData.get("id") ?? "");
   const einheitId = String(formData.get("einheitId") ?? "");
-  const wert = String(formData.get("wert") ?? "") === "an";
+  const istWaermepumpe = String(formData.get("wert") ?? "") === "an";
   if (!id) return;
-
-  const zuordnung = await prisma.geraetZuordnung.findUnique({ where: { id } });
-  // Ein SUBTRAHIEREN-Zaehler (Allgemeinstrom-Zwischenzaehler) ist nie Waermepumpe.
-  const istWaermepumpe = wert && zuordnung?.modus === "ADDIEREN";
 
   await prisma.geraetZuordnung.update({ where: { id }, data: { istWaermepumpe } });
   revalidatePath(`/admin/einheiten/${einheitId}`);
