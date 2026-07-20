@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { NewZuordnungForm } from "./NewZuordnungForm";
 import { EditEinheitForm } from "./EditEinheitForm";
-import { deleteZuordnungAction } from "../actions";
+import { deleteZuordnungAction, setZuordnungWaermepumpeAction } from "../actions";
 import { mietparteiAnzeigeName } from "@/lib/mietpartei";
 
 export default async function EinheitDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -23,6 +23,10 @@ export default async function EinheitDetailPage({ params }: { params: Promise<{ 
     where: { objektId: einheit.objektId },
     orderBy: { bezeichnung: "asc" },
   });
+
+  // Bei Allgemeinstrom kann ein zugeordneter Zähler nachträglich als Wärmepumpe
+  // markiert werden (getrennter Rechnungsausweis, aber dieselbe Partei).
+  const istAllgemeinstrom = einheit.typ === "ALLGEMEINSTROM";
 
   return (
     <div>
@@ -55,6 +59,14 @@ export default async function EinheitDetailPage({ params }: { params: Promise<{ 
           Allgemeinstrom-Zwischenzähler abbilden, der im Stromkreis dieser Einheit hängt - die Mietpartei
           zahlt dann nur die Differenz aus ihrem Zähler abzüglich des Allgemeinstrom-Zählers.
         </p>
+        {istAllgemeinstrom && (
+          <p style={{ fontSize: "0.85rem", color: "var(--color-muted)" }}>
+            <strong>Wärmepumpe:</strong> Ordnen Sie den Wärmepumpen-Zähler hier zu (oder markieren Sie einen
+            bereits zugeordneten Zähler über „Als Wärmepumpe markieren“). Wärmepumpe und Allgemeinstrom
+            bleiben dabei dieselbe Partei – der Wärmepumpen-Verbrauch wird in der Rechnung nur getrennt
+            (nur Arbeitspreis) ausgewiesen.
+          </p>
+        )}
         <table className="data-table">
           <thead>
             <tr>
@@ -78,13 +90,26 @@ export default async function EinheitDetailPage({ params }: { params: Promise<{ 
                   )}
                 </td>
                 <td>
-                  <form action={deleteZuordnungAction}>
-                    <input type="hidden" name="id" value={z.id} />
-                    <input type="hidden" name="einheitId" value={einheit.id} />
-                    <button className="btn-small btn-danger" type="submit">
-                      Entfernen
-                    </button>
-                  </form>
+                  <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+                    {/* Wärmepumpe nachträglich an-/abwählen (nur Allgemeinstrom + ADDIEREN-Zähler). */}
+                    {istAllgemeinstrom && z.modus === "ADDIEREN" && (
+                      <form action={setZuordnungWaermepumpeAction}>
+                        <input type="hidden" name="id" value={z.id} />
+                        <input type="hidden" name="einheitId" value={einheit.id} />
+                        <input type="hidden" name="wert" value={z.istWaermepumpe ? "aus" : "an"} />
+                        <button className="btn-small" type="submit">
+                          {z.istWaermepumpe ? "Keine Wärmepumpe" : "Als Wärmepumpe markieren"}
+                        </button>
+                      </form>
+                    )}
+                    <form action={deleteZuordnungAction}>
+                      <input type="hidden" name="id" value={z.id} />
+                      <input type="hidden" name="einheitId" value={einheit.id} />
+                      <button className="btn-small btn-danger" type="submit">
+                        Entfernen
+                      </button>
+                    </form>
+                  </div>
                 </td>
               </tr>
             ))}

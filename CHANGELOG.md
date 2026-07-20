@@ -7,6 +7,21 @@ gebaut; gepinnte Releases über Git-Tags `vX.Y.Z` (siehe CLAUDE.md → „Versio
 Die jeweils oberste Sektion dieser Datei wird beim Image-Build als „Neu in dieser
 Version" in die Image-Beschreibung (`org.opencontainers.image.description`) übernommen.
 
+## Wärmepumpe nachträglich, manueller Zähler als +-Button & Hausverwaltungs-Kontakt
+
+- **Manueller Zählerstand** auf der Startseite ist jetzt je Mietpartei hinter einem
+  **+-Button** versteckt (gleiche Nuola-Optik wie „Neue Einheit") – die Tabelle zeigt
+  nicht mehr für jede Partei dauerhaft die Eingabefelder. Ein Klick klappt Datum/kWh auf.
+- **Wärmepumpe nachträglich hinzufügen**: An einer Allgemeinstrom-Einheit lässt sich ein
+  bereits zugeordneter Zähler jederzeit über „Als Wärmepumpe markieren" als Wärmepumpe
+  kennzeichnen (bzw. wieder zurücksetzen) – Allgemeinstrom und Wärmepumpe bleiben **eine**
+  Partei, der Wärmepumpen-Verbrauch wird in der Rechnung nur getrennt ausgewiesen.
+- **Gescannte Rückläufer**: Auswahl jetzt „Stromliefervertrag", „Ergänzung zum
+  Mietvertrag", „SEPA-Mandat" und „Sonstiges" (kein „Anschreiben" mehr).
+- **Hausverwaltung beim Objekt** um **Ansprechperson, Telefon und E-Mail** erweitert.
+- **Dropdown-Auswahl beim Objekt** wird nach dem Speichern zuverlässig übernommen
+  (kein Zurückspringen der Auswahlfelder mehr).
+
 ## Bankverbindung, Allgemeinstrom-Anlage, +-Menü & Dark-Mode-Logo
 
 - **Bankverbindung im Mietprofil** (Kontoinhaber:in, IBAN, Bank): IBAN wird geprüft

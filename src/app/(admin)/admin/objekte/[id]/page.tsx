@@ -53,6 +53,9 @@ export default async function ObjektDetailPage({
           hausverwaltungAnschrift={objekt.hausverwaltungAnschrift}
           hausverwaltungPlz={objekt.hausverwaltungPlz}
           hausverwaltungOrt={objekt.hausverwaltungOrt}
+          hausverwaltungAnsprechperson={objekt.hausverwaltungAnsprechperson}
+          hausverwaltungTelefon={objekt.hausverwaltungTelefon}
+          hausverwaltungEmail={objekt.hausverwaltungEmail}
           ergaenzungUnterzeichner={objekt.ergaenzungUnterzeichner}
           bearbeiterName={objekt.bearbeiterName}
           geplanterLiefertermin={objekt.geplanterLiefertermin ? objekt.geplanterLiefertermin.toISOString().slice(0, 10) : ""}

@@ -28,6 +28,9 @@ export function EditObjektForm({
   hausverwaltungAnschrift,
   hausverwaltungPlz,
   hausverwaltungOrt,
+  hausverwaltungAnsprechperson,
+  hausverwaltungTelefon,
+  hausverwaltungEmail,
   ergaenzungUnterzeichner,
   bearbeiterName,
   geplanterLiefertermin,
@@ -52,6 +55,9 @@ export function EditObjektForm({
   hausverwaltungAnschrift: string | null;
   hausverwaltungPlz: string;
   hausverwaltungOrt: string;
+  hausverwaltungAnsprechperson: string | null;
+  hausverwaltungTelefon: string | null;
+  hausverwaltungEmail: string | null;
   ergaenzungUnterzeichner: string;
   bearbeiterName: string | null;
   geplanterLiefertermin: string; // YYYY-MM-DD oder ""
@@ -61,8 +67,12 @@ export function EditObjektForm({
   const [modus, setModus] = useState<"PRO_OBJEKT" | "PRO_EINHEIT">(vermieterModus);
 
   return (
-    <form action={formAction}>
+    // key mit savedNonce: erzwingt nach dem Speichern einen Remount, damit die
+    // kontrollierten/defaultValue-<select>-Felder nicht durch den React-19-Formular-
+    // Reset auf den ersten Options-Wert zurueckspringen (Anzeige = gespeicherter Wert).
+    <form action={formAction} key={state.savedNonce ?? "form"}>
       {state.error && <div className="form-error">{state.error}</div>}
+      {state.savedNonce && <div className="form-notice" role="status">Änderungen gespeichert.</div>}
       <input type="hidden" name="id" value={id} />
       <div className="form-grid">
         <div className="field">
@@ -158,6 +168,9 @@ export function EditObjektForm({
         hausverwaltungAnschrift={hausverwaltungAnschrift ?? ""}
         hausverwaltungPlz={hausverwaltungPlz}
         hausverwaltungOrt={hausverwaltungOrt}
+        hausverwaltungAnsprechperson={hausverwaltungAnsprechperson ?? ""}
+        hausverwaltungTelefon={hausverwaltungTelefon ?? ""}
+        hausverwaltungEmail={hausverwaltungEmail ?? ""}
         ergaenzungUnterzeichner={ergaenzungUnterzeichner}
       />
 

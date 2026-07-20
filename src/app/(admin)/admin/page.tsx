@@ -3,7 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { verbrauchKwhFuerEinheit } from "@/lib/billing/consumption";
 import { isMietparteiEffectivelyAktiv, mietparteiAnzeigeName } from "@/lib/mietpartei";
-import { createEinheitManualMesswertAction } from "./actions";
+import { ManuellerZaehlerZelle } from "./ManuellerZaehlerZelle";
 import { startOfMonth, endOfMonth } from "date-fns";
 
 function toDateInputValue(d: Date): string {
@@ -211,40 +211,13 @@ export default async function AdminHomePage({
                 </td>
                 <td>{verbrauchKwh.toFixed(2)}</td>
                 <td>
-                  {/* Manueller Zählerstand ist immer möglich - fehlt ein Zähler,
-                     legt die Action automatisch einen „Manueller Zähler" an. */}
-                  <form action={createEinheitManualMesswertAction} style={{ display: "flex", gap: "0.4rem", alignItems: "center", flexWrap: "wrap" }}>
-                    <input type="hidden" name="einheitId" value={einheit.id} />
-                    <input type="hidden" name="zurueck" value={zurueckUrl} />
-                    <input
-                      className="text-input"
-                      name="datum"
-                      type="date"
-                      required
-                      defaultValue={toDateInputValue(now)}
-                      aria-label={`Datum des Zählerstands für ${einheit.bezeichnung}`}
-                      style={{ maxWidth: "9rem" }}
-                    />
-                    <input
-                      className="text-input"
-                      name="kwh"
-                      type="number"
-                      step="0.001"
-                      min={0}
-                      required
-                      aria-label={`Manueller Zählerstand (kWh) für ${einheit.bezeichnung}`}
-                      placeholder="kWh"
-                      style={{ maxWidth: "8rem" }}
-                    />
-                    <button className="btn-small" type="submit">
-                      Eintragen
-                    </button>
-                  </form>
-                  {!hatGeraet && (
-                    <span style={{ color: "var(--color-muted)", fontSize: "0.75rem" }}>
-                      Ohne Zähler – legt beim ersten Wert einen manuellen Zähler an.
-                    </span>
-                  )}
+                  <ManuellerZaehlerZelle
+                    einheitId={einheit.id}
+                    einheitBezeichnung={einheit.bezeichnung}
+                    zurueckUrl={zurueckUrl}
+                    hatGeraet={hatGeraet}
+                    defaultDatum={toDateInputValue(now)}
+                  />
                 </td>
               </tr>
             ))}

@@ -12,7 +12,15 @@ import {
 const initialState: OnboardingState = {};
 
 type Status = "INTERESSENT" | "AKTIV" | "INAKTIV";
-type DokTyp = "VERTRAG" | "SEPA" | "ANSCHREIBEN" | "SONSTIGES";
+// Aktuell angebotene Ruecklaeufer-Typen + Legacy-Werte (nur noch zur Anzeige
+// bereits abgelegter Dokumente).
+type DokTyp =
+  | "VERTRAG_EIGENSTAENDIG"
+  | "VERTRAG_ERGAENZUNG"
+  | "SEPA"
+  | "SONSTIGES"
+  | "VERTRAG"
+  | "ANSCHREIBEN";
 type VertragArt = "EIGENSTAENDIG" | "ERGAENZUNG";
 
 interface VertragVersion {
@@ -46,10 +54,13 @@ const STATUS_LABEL: Record<Status, string> = {
 };
 
 const DOK_LABEL: Record<DokTyp, string> = {
-  VERTRAG: "Vertrag (unterschrieben)",
+  VERTRAG_EIGENSTAENDIG: "Stromliefervertrag",
+  VERTRAG_ERGAENZUNG: "Ergänzung zum Mietvertrag",
   SEPA: "SEPA-Mandat",
-  ANSCHREIBEN: "Anschreiben",
   SONSTIGES: "Sonstiges",
+  // Legacy (nicht mehr im Upload wählbar):
+  VERTRAG: "Vertrag (unterschrieben)",
+  ANSCHREIBEN: "Anschreiben",
 };
 
 
@@ -227,8 +238,8 @@ export function OnboardingPanel({
       {/* 3) Gescannte Rückläufer */}
       <h3 style={{ marginTop: "1.5rem" }}>Gescannte Rückläufer</h3>
       <p style={{ fontSize: "0.85rem", color: "var(--color-muted)", marginTop: 0 }}>
-        Unterschriebenen Vertrag und SEPA-Mandat hier hochladen. Dauerhafte, nicht öffentliche Ablage
-        (PDF/JPG/PNG, max. 20 MB).
+        Unterschriebenen Stromliefervertrag, Ergänzung zum Mietvertrag und SEPA-Mandat hier hochladen.
+        Dauerhafte, nicht öffentliche Ablage (PDF/JPG/PNG, max. 20 MB).
       </p>
 
       {dokumente.length > 0 ? (
@@ -286,10 +297,10 @@ export function OnboardingPanel({
         <input type="hidden" name="mietparteiId" value={mietparteiId} />
         <div className="field" style={{ margin: 0 }}>
           <label htmlFor="dok-typ">Art</label>
-          <select id="dok-typ" name="typ" className="select-inline" defaultValue="VERTRAG">
-            <option value="VERTRAG">Vertrag (unterschrieben)</option>
+          <select id="dok-typ" name="typ" className="select-inline" defaultValue="VERTRAG_EIGENSTAENDIG">
+            <option value="VERTRAG_EIGENSTAENDIG">Stromliefervertrag</option>
+            <option value="VERTRAG_ERGAENZUNG">Ergänzung zum Mietvertrag</option>
             <option value="SEPA">SEPA-Mandat</option>
-            <option value="ANSCHREIBEN">Anschreiben</option>
             <option value="SONSTIGES">Sonstiges</option>
           </select>
         </div>

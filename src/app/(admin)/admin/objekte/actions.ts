@@ -65,6 +65,9 @@ function parseObjektZusatz(formData: FormData) {
   const hausverwaltungAnschrift = String(formData.get("hausverwaltungAnschrift") ?? "").trim() || null;
   const hausverwaltungPlz = String(formData.get("hausverwaltungPlz") ?? "").trim();
   const hausverwaltungOrt = String(formData.get("hausverwaltungOrt") ?? "").trim();
+  const hausverwaltungAnsprechperson = String(formData.get("hausverwaltungAnsprechperson") ?? "").trim() || null;
+  const hausverwaltungTelefon = String(formData.get("hausverwaltungTelefon") ?? "").trim() || null;
+  const hausverwaltungEmail = String(formData.get("hausverwaltungEmail") ?? "").trim() || null;
   const unterzeichnerRaw = String(formData.get("ergaenzungUnterzeichner") ?? "VERMIETER");
   // Hausverwaltung nur als Unterzeichner zulassen, wenn ein Name hinterlegt ist.
   const ergaenzungUnterzeichner =
@@ -75,6 +78,9 @@ function parseObjektZusatz(formData: FormData) {
     hausverwaltungAnschrift,
     hausverwaltungPlz,
     hausverwaltungOrt,
+    hausverwaltungAnsprechperson,
+    hausverwaltungTelefon,
+    hausverwaltungEmail,
     ergaenzungUnterzeichner: ergaenzungUnterzeichner as "VERMIETER" | "HAUSVERWALTUNG",
   };
 }
@@ -179,7 +185,10 @@ export async function updateObjektAction(
   });
   revalidatePath("/admin/objekte");
   revalidatePath(`/admin/objekte/${id}`);
-  return {};
+  // savedNonce erzwingt im Edit-Formular einen Remount, damit alle <select>-Felder
+  // (Vermieter-Modus/-Anrede, Unterzeichner) nach dem React-19-Formular-Reset den
+  // gespeicherten Wert anzeigen statt auf den ersten Options-Wert zurueckzuspringen.
+  return { savedNonce: Date.now().toString() };
 }
 
 export async function deleteObjektAction(formData: FormData): Promise<void> {

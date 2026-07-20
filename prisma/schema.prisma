@@ -54,6 +54,10 @@ model Objekt {
   hausverwaltungAnschrift String?
   hausverwaltungPlz       String  @default("")
   hausverwaltungOrt       String  @default("")
+  // Zusaetzliche Kontaktangaben der Hausverwaltung (rein dokumentarisch).
+  hausverwaltungAnsprechperson String?
+  hausverwaltungTelefon        String?
+  hausverwaltungEmail          String?
   // Wer unterschreibt die Ergaenzung zum Mietvertrag: die Vermieter:in (Default)
   // oder die Hausverwaltung.
   ergaenzungUnterzeichner ErgaenzungUnterzeichner @default(VERMIETER)
@@ -254,10 +258,16 @@ enum MietverhaeltnisStatus {
 // Onboarding). Dateien liegen im data-Volume (nicht public), Download nur
 // authentifiziert.
 enum DokumentTyp {
-  VERTRAG
-  SEPA
-  ANSCHREIBEN
+  // Aktuell im Upload angebotene Typen der gescannten Ruecklaeufer:
+  VERTRAG_EIGENSTAENDIG // Stromliefervertrag (unterschrieben)
+  VERTRAG_ERGAENZUNG // Ergaenzung zum Mietvertrag (unterschrieben)
+  SEPA // SEPA-Mandat
   SONSTIGES
+  // Legacy-Werte: bleiben fuer bereits abgelegte Dokumente lesbar, werden aber
+  // im Upload nicht mehr angeboten (Anschreiben braucht es als Ruecklaeufer nicht,
+  // der frueher pauschale "VERTRAG" ist jetzt in zwei Arten aufgeteilt).
+  VERTRAG
+  ANSCHREIBEN
 }
 
 // Anrede der Mietpartei. FIRMA kennzeichnet eine juristische Person (dann ist

@@ -14,6 +14,9 @@ export function ObjektZusatzFelder({
   hausverwaltungAnschrift = "",
   hausverwaltungPlz = "",
   hausverwaltungOrt = "",
+  hausverwaltungAnsprechperson = "",
+  hausverwaltungTelefon = "",
+  hausverwaltungEmail = "",
   ergaenzungUnterzeichner = "VERMIETER",
 }: {
   oeffentlicherZaehler?: string;
@@ -21,6 +24,9 @@ export function ObjektZusatzFelder({
   hausverwaltungAnschrift?: string;
   hausverwaltungPlz?: string;
   hausverwaltungOrt?: string;
+  hausverwaltungAnsprechperson?: string;
+  hausverwaltungTelefon?: string;
+  hausverwaltungEmail?: string;
   ergaenzungUnterzeichner?: string;
 }) {
   const [hvName, setHvName] = useState(hausverwaltungName);
@@ -68,6 +74,33 @@ export function ObjektZusatzFelder({
         <div className="field">
           <label htmlFor="hausverwaltungOrt">Hausverwaltung – Ort</label>
           <input id="hausverwaltungOrt" name="hausverwaltungOrt" type="text" defaultValue={hausverwaltungOrt} />
+        </div>
+        <div className="field">
+          <label htmlFor="hausverwaltungAnsprechperson">Hausverwaltung – Ansprechperson</label>
+          <input
+            id="hausverwaltungAnsprechperson"
+            name="hausverwaltungAnsprechperson"
+            type="text"
+            defaultValue={hausverwaltungAnsprechperson}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="hausverwaltungTelefon">Hausverwaltung – Telefon</label>
+          <input
+            id="hausverwaltungTelefon"
+            name="hausverwaltungTelefon"
+            type="tel"
+            defaultValue={hausverwaltungTelefon}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="hausverwaltungEmail">Hausverwaltung – E-Mail</label>
+          <input
+            id="hausverwaltungEmail"
+            name="hausverwaltungEmail"
+            type="email"
+            defaultValue={hausverwaltungEmail}
+          />
         </div>
       </div>
 

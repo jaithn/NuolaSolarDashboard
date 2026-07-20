@@ -626,7 +626,11 @@ export async function setMietparteiStatusAction(
   const statusLabel = zielStatus === "AKTIV" ? "aktiv" : zielStatus === "INAKTIV" ? "inaktiv" : "Interessent:in";
   // Bei Aktivierung auf fehlende Scan-Rückläufer hinweisen (nicht blockierend).
   if (zielStatus === "AKTIV") {
-    const hatVertrag = mietpartei.dokumente.some((d) => d.typ === "VERTRAG");
+    // Ein Vertrags-Scan liegt vor, wenn eine der Vertragsarten (oder der Legacy-
+    // Sammeltyp) hochgeladen wurde.
+    const hatVertrag = mietpartei.dokumente.some(
+      (d) => d.typ === "VERTRAG_EIGENSTAENDIG" || d.typ === "VERTRAG_ERGAENZUNG" || d.typ === "VERTRAG",
+    );
     const hatSepa = mietpartei.dokumente.some((d) => d.typ === "SEPA");
     const fehlend = [!hatVertrag ? "unterschriebener Vertrag" : null, !hatSepa ? "SEPA-Mandat" : null].filter(
       Boolean,
@@ -667,7 +671,14 @@ export async function setOnboardingOptionenAction(
   return { success: "Onboarding-Optionen gespeichert." };
 }
 
-const DOKUMENT_TYPEN: DokumentTyp[] = ["VERTRAG", "SEPA", "ANSCHREIBEN", "SONSTIGES"];
+// Im Upload waehlbare Ruecklaeufer-Typen (Legacy VERTRAG/ANSCHREIBEN werden nicht
+// mehr angeboten, bleiben aber fuer bereits abgelegte Dokumente gueltig).
+const DOKUMENT_TYPEN: DokumentTyp[] = [
+  "VERTRAG_EIGENSTAENDIG",
+  "VERTRAG_ERGAENZUNG",
+  "SEPA",
+  "SONSTIGES",
+];
 
 /** Nimmt eine hochgeladene, gescannte Datei entgegen und legt sie dauerhaft ab. */
 export async function uploadDokumentAction(

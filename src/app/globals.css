@@ -132,6 +132,11 @@ a {
   border-radius: 10px;
   cursor: pointer;
 }
+.anlegen-plus-klein {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+}
 .anlegen-plus:hover {
   border-color: var(--color-focus);
 }

@@ -92,8 +92,16 @@ export function SeitentitelAnlegen({
 
 /** Nuola-Rahmen (abgerundetes Quadrat) mit goldenem Plus statt der Sonne. */
 function PlusZeichen() {
+  return <NuolaPlusIcon size={30} />;
+}
+
+/**
+ * Wiederverwendbares Nuola-Plus-Icon (goldenes Plus im abgerundeten Rahmen).
+ * Wird u. a. auch für die aufklappbaren +-Buttons in Tabellenzeilen genutzt.
+ */
+export function NuolaPlusIcon({ size = 30 }: { size?: number }) {
   return (
-    <svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true" focusable="false">
       <rect x="8" y="8" width="48" height="48" rx="12" fill="none" stroke="currentColor" strokeWidth="3" />
       <line x1="32" y1="20" x2="32" y2="44" stroke="#D9A441" strokeWidth="4.5" strokeLinecap="round" />
       <line x1="20" y1="32" x2="44" y2="32" stroke="#D9A441" strokeWidth="4.5" strokeLinecap="round" />
