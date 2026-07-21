@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { verifyPassword } from "@/lib/auth/password";
 import { getSession } from "@/lib/auth/getSession";
-import { isMietparteiEffectivelyAktiv } from "@/lib/mietpartei";
+import { darfMieterEinloggen } from "@/lib/mietpartei";
 import { consumeRateLimit, resetRateLimit } from "@/lib/rateLimit";
 import { getClientIp } from "@/lib/clientIp";
 
@@ -68,7 +68,7 @@ export async function loginAction(_prevState: LoginState, formData: FormData): P
 
   resetRateLimit(userIpKey);
 
-  if (nutzer.role === "MIETER" && (!nutzer.mietpartei || !isMietparteiEffectivelyAktiv(nutzer.mietpartei))) {
+  if (nutzer.role === "MIETER" && (!nutzer.mietpartei || !darfMieterEinloggen(nutzer.mietpartei))) {
     return { error: "Dieser Zugang ist nicht mehr aktiv. Bitte wenden Sie sich an die Verwaltung." };
   }
 

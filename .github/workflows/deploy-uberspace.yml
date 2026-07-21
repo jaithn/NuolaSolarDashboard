@@ -89,6 +89,9 @@ jobs:
         # --delete raeumt geloeschte Dateien auf dem Host auf; die Ausschluesse
         # schuetzen Laufzeit-/Kundendaten (data/ = SQLite + Rechnungs-PDFs),
         # die lokale .env und die hochgeladenen Logos (public/uploads).
+        # Zusaetzlich werden Docker-/Reverse-Proxy-Artefakte NICHT uebertragen -
+        # auf Uberspace laeuft die App per systemd + `next start`, weder Docker
+        # noch SWAG/nginx werden dort gebraucht.
         run: |
           rsync -az --delete \
             --exclude='/.git' \
@@ -99,6 +102,12 @@ jobs:
             --exclude='/.next/cache' \
             --exclude='/tests' \
             --exclude='/coverage' \
+            --exclude='/Dockerfile' \
+            --exclude='/.dockerignore' \
+            --exclude='/docker-compose*.yml' \
+            --exclude='/docker-entrypoint.sh' \
+            --exclude='/nginx.example.conf' \
+            --exclude='/swag' \
             ./ "${{ secrets.UBERSPACE_USER }}@${{ secrets.UBERSPACE_HOST }}:${{ secrets.UBERSPACE_PATH }}/"
 
       - name: Migration, Textsync & Neustart auf dem Host

@@ -3,6 +3,8 @@ import { hashPassword, generateOneTimePassword } from "./password";
 import { sendMail } from "@/lib/mail/mailer";
 import { onboardingEmailHtml } from "@/lib/mail/templates";
 import { getAppBaseUrl } from "@/lib/appBaseUrl";
+import { benutzernameBasis } from "@/lib/mietpartei";
+import { renderWelcomeLetterPdf } from "@/lib/pdf/renderWelcomeLetter";
 import { invalidateAllPasswordResetTokens } from "./resetToken";
 
 export interface ZugangsErgebnis {
@@ -10,19 +12,6 @@ export interface ZugangsErgebnis {
   password: string;
   emailOk: boolean;
   emailFehler?: string;
-}
-
-const COMBINING_DIACRITICS = /[̀-ͯ]/g;
-
-function slugify(input: string): string {
-  const cleaned = input
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(COMBINING_DIACRITICS, "")
-    .replace(/[^a-z0-9]+/g, ".")
-    .replace(/^\.+|\.+$/g, "")
-    .slice(0, 40);
-  return cleaned || "mieter";
 }
 
 async function ensureUniqueUsername(base: string): Promise<string> {
@@ -75,7 +64,7 @@ export async function erstelleOderResetZugang(
     // Offene Passwort-Reset-Links entwerten - sie gehoeren zum alten Passwort.
     await invalidateAllPasswordResetTokens(existing.id);
   } else {
-    username = await ensureUniqueUsername(slugify(mietpartei.name));
+    username = await ensureUniqueUsername(benutzernameBasis(mietpartei));
     await prisma.nutzer.create({
       data: { username, passwordHash, role: "MIETER", mustChangePassword: true, mietparteiId },
     });
@@ -85,10 +74,20 @@ export async function erstelleOderResetZugang(
   let emailFehler: string | undefined;
   try {
     const loginUrl = `${await getAppBaseUrl()}/login`;
+    // Willkommensbrief als PDF beilegen: enthaelt Zugangsdaten, Konditionen und
+    // Anleitung. Das Klartext-Passwort existiert nur hier transient.
+    const willkommenPdf = await renderWelcomeLetterPdf({
+      mietparteiId,
+      benutzername: username,
+      passwort: oneTimePassword,
+    });
     await sendMail({
       to: mietpartei.email,
       subject: "Ihr Zugang zum Nuola Energy Dashboard",
       html: onboardingEmailHtml({ username, password: oneTimePassword, loginUrl }),
+      attachments: [
+        { filename: "Willkommensbrief.pdf", content: willkommenPdf, contentType: "application/pdf" },
+      ],
     });
   } catch (err) {
     emailOk = false;

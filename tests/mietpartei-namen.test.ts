@@ -5,6 +5,8 @@ import {
   empfaengerAnredeKurz,
   kombiniereNamen,
   vermieterAnredePhrase,
+  benutzernameBasis,
+  darfMieterEinloggen,
 } from "../src/lib/mietpartei";
 import { verbrauchsstelleBezeichnung } from "../src/app/(admin)/admin/objekte/einheitTyp";
 
@@ -80,6 +82,88 @@ describe("verbrauchsstelleBezeichnung", () => {
   });
   it("Allgemeinstrom -> Verbrauchsstelle", () => {
     expect(verbrauchsstelleBezeichnung("ALLGEMEINSTROM")).toBe("Verbrauchsstelle");
+  });
+});
+
+describe("benutzernameBasis", () => {
+  it("eine Person -> 'vorname-nachname'", () => {
+    expect(benutzernameBasis({ vorname: "Denise", name: "Kosidis" })).toBe("denise-kosidis");
+  });
+
+  it("gleicher Nachname (Familie) -> Vorname der Hauptperson + Nachname", () => {
+    expect(
+      benutzernameBasis({
+        vorname: "Roswitha",
+        name: "Orlowski",
+        weiterePersonen: [{ anrede: "HERR", vorname: "Claus-Dieter", name: "Orlowski" }],
+      }),
+    ).toBe("roswitha-orlowski");
+  });
+
+  it("verschiedene Nachnamen -> 'nachname1-nachname2'", () => {
+    expect(
+      benutzernameBasis({
+        vorname: "Bianca",
+        name: "Schönemann",
+        weiterePersonen: [{ anrede: "HERR", vorname: "Marcel", name: "Orlowski" }],
+      }),
+    ).toBe("schonemann-orlowski");
+  });
+
+  it("drei verschiedene Nachnamen -> alle verbunden, Duplikate zusammengefasst", () => {
+    expect(
+      benutzernameBasis({
+        vorname: "A",
+        name: "Klein",
+        weiterePersonen: [
+          { anrede: "FRAU", vorname: "B", name: "Müller" },
+          { anrede: "HERR", vorname: "C", name: "Klein" },
+        ],
+      }),
+    ).toBe("klein-muller");
+  });
+
+  it("Umlaute/ß werden vereinfacht (ä→a, ö→o, ü→u, ß→ss)", () => {
+    expect(benutzernameBasis({ vorname: "Jürgen", name: "Weiß" })).toBe("jurgen-weiss");
+  });
+
+  it("reine Firma -> Slug des Firmennamens", () => {
+    expect(benutzernameBasis({ firma: "OneBet Sportwetten GmbH" })).toBe("onebetsportwettengmbh");
+  });
+
+  it("ohne verwertbare Namen -> 'mieter'", () => {
+    expect(benutzernameBasis({})).toBe("mieter");
+  });
+});
+
+describe("darfMieterEinloggen", () => {
+  const heute = new Date("2026-07-21T12:00:00Z");
+
+  it("AKTIV mit zukünftigem Einzug -> Login erlaubt (anders als isMietparteiEffectivelyAktiv)", () => {
+    expect(
+      darfMieterEinloggen(
+        { status: "AKTIV", einzugsdatum: new Date("2026-08-15"), auszugsdatum: null },
+        heute,
+      ),
+    ).toBe(true);
+  });
+
+  it("Status INTERESSENT -> Login gesperrt", () => {
+    expect(
+      darfMieterEinloggen(
+        { status: "INTERESSENT", einzugsdatum: new Date("2026-01-01"), auszugsdatum: null },
+        heute,
+      ),
+    ).toBe(false);
+  });
+
+  it("nach dem Auszug -> Login gesperrt", () => {
+    expect(
+      darfMieterEinloggen(
+        { status: "AKTIV", einzugsdatum: new Date("2025-01-01"), auszugsdatum: new Date("2026-06-30") },
+        heute,
+      ),
+    ).toBe(false);
   });
 });
 

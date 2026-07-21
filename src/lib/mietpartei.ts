@@ -1,5 +1,21 @@
 export type Anrede = "HERR" | "FRAU" | "FAMILIE" | "FIRMA" | null | undefined;
 
+const KOMBINIERENDE_DIAKRITIKA = /[̀-ͯ]/g;
+
+/**
+ * Reduziert ein einzelnes Namensteil auf reine Kleinbuchstaben/Ziffern (ohne
+ * Trennzeichen), damit Namensteile beim Benutzernamen sauber mit „-" verbunden
+ * werden koennen. Umlaute werden vereinfacht (ä→a, ö→o, ü→u), ß→ss.
+ */
+function slugNamensteil(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/ß/g, "ss")
+    .normalize("NFD")
+    .replace(KOMBINIERENDE_DIAKRITIKA, "")
+    .replace(/[^a-z0-9]+/g, "");
+}
+
 /**
  * Anzeige-Bezeichner einer Mietpartei. Firmen werden ueber den Firmennamen
  * gefuehrt (ggf. mit Ansprechpartner in Klammern), Privatpersonen ueber
@@ -122,6 +138,34 @@ export function mietparteiAnzeigeName(m: MietparteiPersonenInput): string {
     person = joinUnd(personen.map((p) => personName(p.vorname, p.name)).filter(Boolean));
   }
   return person || "—";
+}
+
+/**
+ * Basis für den Dashboard-Benutzernamen (ohne Eindeutigkeits-Suffix). Regeln:
+ * - genau eine Person ODER mehrere Personen mit demselben Nachnamen →
+ *   „vorname-nachname" (Vorname der Hauptperson + gemeinsamer Nachname);
+ * - mehrere unterschiedliche Nachnamen → „nachname1-nachname2-…" (jeweils
+ *   verschiedene Nachnamen, Reihenfolge wie erfasst, Duplikate zusammengefasst);
+ * - reine Firma (keine natürlichen Personen) → Slug des Firmennamens.
+ * Fällt alles weg, greift „mieter". Auf 40 Zeichen begrenzt.
+ */
+export function benutzernameBasis(m: MietparteiPersonenInput): string {
+  const personen = alleNatuerlichenPersonen(m).filter((p) => p.vorname || p.name);
+  let basis: string;
+  if (personen.length === 0) {
+    basis = slugNamensteil(m.firma ?? "");
+  } else {
+    const nachnamen = personen.map((p) => slugNamensteil(p.name)).filter(Boolean);
+    const verschiedene = [...new Set(nachnamen)];
+    if (verschiedene.length >= 2) {
+      basis = verschiedene.join("-");
+    } else {
+      // Eine Person oder gemeinsamer Nachname → Vorname der Hauptperson + Nachname.
+      const haupt = personen[0]!;
+      basis = [slugNamensteil(haupt.vorname), slugNamensteil(haupt.name)].filter(Boolean).join("-");
+    }
+  }
+  return basis.slice(0, 40) || "mieter";
 }
 
 /**
@@ -268,6 +312,20 @@ interface MietparteiStatusInput {
 export function isMietparteiEffectivelyAktiv(mietpartei: MietparteiStatusInput, now: Date = new Date()): boolean {
   if (mietpartei.status !== "AKTIV") return false;
   if (now < mietpartei.einzugsdatum) return false;
+  if (mietpartei.auszugsdatum && now > mietpartei.auszugsdatum) return false;
+  return true;
+}
+
+/**
+ * Darf sich eine Mietpartei am Dashboard anmelden? Bewusst LOSER als
+ * `isMietparteiEffectivelyAktiv`: Ein **zukünftiges Einzugsdatum blockiert die
+ * Anmeldung NICHT** – ein frisch angelegter Onboarding-Zugang soll schon vor dem
+ * Einzug funktionieren (Passwort setzen, Portal ansehen). Verlangt wird nur der
+ * Status AKTIV; nach dem Auszug ist der Login gesperrt. Abrechnung und Polling
+ * bleiben weiterhin an `isMietparteiEffectivelyAktiv` (inkl. Einzugsdatum) gebunden.
+ */
+export function darfMieterEinloggen(mietpartei: MietparteiStatusInput, now: Date = new Date()): boolean {
+  if (mietpartei.status !== "AKTIV") return false;
   if (mietpartei.auszugsdatum && now > mietpartei.auszugsdatum) return false;
   return true;
 }
