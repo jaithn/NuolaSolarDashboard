@@ -1,11 +1,24 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { ReactNode } from "react";
 import { prisma } from "@/lib/db";
 import { NewZuordnungForm } from "./NewZuordnungForm";
 import { EditEinheitForm } from "./EditEinheitForm";
+import { EinheitAktionenPanel } from "./EinheitAktionenPanel";
 import { deleteZuordnungAction, setZuordnungWaermepumpeAction } from "../actions";
-import { mietparteiAnzeigeName } from "@/lib/mietpartei";
+import { mietparteiAnzeigeName, kombiniereNamen } from "@/lib/mietpartei";
+import { EINHEIT_TYP_LABEL } from "../../objekte/einheitTyp";
 import { SetBreadcrumbs } from "@/components/AutoBreadcrumbs";
+
+/** Read-only-Zeile „Label: Wert" für die Anzeige-Abschnitte. */
+function Feld({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div style={{ marginBottom: "0.5rem" }}>
+      <div style={{ fontSize: "0.8rem", color: "var(--color-muted)" }}>{label}</div>
+      <div>{children ?? "–"}</div>
+    </div>
+  );
+}
 
 export default async function EinheitDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -28,6 +41,9 @@ export default async function EinheitDetailPage({ params }: { params: Promise<{ 
   // Bei Allgemeinstrom kann ein zugeordneter Zähler nachträglich als Wärmepumpe
   // markiert werden (getrennter Rechnungsausweis, aber dieselbe Partei).
   const istAllgemeinstrom = einheit.typ === "ALLGEMEINSTROM";
+  const hatWaermepumpe = einheit.geraetZuordnungen.some((z) => z.istWaermepumpe);
+  const proEinheitVermieter = einheit.objekt.vermieterModus === "PRO_EINHEIT";
+  const vermieterName = kombiniereNamen(einheit.vermieterName, einheit.vermieterName2);
 
   return (
     <div>
@@ -39,26 +55,50 @@ export default async function EinheitDetailPage({ params }: { params: Promise<{ 
           { label: einheit.bezeichnung, href: `/admin/einheiten/${einheit.id}` },
         ]}
       />
-      <h1>
-        {einheit.objekt.name} – {einheit.bezeichnung}
-      </h1>
 
+      {/* Titel + +-Menü (alle Bearbeitungen laufen über das Menü). */}
+      <EinheitAktionenPanel
+        titel={`${einheit.objekt.name} – ${einheit.bezeichnung}`}
+        kannZuordnen={geraeteImObjekt.length > 0}
+        editForm={
+          <EditEinheitForm
+            id={einheit.id}
+            bezeichnung={einheit.bezeichnung}
+            vermieterProEinheit={proEinheitVermieter}
+            typ={einheit.typ}
+            vermieterName={einheit.vermieterName}
+            vermieterName2={einheit.vermieterName2}
+            vermieterAnrede={einheit.vermieterAnrede}
+            vermieterAnrede2={einheit.vermieterAnrede2}
+            vermieterFirma={einheit.vermieterFirma}
+            vermieterAnschrift={einheit.vermieterAnschrift}
+            vermieterPlz={einheit.vermieterPlz}
+            vermieterOrt={einheit.vermieterOrt}
+          />
+        }
+        neueZuordnungForm={
+          geraeteImObjekt.length > 0 ? (
+            <NewZuordnungForm einheitId={einheit.id} geraete={geraeteImObjekt} zeigeWaermepumpe={istAllgemeinstrom} />
+          ) : (
+            <p>Es sind noch keine Zähler in diesem Objekt angelegt.</p>
+          )
+        }
+      />
+
+      {/* --- Read-only-Abschnitt: Stammdaten --- */}
       <div className="section">
         <h2>Stammdaten</h2>
-        <EditEinheitForm
-          id={einheit.id}
-          bezeichnung={einheit.bezeichnung}
-          vermieterProEinheit={einheit.objekt.vermieterModus === "PRO_EINHEIT"}
-          typ={einheit.typ}
-          vermieterName={einheit.vermieterName}
-          vermieterName2={einheit.vermieterName2}
-          vermieterAnrede={einheit.vermieterAnrede}
-          vermieterAnrede2={einheit.vermieterAnrede2}
-          vermieterFirma={einheit.vermieterFirma}
-          vermieterAnschrift={einheit.vermieterAnschrift}
-          vermieterPlz={einheit.vermieterPlz}
-          vermieterOrt={einheit.vermieterOrt}
-        />
+        <div className="form-grid">
+          <Feld label="Objekt">
+            <Link href={`/admin/objekte/${einheit.objektId}`}>{einheit.objekt.name}</Link>
+          </Feld>
+          <Feld label="Bezeichnung">{einheit.bezeichnung}</Feld>
+          <Feld label="Typ">{EINHEIT_TYP_LABEL[einheit.typ]}</Feld>
+          {proEinheitVermieter && (
+            <Feld label="Vermieter:in (dieser Einheit)">{einheit.vermieterFirma?.trim() || vermieterName || "–"}</Feld>
+          )}
+          {istAllgemeinstrom && <Feld label="Wärmepumpe">{hatWaermepumpe ? "ja (eigener Zähler)" : "nein"}</Feld>}
+        </div>
       </div>
 
       <div className="section">
@@ -66,14 +106,15 @@ export default async function EinheitDetailPage({ params }: { params: Promise<{ 
         <p>
           Ein Zähler kann mehreren Einheiten zugeordnet sein. Mit &quot;Subtrahieren&quot; lässt sich z.B. ein
           Allgemeinstrom-Zwischenzähler abbilden, der im Stromkreis dieser Einheit hängt - die Mietpartei
-          zahlt dann nur die Differenz aus ihrem Zähler abzüglich des Allgemeinstrom-Zählers.
+          zahlt dann nur die Differenz aus ihrem Zähler abzüglich des Allgemeinstrom-Zählers. Neue Zuordnung
+          über das +-Menü oben.
         </p>
         {istAllgemeinstrom && (
           <p style={{ fontSize: "0.85rem", color: "var(--color-muted)" }}>
-            <strong>Wärmepumpe:</strong> Ordnen Sie den Wärmepumpen-Zähler hier zu (oder markieren Sie einen
-            bereits zugeordneten Zähler über „Als Wärmepumpe markieren“). Wärmepumpe und Allgemeinstrom
-            bleiben dabei dieselbe Partei – der Wärmepumpen-Verbrauch wird in der Rechnung nur getrennt
-            (nur Arbeitspreis) ausgewiesen.
+            <strong>Wärmepumpe:</strong> Ordnen Sie den Wärmepumpen-Zähler über „Neue Zähler-Zuordnung“ zu (dort
+            „Dieser Zähler ist die Wärmepumpe“ ankreuzen) oder markieren Sie einen bereits zugeordneten Zähler
+            unten über „Als Wärmepumpe markieren“. Wärmepumpe und Allgemeinstrom bleiben dieselbe Partei – der
+            Wärmepumpen-Verbrauch wird in der Rechnung nur getrennt (nur Arbeitspreis) ausgewiesen.
           </p>
         )}
         <table className="data-table">
@@ -129,18 +170,6 @@ export default async function EinheitDetailPage({ params }: { params: Promise<{ 
             )}
           </tbody>
         </table>
-
-        <div style={{ marginTop: "1rem" }}>
-          {geraeteImObjekt.length === 0 ? (
-            <p>Es sind noch keine Zähler in diesem Objekt angelegt.</p>
-          ) : (
-            <NewZuordnungForm
-              einheitId={einheit.id}
-              geraete={geraeteImObjekt}
-              zeigeWaermepumpe={einheit.typ === "ALLGEMEINSTROM"}
-            />
-          )}
-        </div>
       </div>
 
       <div className="section">

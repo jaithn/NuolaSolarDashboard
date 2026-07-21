@@ -6,6 +6,7 @@ import { EinheitTypFeld, type EinheitTyp } from "../../objekte/EinheitTypFeld";
 import { istVermietbareEinheit } from "../../objekte/einheitTyp";
 import { ZweiterNameFeld } from "@/components/ZweiterNameFeld";
 import { VermieterAnredeFirma } from "@/components/VermieterAnredeFirma";
+import { useCloseOnSaved } from "@/components/PanelClose";
 
 const initialState: ObjektFormState = {};
 
@@ -37,6 +38,7 @@ export function EditEinheitForm({
   vermieterOrt: string;
 }) {
   const [state, formAction, pending] = useActionState(updateEinheitAction, initialState);
+  useCloseOnSaved(state.savedNonce);
   const [typ, setTyp] = useState<EinheitTyp>(typInitial);
   const zeigeVermieter = vermieterProEinheit && istVermietbareEinheit(typ);
 

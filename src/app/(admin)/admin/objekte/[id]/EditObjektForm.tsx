@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { updateObjektAction, type ObjektFormState } from "../actions";
+import { useCloseOnSaved } from "@/components/PanelClose";
 import { ZweiterNameFeld } from "@/components/ZweiterNameFeld";
 import { VermieterAnredeFirma } from "@/components/VermieterAnredeFirma";
 import { ObjektZusatzFelder } from "@/components/ObjektZusatzFelder";
@@ -75,6 +76,7 @@ export function EditObjektForm({
   hatWaermepumpe: boolean;
 }) {
   const [state, formAction, pending] = useActionState(updateObjektAction, initialState);
+  useCloseOnSaved(state.savedNonce);
   const [modus, setModus] = useState<"PRO_OBJEKT" | "PRO_EINHEIT">(vermieterModus);
 
   return (
