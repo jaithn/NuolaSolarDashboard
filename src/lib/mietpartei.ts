@@ -317,6 +317,21 @@ export function isMietparteiEffectivelyAktiv(mietpartei: MietparteiStatusInput, 
 }
 
 /**
+ * „Inaktiv" für Übersichten/Zählung: Status INAKTIV oder bereits ausgezogen
+ * (Auszugsdatum in der Vergangenheit). INTERESSENT und AKTIV (auch mit
+ * zukünftigem Einzug) gelten hier NICHT als inaktiv. Wird genutzt, um inaktive
+ * Mietparteien ins Archiv auszugliedern und aus Zählungen herauszunehmen.
+ */
+export function istMietparteiInaktiv(
+  m: { status: "INTERESSENT" | "AKTIV" | "INAKTIV"; auszugsdatum: Date | null },
+  now: Date = new Date(),
+): boolean {
+  if (m.status === "INAKTIV") return true;
+  if (m.auszugsdatum && m.auszugsdatum < now) return true;
+  return false;
+}
+
+/**
  * Darf sich eine Mietpartei am Dashboard anmelden? Bewusst LOSER als
  * `isMietparteiEffectivelyAktiv`: Ein **zukünftiges Einzugsdatum blockiert die
  * Anmeldung NICHT** – ein frisch angelegter Onboarding-Zugang soll schon vor dem

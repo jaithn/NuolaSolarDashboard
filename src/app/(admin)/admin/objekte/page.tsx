@@ -4,6 +4,7 @@ import { StammdatenAnlegenPanel } from "./StammdatenAnlegenPanel";
 import { deleteObjektAction, deleteEinheitAction } from "./actions";
 import { deleteGeraetAction } from "../geraete/actions";
 import { EINHEIT_TYP_LABEL } from "./einheitTyp";
+import { istMietparteiInaktiv } from "@/lib/mietpartei";
 
 export default async function ObjektePage({
   searchParams,
@@ -16,7 +17,12 @@ export default async function ObjektePage({
     include: {
       einheiten: {
         orderBy: { bezeichnung: "asc" },
-        include: { _count: { select: { mietparteien: true, geraetZuordnungen: true } } },
+        include: {
+          _count: { select: { geraetZuordnungen: true } },
+          // Für die Anzahl aktiver Mietparteien: Status/Auszug laden und inaktive
+          // (Status INAKTIV oder ausgezogen) in JS herausrechnen.
+          mietparteien: { select: { status: true, auszugsdatum: true } },
+        },
       },
       shellyGeraete: {
         orderBy: { bezeichnung: "asc" },
@@ -86,7 +92,7 @@ export default async function ObjektePage({
                       </span>
                     )}
                   </td>
-                  <td>{e._count.mietparteien}</td>
+                  <td>{e.mietparteien.filter((m) => !istMietparteiInaktiv(m)).length}</td>
                   <td>{e._count.geraetZuordnungen}</td>
                   <td>
                     <form action={deleteEinheitAction}>

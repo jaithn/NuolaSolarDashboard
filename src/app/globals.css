@@ -222,6 +222,25 @@ a {
   color: var(--color-border);
   user-select: none;
 }
+
+/* Ausklappbares Archiv (inaktive Mietparteien). Nativer <details>/<summary>. */
+.archiv-summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--color-ink);
+  list-style: none;
+}
+.archiv-summary::-webkit-details-marker {
+  display: none;
+}
+.archiv-summary::before {
+  content: "▸";
+  margin-right: 0.5rem;
+  color: var(--color-muted);
+}
+.archiv-details[open] > .archiv-summary::before {
+  content: "▾";
+}
 .auth-footer a {
   color: var(--color-muted);
   text-decoration: none;

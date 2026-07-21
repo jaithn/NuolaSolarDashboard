@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { EditObjektForm } from "./EditObjektForm";
 import { NewEinheitForm } from "./NewEinheitForm";
 import { deleteEinheitAction } from "../actions";
+import { istMietparteiInaktiv } from "@/lib/mietpartei";
 
 export default async function ObjektDetailPage({
   params,
@@ -20,7 +21,10 @@ export default async function ObjektDetailPage({
     include: {
       einheiten: {
         orderBy: { bezeichnung: "asc" },
-        include: { _count: { select: { mietparteien: true, geraetZuordnungen: true } } },
+        include: {
+          _count: { select: { geraetZuordnungen: true } },
+          mietparteien: { select: { status: true, auszugsdatum: true } },
+        },
       },
     },
   });
@@ -85,7 +89,7 @@ export default async function ObjektDetailPage({
                 <td>
                   <Link href={`/admin/einheiten/${e.id}`}>{e.bezeichnung}</Link>
                 </td>
-                <td>{e._count.mietparteien}</td>
+                <td>{e.mietparteien.filter((m) => !istMietparteiInaktiv(m)).length}</td>
                 <td>{e._count.geraetZuordnungen}</td>
                 <td>
                   <form action={deleteEinheitAction}>
