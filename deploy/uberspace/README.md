@@ -150,9 +150,30 @@ Repo → **Settings → Secrets and variables → Actions → New repository sec
 
 ## B. Deployment auslösen
 
-Der Workflow ist bewusst **manuell** ausgelöst (`workflow_dispatch`):
+### Freigabe-Flow (Staging → Produktion)
 
-- GitHub → **Actions → „Deploy auf Uberspace" → Run workflow**.
+Live wird **nur über einen Release-Tag** deployt – so ist die Freigabe an genau
+den auf dem Docker-Testsystem geprüften Commit gekoppelt:
+
+1. **Entwickeln** → `main`-Push. Baut automatisch nur das **Docker-Image**
+   ([`docker-publish.yml`](../../.github/workflows/docker-publish.yml), Tags
+   `latest` + `1.0.<lauf-nr>`); Uberspace bleibt unberührt.
+2. **Testen** auf dem Docker-Testsystem (zieht `latest`).
+3. **Freigeben** = den getesteten Commit taggen und pushen:
+   ```console
+   git tag v1.0.42 <getesteter-commit>
+   git push origin v1.0.42
+   ```
+   Der Tag-Push (`v*.*.*`) löst **diesen** Workflow aus. `actions/checkout`
+   fährt genau den getaggten Commit aus – kein ungetesteter `main`-Stand kann
+   dazwischenrutschen. (Derselbe Tag baut zugleich ein gepinntes Docker-Image
+   `1.0.42`.)
+
+**Notfall-Wiederholung** (Deploy ohne neuen Tag erneut fahren, z. B. nach einem
+abgebrochenen Lauf): GitHub → **Actions → „Deploy auf Uberspace" → Run workflow**
+(`workflow_dispatch`). Achtung: ohne Tag fährt der Dispatch den Stand des
+gewählten Branches (Default `main`) – für eine echte Freigabe immer den Tag-Weg
+nutzen.
 
 Ablauf: `npm ci` → `prisma generate` → `next build` (in CI) → `rsync` nach
 `~/nuola` → per SSH `prisma generate` (plattformrichtige Engine!) + `prisma db
