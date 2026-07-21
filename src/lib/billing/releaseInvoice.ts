@@ -5,6 +5,65 @@ import { sendMail } from "@/lib/mail/mailer";
 import { invoiceSentEmailHtml } from "@/lib/mail/templates";
 import { getAppBaseUrl } from "@/lib/appBaseUrl";
 import { vergibNaechsteRechnungsnummer } from "./invoiceNumber";
+import { parseAusblick, berechneNettoAusBrutto } from "./ausblick";
+
+/**
+ * Übernimmt den an der Rechnung erfassten „Ausblick" (Preisänderung und/oder
+ * neuer Abschlag) ins Mietprofil – idempotent (nur einmal, gesteuert über
+ * `ausblickUebernommen`). Neue Preise überschreiben die aktuellen Werte der
+ * Mietpartei; ein neuer Abschlag wird zum Gültig-ab-Datum angelegt und löst den
+ * bisherigen ab (wie createAbschlagAction).
+ */
+async function uebernehmeAusblick(rechnungId: string): Promise<void> {
+  const rechnung = await prisma.rechnung.findUniqueOrThrow({ where: { id: rechnungId } });
+  if (rechnung.ausblickUebernommen) return;
+  const ausblick = parseAusblick(rechnung.ausblick);
+  if (!ausblick) return;
+
+  const gueltigAb = new Date(ausblick.gueltigAb);
+
+  await prisma.$transaction(async (tx) => {
+    if (ausblick.preis) {
+      await tx.mietpartei.update({
+        where: { id: rechnung.mietparteiId },
+        data: {
+          arbeitspreisNetto: ausblick.preis.arbeitspreisNetto,
+          arbeitspreisSteuersatzId: ausblick.preis.arbeitspreisSteuersatzId,
+          grundpreisNetto: ausblick.preis.grundpreisNetto,
+          grundpreisSteuersatzId: ausblick.preis.grundpreisNetto != null ? ausblick.preis.grundpreisSteuersatzId : null,
+        },
+      });
+    }
+
+    if (ausblick.abschlag) {
+      const satz = await tx.steuersatz.findUnique({ where: { id: ausblick.abschlag.steuersatzId } });
+      if (satz) {
+        const tagVorNeu = new Date(gueltigAb);
+        tagVorNeu.setDate(tagVorNeu.getDate() - 1);
+        // Bisherigen (überschneidenden) Abschlag am Tag vor dem neuen Beginn beenden.
+        await tx.abschlag.updateMany({
+          where: {
+            mietparteiId: rechnung.mietparteiId,
+            gueltigAb: { lt: gueltigAb },
+            OR: [{ gueltigBis: null }, { gueltigBis: { gte: gueltigAb } }],
+          },
+          data: { gueltigBis: tagVorNeu },
+        });
+        await tx.abschlag.create({
+          data: {
+            mietparteiId: rechnung.mietparteiId,
+            bruttoBetrag: ausblick.abschlag.bruttoBetrag,
+            nettoBetrag: berechneNettoAusBrutto(ausblick.abschlag.bruttoBetrag, satz.prozentsatz),
+            steuersatzId: ausblick.abschlag.steuersatzId,
+            gueltigAb,
+          },
+        });
+      }
+    }
+
+    await tx.rechnung.update({ where: { id: rechnungId }, data: { ausblickUebernommen: true } });
+  });
+}
 
 /**
  * Versucht, das Rechnungs-PDF per E-Mail an den Mieter zu versenden, und
@@ -72,6 +131,11 @@ export async function freigebenUndVersenden(rechnungId: string): Promise<void> {
     where: { id: rechnungId },
     data: { status: "FREIGEGEBEN", freigegebenAm: now, rechnungsnummer },
   });
+
+  // 1b. Erfassten Ausblick (neue Preise / neuer Abschlag) ins Mietprofil
+  //     übernehmen (idempotent). Die Rechnungspositionen selbst bleiben
+  //     unverändert (sie wurden beim Entwurf mit den damaligen Preisen erzeugt).
+  await uebernehmeAusblick(rechnungId);
 
   // 2. Finales PDF MIT Nummer erzeugen (ueberschreibt den Entwurfs-PDF).
   await generateAndStoreInvoicePdf(rechnungId);

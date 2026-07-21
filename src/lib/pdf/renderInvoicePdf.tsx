@@ -4,6 +4,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { prisma } from "@/lib/db";
 import { mietparteiAnzeigeName, anredeSatz, empfaengerAnredeKurz, mietparteiPostanschrift } from "@/lib/mietpartei";
 import { kundenOrdner } from "@/lib/dokumente";
+import { parseAusblick, ausblickFuerPdf } from "@/lib/billing/ausblick";
 import { InvoiceDocument } from "./invoiceDocument";
 import type { FirmaBriefData } from "./letterLayout";
 
@@ -33,7 +34,7 @@ export async function generateAndStoreInvoicePdf(rechnungId: string): Promise<st
     },
   });
 
-  const [firma, designvorlage] = await Promise.all([
+  const [firma, designvorlage, steuersaetze] = await Promise.all([
     prisma.firmenStammdaten.upsert({
       where: { id: "singleton" },
       update: {},
@@ -44,7 +45,15 @@ export async function generateAndStoreInvoicePdf(rechnungId: string): Promise<st
       update: {},
       create: { id: "singleton" },
     }),
+    prisma.steuersatz.findMany(),
   ]);
+
+  // Ausblick (Preisänderung/neuer Abschlag ab der nächsten Periode) für die
+  // PDF-Darstellung aufbereiten (Brutto-Preise aus den hinterlegten Steuersätzen).
+  const ausblickDaten = parseAusblick(rechnung.ausblick);
+  const ausblick = ausblickDaten
+    ? ausblickFuerPdf(ausblickDaten, (satzId) => steuersaetze.find((s) => s.id === satzId)?.prozentsatz ?? null)
+    : null;
 
   // Logo: entweder das im Admin hochgeladene, sonst das mitgelieferte offizielle
   // Nuola Solar Logo (public/nuola-solar-logo.png, im Docker-Image enthalten).
@@ -95,6 +104,7 @@ export async function generateAndStoreInvoicePdf(rechnungId: string): Promise<st
         steuerBetrag: p.steuerBetrag,
         bruttoBetrag: p.bruttoBetrag,
       }))}
+      ausblick={ausblick}
     />,
   );
 

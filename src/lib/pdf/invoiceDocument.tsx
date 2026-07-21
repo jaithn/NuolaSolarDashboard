@@ -13,6 +13,7 @@ import {
   type EmpfaengerData,
 } from "./letterLayout";
 import { fmtDate } from "./format";
+import type { AusblickPdf } from "@/lib/billing/ausblick";
 
 export interface InvoicePositionData {
   bezeichnung: string;
@@ -46,6 +47,9 @@ export interface InvoiceDocumentData {
     verrechnungBetrag: number;
   };
   positionen: InvoicePositionData[];
+  // Ausblick auf Änderungen ab der nächsten Periode (optional): neue Preise
+  // (mit Grund) und/oder neuer monatlicher Abschlag.
+  ausblick?: AusblickPdf | null;
 }
 
 const styles = StyleSheet.create({
@@ -59,7 +63,14 @@ const styles = StyleSheet.create({
   summaryBox: { marginTop: 16, alignItems: "flex-end" },
   verrechnungBox: { marginTop: 10, padding: 8, backgroundColor: "#f6edda", alignItems: "flex-end" },
   abschlussBox: { marginTop: 12, fontSize: 9.5, lineHeight: 1.4, color: "#334155" },
+  ausblickBox: { marginTop: 14, borderWidth: 1, borderColor: "#d9c9a4", borderRadius: 4, padding: 10 },
+  ausblickTitel: { fontFamily: "Helvetica-Bold", fontSize: 10.5, color: GOLD, marginBottom: 4 },
+  ausblickZeile: { fontSize: 9.5, color: "#334155", marginBottom: 3, lineHeight: 1.4 },
 });
+
+function fmtPreis4(n: number): string {
+  return n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+}
 
 function fmt(n: number): string {
   return n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -74,6 +85,7 @@ export function InvoiceDocument({
   anredeSatz,
   rechnung,
   positionen,
+  ausblick,
 }: InvoiceDocumentData) {
   const steuerGruppen = new Map<number, { netto: number; steuer: number }>();
   for (const p of positionen) {
@@ -205,6 +217,34 @@ export function InvoiceDocument({
             </Text>
           )}
         </View>
+
+        {/* Ausblick: angekündigte Änderungen ab der nächsten Periode. */}
+        {ausblick && (ausblick.preis || ausblick.abschlagBrutto != null) && (
+          <View style={styles.ausblickBox} wrap={false}>
+            <Text style={styles.ausblickTitel}>Ausblick: Änderungen ab {fmtDate(ausblick.gueltigAb)}</Text>
+            {ausblick.preis && (
+              <>
+                <Text style={styles.ausblickZeile}>
+                  Ab dem {fmtDate(ausblick.gueltigAb)} gelten neue Strompreise: Arbeitspreis{" "}
+                  {fmtPreis4(ausblick.preis.arbeitspreisBrutto)} €/kWh (inkl. MwSt.)
+                  {ausblick.preis.grundpreisBrutto != null
+                    ? `, Grundpreis ${fmt(ausblick.preis.grundpreisBrutto)} €/Monat (inkl. MwSt.)`
+                    : ""}
+                  .
+                </Text>
+                {ausblick.preis.grund ? (
+                  <Text style={styles.ausblickZeile}>Grund der Anpassung: {ausblick.preis.grund}</Text>
+                ) : null}
+              </>
+            )}
+            {ausblick.abschlagBrutto != null && (
+              <Text style={styles.ausblickZeile}>
+                Ihr neuer monatlicher Abschlag beträgt ab dem {fmtDate(ausblick.gueltigAb)}{" "}
+                {fmt(ausblick.abschlagBrutto)} € (inkl. MwSt.).
+              </Text>
+            )}
+          </View>
+        )}
 
         <View style={[letterStyles.section, { marginTop: 14 }]}>
           <Text>Bei Fragen wenden Sie sich gerne an uns.</Text>

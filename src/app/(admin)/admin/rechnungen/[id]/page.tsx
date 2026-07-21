@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { mietparteiAnzeigeName } from "@/lib/mietpartei";
+import { parseAusblick } from "@/lib/billing/ausblick";
 import { freigebenAction, erneutVersendenAction, loescheEntwurfAction, storniereAction } from "../actions";
+import { AusblickForm } from "./AusblickForm";
 
 const STATUS_LABEL: Record<string, string> = {
   ENTWURF: "Entwurf",
@@ -34,6 +36,18 @@ export default async function RechnungDetailPage({
 
   const titel = rechnung.rechnungsnummer ?? "Entwurf (noch keine Nummer)";
   const istStorno = rechnung.stornoVonId !== null;
+
+  // Ausblick (Preisänderung/neuer Abschlag) nur bei Jahresabrechnungs-Entwürfen
+  // erfassbar. Steuersätze fürs Formular; Default-Stichtag = Tag nach Zeitraum-Ende.
+  const istJahresEntwurf = rechnung.status === "ENTWURF" && rechnung.typ === "JAHRESABRECHNUNG";
+  const steuersaetze = istJahresEntwurf
+    ? await prisma.steuersatz.findMany({ orderBy: { gueltigAb: "desc" } })
+    : [];
+  const ausblick = parseAusblick(rechnung.ausblick);
+  // Default-Stichtag = 1. des Folgemonats nach dem Ausstellungsdatum (UTC, damit
+  // das YYYY-MM-DD-Datum unabhängig von der Zeitzone stimmt). Im Formular überschreibbar.
+  const a = new Date(rechnung.ausstellungsdatum);
+  const defaultGueltigAb = new Date(Date.UTC(a.getUTCFullYear(), a.getUTCMonth() + 1, 1)).toISOString().slice(0, 10);
 
   return (
     <div>
@@ -134,6 +148,22 @@ export default async function RechnungDetailPage({
           </p>
         </div>
       </div>
+
+      {istJahresEntwurf && (
+        <div className="section">
+          <h2>Ausblick: Preisänderung &amp; neuer Abschlag (optional)</h2>
+          <AusblickForm
+            rechnungId={rechnung.id}
+            steuersaetze={steuersaetze.map((s) => ({ id: s.id, bezeichnung: s.bezeichnung, prozentsatz: s.prozentsatz }))}
+            defaultGueltigAb={defaultGueltigAb}
+            arbeitspreisNetto={rechnung.mietpartei.arbeitspreisNetto}
+            arbeitspreisSteuersatzId={rechnung.mietpartei.arbeitspreisSteuersatzId}
+            grundpreisNetto={rechnung.mietpartei.grundpreisNetto}
+            grundpreisSteuersatzId={rechnung.mietpartei.grundpreisSteuersatzId}
+            ausblick={ausblick}
+          />
+        </div>
+      )}
 
       <div className="section">
         <h2>Status &amp; Freigabe</h2>

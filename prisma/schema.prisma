@@ -609,6 +609,19 @@ model Rechnung {
   freigegebenAm DateTime?
   versendetAm   DateTime?
 
+  // Ausblick auf Aenderungen ab der naechsten Periode, bei der Pruefung der
+  // Jahresrechnung erfasst: neue Strompreise (mit Grund) und/oder neuer
+  // monatlicher Abschlag. Wird auf der Rechnung ausgewiesen und bei Freigabe ins
+  // Mietprofil uebernommen (Preise ueberschrieben, neuer Abschlag angelegt).
+  // JSON: { gueltigAb: ISO,
+  //   preis?: { arbeitspreisNetto, arbeitspreisSteuersatzId,
+  //             grundpreisNetto|null, grundpreisSteuersatzId|null, grund },
+  //   abschlag?: { bruttoBetrag, steuersatzId } }
+  ausblick Json?
+  // Gesetzt, sobald der Ausblick bei einer Freigabe ins Mietprofil uebernommen
+  // wurde (verhindert doppelte Anwendung bei erneutem Versand o.ae.).
+  ausblickUebernommen Boolean @default(false)
+
   mietpartei   Mietpartei @relation(fields: [mietparteiId], references: [id], onDelete: Restrict)
   positionen   Rechnungsposition[]
 

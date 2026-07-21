@@ -3,6 +3,8 @@
 import { requireAdmin } from "@/lib/auth/guards";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import {
   erstelleRechnungsentwurf,
   erstelleEntwuerfeFuerAktiveEinheiten,
@@ -12,6 +14,7 @@ import { generateAndStoreInvoicePdf } from "@/lib/pdf/renderInvoicePdf";
 import { freigebenUndVersenden, rechnungErneutVersenden } from "@/lib/billing/releaseInvoice";
 import { storniereRechnung } from "@/lib/billing/storno";
 import { loescheRechnungsentwurf } from "@/lib/billing/deleteDraft";
+import type { AusblickDaten } from "@/lib/billing/ausblick";
 
 export interface RechnungFormState {
   error?: string;
@@ -65,6 +68,90 @@ export async function createRechnungsentwurfAction(
 
   revalidatePath("/admin/rechnungen");
   redirect(`/admin/rechnungen/${rechnungId}`);
+}
+
+export interface AusblickFormState {
+  error?: string;
+  success?: string;
+  savedNonce?: string;
+}
+
+/**
+ * Speichert den „Ausblick" (Preisänderung und/oder neuer Abschlag ab der
+ * nächsten Periode) an einem Rechnungs-ENTWURF. Er wird auf dem PDF ausgewiesen
+ * und bei der Freigabe ins Mietprofil übernommen. Ohne aktivierten Punkt wird
+ * der Ausblick geleert. Danach wird das Entwurfs-PDF neu erzeugt (Vorschau).
+ */
+export async function setAusblickAction(
+  _prevState: AusblickFormState,
+  formData: FormData,
+): Promise<AusblickFormState> {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: "Rechnung fehlt." };
+  const rechnung = await prisma.rechnung.findUnique({ where: { id } });
+  if (!rechnung) return { error: "Rechnung nicht gefunden." };
+  if (rechnung.status !== "ENTWURF") {
+    return { error: "Der Ausblick lässt sich nur an einem Entwurf ändern." };
+  }
+
+  const gueltigAb = String(formData.get("gueltigAb") ?? "");
+  if (!gueltigAb) return { error: "Bitte ein Datum angeben, ab wann die Änderungen gelten." };
+
+  const preisAktiv = formData.get("preisAktiv") === "on";
+  const abschlagAktiv = formData.get("abschlagAktiv") === "on";
+
+  let preis: AusblickDaten["preis"] = null;
+  if (preisAktiv) {
+    const arbeitspreisNetto = Number(formData.get("arbeitspreisNetto"));
+    const arbeitspreisSteuersatzId = String(formData.get("arbeitspreisSteuersatzId") ?? "");
+    if (!arbeitspreisSteuersatzId || !Number.isFinite(arbeitspreisNetto) || arbeitspreisNetto < 0) {
+      return { error: "Bitte einen gültigen neuen Arbeitspreis und Steuersatz angeben." };
+    }
+    const hatGrundpreis = formData.get("hatGrundpreis") === "on";
+    const grundpreisNettoRaw = Number(formData.get("grundpreisNetto"));
+    const grundpreisSteuersatzId = String(formData.get("grundpreisSteuersatzId") ?? "");
+    const grund = String(formData.get("grund") ?? "").trim();
+    if (!grund) return { error: "Bitte den Grund für die Preisänderung angeben." };
+    preis = {
+      arbeitspreisNetto,
+      arbeitspreisSteuersatzId,
+      grundpreisNetto: hatGrundpreis && Number.isFinite(grundpreisNettoRaw) ? grundpreisNettoRaw : null,
+      grundpreisSteuersatzId: hatGrundpreis && grundpreisSteuersatzId ? grundpreisSteuersatzId : null,
+      grund,
+    };
+  }
+
+  let abschlag: AusblickDaten["abschlag"] = null;
+  if (abschlagAktiv) {
+    const bruttoBetrag = Number(formData.get("abschlagBrutto"));
+    const steuersatzId = String(formData.get("abschlagSteuersatzId") ?? "");
+    if (!steuersatzId || !Number.isFinite(bruttoBetrag) || bruttoBetrag <= 0) {
+      return { error: "Bitte einen gültigen neuen Abschlag (inkl. MwSt.) und Steuersatz angeben." };
+    }
+    abschlag = { bruttoBetrag, steuersatzId };
+  }
+
+  const ausblick: AusblickDaten | null = preis || abschlag ? { gueltigAb, preis, abschlag } : null;
+
+  await prisma.rechnung.update({
+    where: { id },
+    data: {
+      // Prisma-Json: DbNull setzt die Spalte auf SQL-NULL (Ausblick geleert).
+      ausblick: ausblick ? (ausblick as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
+      ausblickUebernommen: false,
+    },
+  });
+
+  // Entwurfs-PDF neu erzeugen, damit die Vorschau den Ausblick zeigt.
+  await generateAndStoreInvoicePdf(id);
+
+  revalidatePath(`/admin/rechnungen/${id}`);
+  return {
+    success: ausblick ? "Ausblick gespeichert – in der PDF-Vorschau sichtbar." : "Ausblick entfernt.",
+    savedNonce: Date.now().toString(),
+  };
 }
 
 export async function freigebenAction(formData: FormData): Promise<void> {
