@@ -1,10 +1,12 @@
 name: Deploy auf Uberspace
 
 # Alternativer Betriebsweg NEBEN dem Docker-Image (docker-publish.yml):
-# Baut die App in GitHub Actions und spielt sie per rsync auf einen Uberspace-8-
-# Host. Die plattformspezifischen Prisma-Engines werden bewusst NICHT in CI,
-# sondern nach dem Transfer auf dem Host erzeugt (prisma generate), damit die
-# zur Uberspace-Plattform passende Query-Engine verwendet wird.
+# Baut die App in GitHub Actions und spielt sie per rsync auf einen Uberspace-
+# Host der "Asteroid"-Generation. Die Dienste laufen dort als systemd-User-
+# Services (nicht supervisord); der Neustart erfolgt per `systemctl --user`.
+# Die plattformspezifischen Prisma-Engines werden bewusst NICHT in CI, sondern
+# nach dem Transfer auf dem Host erzeugt (prisma generate), damit die zur
+# Uberspace-Plattform passende Query-Engine verwendet wird.
 #
 # Einrichtung/Details: siehe deploy/uberspace/README.md
 #
@@ -38,9 +40,10 @@ jobs:
       - name: Node einrichten
         uses: actions/setup-node@v4
         with:
-          # Sollte der auf dem Uberspace eingestellten Node-Hauptversion
-          # entsprechen (siehe README, `uberspace tools version use node`).
-          node-version: "22"
+          # Muss zur Node-Version des Uberspace-Hosts passen (Asteroid stellt
+          # die System-Node fest bereit, aktuell 26 unter /usr/bin/node und
+          # NICHT via `uberspace tool` umstellbar) - Build- = Laufzeit-Version.
+          node-version: "26"
           cache: "npm"
 
       - name: Abhaengigkeiten installieren
@@ -96,15 +99,17 @@ jobs:
         # prisma generate laeuft HIER (nicht in CI), damit die Query-Engine zur
         # Uberspace-Plattform passt. db push wendet Schemaaenderungen an (bewusst
         # ohne --accept-data-loss). Danach Vertrags-/Brieftexte einlesen und die
-        # supervisord-Dienste neu starten.
+        # systemd-User-Dienste neu starten (Asteroid; die Units muessen einmalig
+        # per `uberspace service add` angelegt sein, siehe deploy/uberspace/README.md).
         run: |
           ssh "${{ secrets.UBERSPACE_USER }}@${{ secrets.UBERSPACE_HOST }}" bash -s <<'REMOTE'
           set -euo pipefail
+          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
           cd "${{ secrets.UBERSPACE_PATH }}"
           set -a; [ -f .env ] && . ./.env; set +a
           ./node_modules/.bin/prisma generate
           ./node_modules/.bin/prisma db push --skip-generate
           ./node_modules/.bin/tsx scripts/sync-dokumente.ts || true
-          supervisorctl restart nuola-web nuola-worker
-          supervisorctl status nuola-web nuola-worker
+          systemctl --user restart nuola-web nuola-worker
+          systemctl --user --no-pager status nuola-web nuola-worker || true
           REMOTE
