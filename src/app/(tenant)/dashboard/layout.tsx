@@ -6,6 +6,7 @@ import { logoutAction } from "@/app/login/actions";
 import { isMietparteiEffectivelyAktiv } from "@/lib/mietpartei";
 import { AutoBreadcrumbs } from "@/components/AutoBreadcrumbs";
 import { BrandLogo } from "@/components/BrandLogo";
+import { SiteFooter } from "@/components/SiteFooter";
 
 export default async function TenantLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
@@ -56,6 +57,7 @@ export default async function TenantLayout({ children }: { children: React.React
         <AutoBreadcrumbs />
         {children}
       </main>
+      <SiteFooter />
     </div>
   );
 }

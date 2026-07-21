@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth/getSession";
 import { logoutAction } from "@/app/login/actions";
 import { AutoBreadcrumbs } from "@/components/AutoBreadcrumbs";
 import { BrandLogo } from "@/components/BrandLogo";
+import { SiteFooter } from "@/components/SiteFooter";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
@@ -37,6 +38,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <AutoBreadcrumbs />
         {children}
       </main>
+      <SiteFooter />
     </div>
   );
 }
