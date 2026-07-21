@@ -17,12 +17,18 @@ name: Deploy auf Uberspace
 #   UBERSPACE_PATH     Ziel-Verzeichnis auf dem Host, z.B. "/home/isabell/nuola"
 
 on:
-  # Bewusst NUR manuell bzw. per Tag ausloesbar, damit nicht jeder main-Push
-  # gleichzeitig Docker UND Uberspace deployt. Wer bei jedem Push deployen will,
-  # kann den push-Trigger unten einkommentieren.
+  # Freigabe-Flow (Staging -> Produktion): Jeder main-Push baut nur das
+  # Docker-Image (docker-publish.yml) fuers Testsystem. Erst wenn ein Build dort
+  # geprueft und FREIGEGEBEN ist, wird der getestete Commit als Release-Tag
+  # "vX.Y.Z" gepusht -> DAS loest diesen Uberspace-Deploy aus. `actions/checkout`
+  # checkt bei einem Tag-Push automatisch genau diesen Commit aus, es kann also
+  # kein ungetesteter main-Stand dazwischenrutschen.
+  #   git tag v1.0.42 <getesteter-commit> && git push origin v1.0.42
+  # `workflow_dispatch` bleibt als manueller Notfall-Knopf (Deploy erneut
+  # ausloesen) erhalten und loest NICHTS von allein aus.
+  push:
+    tags: ["v*.*.*"]
   workflow_dispatch:
-  # push:
-  #   branches: [main]
 
 concurrency:
   group: deploy-uberspace
