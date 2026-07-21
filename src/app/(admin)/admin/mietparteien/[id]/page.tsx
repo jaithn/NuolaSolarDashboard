@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { prisma } from "@/lib/db";
 import { OnboardingPanel } from "./OnboardingPanel";
 import { MietparteiAktionenPanel } from "./MietparteiAktionenPanel";
+import { deleteAbschlagAction } from "../actions";
 import { mietparteiAnzeigeName, anredeKurz, weiterePersonenDerMietpartei, type Anrede } from "@/lib/mietpartei";
 import { berechneBrutto } from "@/lib/steuer";
 
@@ -116,6 +117,9 @@ export default async function MietparteiDetailPage({ params }: { params: Promise
         username={nutzer?.username}
         mustChangePassword={nutzer?.mustChangePassword}
         einheitBezeichnung={mietpartei.einheit.bezeichnung}
+        istAllgemeinstrom={mietpartei.einheit.typ === "ALLGEMEINSTROM"}
+        anschreibenVariante={mietpartei.anschreibenVariante}
+        braucheErgaenzung={mietpartei.braucheErgaenzung}
       />
 
       <p style={{ marginTop: "-0.5rem" }}>
@@ -259,6 +263,7 @@ export default async function MietparteiDetailPage({ params }: { params: Promise
               <th>Brutto</th>
               <th>Gültig ab</th>
               <th>Gültig bis</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -271,12 +276,21 @@ export default async function MietparteiDetailPage({ params }: { params: Promise
                   <td>{brutto.toFixed(2)} €</td>
                   <td>{a.gueltigAb.toLocaleDateString("de-DE")}</td>
                   <td>{a.gueltigBis ? a.gueltigBis.toLocaleDateString("de-DE") : "–"}</td>
+                  <td>
+                    <form action={deleteAbschlagAction}>
+                      <input type="hidden" name="id" value={a.id} />
+                      <input type="hidden" name="mietparteiId" value={mietpartei.id} />
+                      <button className="btn-small btn-danger" type="submit">
+                        Löschen
+                      </button>
+                    </form>
+                  </td>
                 </tr>
               );
             })}
             {abschlaege.length === 0 && (
               <tr>
-                <td colSpan={5}>Noch kein Abschlag hinterlegt.</td>
+                <td colSpan={6}>Noch kein Abschlag hinterlegt.</td>
               </tr>
             )}
           </tbody>

@@ -1,13 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import {
-  setMietparteiStatusAction,
-  setOnboardingOptionenAction,
-  uploadDokumentAction,
-  deleteDokumentAction,
-  type OnboardingState,
-} from "../actions";
+import { deleteDokumentAction, type OnboardingState } from "../actions";
 
 const initialState: OnboardingState = {};
 
@@ -47,12 +41,6 @@ interface Dokument {
   hochgeladenAm: string; // ISO
 }
 
-const STATUS_LABEL: Record<Status, string> = {
-  INTERESSENT: "Interessent:in",
-  AKTIV: "Aktiv",
-  INAKTIV: "Inaktiv",
-};
-
 const DOK_LABEL: Record<DokTyp, string> = {
   VERTRAG_EIGENSTAENDIG: "Stromliefervertrag",
   VERTRAG_ERGAENZUNG: "Ergänzung zum Mietvertrag",
@@ -63,16 +51,21 @@ const DOK_LABEL: Record<DokTyp, string> = {
   ANSCHREIBEN: "Anschreiben",
 };
 
-
 function fmtGroesse(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+/**
+ * Vertragsunterlagen/Onboarding – bewusst als ANZEIGE-Abschnitt (read-only):
+ * Onboarding-Optionen, Vertragsversionen, PDF-Downloads und die Liste der
+ * gescannten Rückläufer. Alle aktiven Bearbeitungen (Onboarding-Optionen ändern,
+ * Status wechseln, Dokument hochladen) laufen über das +-Menü oben. Einzige
+ * Ausnahme hier: das Löschen einer einzelnen Scan-Datei (Zeilen-Aktion).
+ */
 export function OnboardingPanel({
   mietparteiId,
-  status,
   anschreibenVariante,
   braucheErgaenzung,
   istAllgemeinstrom = false,
@@ -88,15 +81,7 @@ export function OnboardingPanel({
   vertragVersionen: VertragVersion[];
   dokumente: Dokument[];
 }) {
-  const [statusState, statusAction, statusPending] = useActionState(setMietparteiStatusAction, initialState);
-  const [optionenState, optionenAction, optionenPending] = useActionState(setOnboardingOptionenAction, initialState);
-  const [uploadState, uploadAction, uploadPending] = useActionState(uploadDokumentAction, initialState);
   const [deleteState, deleteAction, deletePending] = useActionState(deleteDokumentAction, initialState);
-
-  const istAktiv = status === "AKTIV";
-  // „Interessent:in" wird als Zielstatus nicht mehr angeboten (kein Zurück,
-  // sobald aktiviert) - nur Aktiv/Inaktiv.
-  const andereStatus = (["AKTIV", "INAKTIV"] as Status[]).filter((s) => s !== status);
 
   // Aktuell gültige Version je Vertragsart.
   const aktiveVersion = (art: VertragArt) =>
@@ -116,47 +101,23 @@ export function OnboardingPanel({
 
   return (
     <div>
-      {/* 0) Onboarding-Optionen: Anschreiben-Variante + Ergaenzungs-Bedarf,
-         waehrend der Interessenten-Phase aenderbar. Sobald die Partei aktiv ist
-         (oder bei Allgemeinstrom) entfaellt dieser Block – die zuletzt gewaehlten
-         Optionen bleiben gespeichert und steuern weiterhin die PDF-Erzeugung. */}
-      {!istAllgemeinstrom && !istAktiv && (
+      {/* 0) Onboarding-Optionen – read-only. Änderung über das +-Menü. */}
+      {!istAllgemeinstrom && (
         <>
           <h3 style={{ marginTop: 0 }}>Onboarding-Optionen</h3>
-          {optionenState.error && <div className="form-error">{optionenState.error}</div>}
-          {optionenState.success && (
-            <div className="form-notice" role="status">
-              {optionenState.success}
-            </div>
-          )}
-          <form action={optionenAction} style={{ display: "flex", gap: "1rem", alignItems: "flex-end", flexWrap: "wrap" }}>
-            <input type="hidden" name="mietparteiId" value={mietparteiId} />
-            <div className="field" style={{ margin: 0 }}>
-              <label htmlFor="opt-anschreiben">Anschreiben</label>
-              <select
-                id="opt-anschreiben"
-                name="anschreibenVariante"
-                className="select-inline"
-                defaultValue={anschreibenVariante === "persoenlich" ? "persoenlich" : "formal"}
-              >
-                <option value="formal">Formal</option>
-                <option value="persoenlich">Persönlich</option>
-              </select>
-            </div>
-            <div className="field" style={{ margin: 0 }}>
-              <label>
-                <input type="checkbox" name="braucheErgaenzung" defaultChecked={braucheErgaenzung} /> Ergänzung zum
-                Mietvertrag erforderlich
-              </label>
-            </div>
-            <button className="btn-small" type="submit" disabled={optionenPending}>
-              {optionenPending ? "…" : "Optionen speichern"}
-            </button>
-          </form>
+          <p style={{ marginTop: 0 }}>
+            Anschreiben: <strong>{anschreibenVariante === "persoenlich" ? "Persönlich" : "Formal"}</strong>
+            {" · "}
+            Ergänzung zum Mietvertrag:{" "}
+            <strong>{braucheErgaenzung ? "erforderlich" : "nicht erforderlich"}</strong>
+          </p>
+          <p style={{ fontSize: "0.85rem", color: "var(--color-muted)", marginTop: 0 }}>
+            Änderbar über das +-Menü oben („Onboarding-Optionen“).
+          </p>
         </>
       )}
 
-      <h3 style={{ marginTop: istAllgemeinstrom || istAktiv ? 0 : "1.5rem" }}>Verträge</h3>
+      <h3 style={{ marginTop: istAllgemeinstrom ? 0 : "1.5rem" }}>Verträge</h3>
       <ul style={{ marginTop: 0 }}>
         {(braucheErgaenzung
           ? (["EIGENSTAENDIG", "ERGAENZUNG"] as VertragArt[])
@@ -178,7 +139,7 @@ export function OnboardingPanel({
         })}
       </ul>
 
-      {/* 1) PDF-Briefe erzeugen */}
+      {/* 1) PDF-Briefe erzeugen (Download) */}
       <h3 style={{ marginTop: "1.5rem" }}>Onboarding-Unterlagen (PDF)</h3>
       <p style={{ fontSize: "0.85rem", color: "var(--color-muted)", marginTop: 0 }}>
         Werden bei jedem Abruf frisch aus den aktuellen Stammdaten erzeugt.
@@ -196,8 +157,7 @@ export function OnboardingPanel({
           </a>
         ))}
       </div>
-      {/* Alle relevanten Briefe (gemäß Optionen) in EINEM PDF - praktisch zum
-         Ausdrucken/Versenden des kompletten Onboarding-Pakets. */}
+      {/* Alle relevanten Briefe (gemäß Optionen) in EINEM PDF. */}
       <div style={{ marginTop: "0.75rem" }}>
         <a
           className="btn"
@@ -210,40 +170,16 @@ export function OnboardingPanel({
         </a>
       </div>
 
-      {/* 2) Status wechseln - bei aktiven Kunden entfällt der Block (Status wird
-         in den Stammdaten oben angezeigt/geändert). */}
-      {!istAktiv && (
-        <>
-          <h3 style={{ marginTop: "1.5rem" }}>Status</h3>
-          <p style={{ marginTop: 0 }}>
-            Aktueller Status: <strong>{STATUS_LABEL[status]}</strong>
-          </p>
-          {statusState.error && <div className="form-error">{statusState.error}</div>}
-          {statusState.success && (
-            <div className="form-notice" role="status">
-              {statusState.success}
-            </div>
-          )}
-          <form action={statusAction} style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
-            <input type="hidden" name="mietparteiId" value={mietparteiId} />
-            {andereStatus.map((s) => (
-              <button key={s} className="btn-small" type="submit" name="status" value={s} disabled={statusPending}>
-                {statusPending ? "…" : `In „${STATUS_LABEL[s]}“ überführen`}
-              </button>
-            ))}
-          </form>
-        </>
-      )}
-
-      {/* 3) Gescannte Rückläufer */}
+      {/* 2) Gescannte Rückläufer – Anzeige + Download; Upload über das +-Menü. */}
       <h3 style={{ marginTop: "1.5rem" }}>Gescannte Rückläufer</h3>
       <p style={{ fontSize: "0.85rem", color: "var(--color-muted)", marginTop: 0 }}>
-        Unterschriebenen Stromliefervertrag, Ergänzung zum Mietvertrag und SEPA-Mandat hier hochladen.
-        Dauerhafte, nicht öffentliche Ablage (PDF/JPG/PNG, max. 20 MB).
+        Hochladen über das +-Menü oben („Neuer Dokumenten-Upload“). Dauerhafte, nicht öffentliche Ablage.
       </p>
 
+      {deleteState.error && <div className="form-error">{deleteState.error}</div>}
+
       {dokumente.length > 0 ? (
-        <table className="data-table" style={{ marginBottom: "1rem" }}>
+        <table className="data-table">
           <thead>
             <tr>
               <th>Art</th>
@@ -258,11 +194,7 @@ export function OnboardingPanel({
               <tr key={d.id}>
                 <td>{DOK_LABEL[d.typ]}</td>
                 <td>
-                  <a
-                    href={`/api/mietparteien/${mietparteiId}/dokument/${d.id}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
+                  <a href={`/api/mietparteien/${mietparteiId}/dokument/${d.id}`} target="_blank" rel="noreferrer">
                     {d.pfad}
                   </a>
                 </td>
@@ -284,34 +216,6 @@ export function OnboardingPanel({
       ) : (
         <p>Noch keine Dokumente hinterlegt.</p>
       )}
-
-      {deleteState.error && <div className="form-error">{deleteState.error}</div>}
-      {uploadState.error && <div className="form-error">{uploadState.error}</div>}
-      {uploadState.success && (
-        <div className="form-notice" role="status">
-          {uploadState.success}
-        </div>
-      )}
-
-      <form action={uploadAction} style={{ display: "flex", gap: "0.6rem", alignItems: "flex-end", flexWrap: "wrap" }}>
-        <input type="hidden" name="mietparteiId" value={mietparteiId} />
-        <div className="field" style={{ margin: 0 }}>
-          <label htmlFor="dok-typ">Art</label>
-          <select id="dok-typ" name="typ" className="select-inline" defaultValue="VERTRAG_EIGENSTAENDIG">
-            <option value="VERTRAG_EIGENSTAENDIG">Stromliefervertrag</option>
-            <option value="VERTRAG_ERGAENZUNG">Ergänzung zum Mietvertrag</option>
-            <option value="SEPA">SEPA-Mandat</option>
-            <option value="SONSTIGES">Sonstiges</option>
-          </select>
-        </div>
-        <div className="field" style={{ margin: 0 }}>
-          <label htmlFor="dok-datei">Datei</label>
-          <input id="dok-datei" name="datei" type="file" accept=".pdf,.jpg,.jpeg,.png" required />
-        </div>
-        <button className="btn" type="submit" disabled={uploadPending}>
-          {uploadPending ? "Wird hochgeladen…" : "Hochladen"}
-        </button>
-      </form>
     </div>
   );
 }

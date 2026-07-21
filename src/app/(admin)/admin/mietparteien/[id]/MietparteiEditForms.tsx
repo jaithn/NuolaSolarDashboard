@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState, useState, type CSSProperties } from "react";
-import { PriceInput, GrossPriceInput, type SteuersatzOption } from "@/components/PriceInput";
+import { useActionState, useEffect, useState, type CSSProperties } from "react";
+import { PriceInput, type SteuersatzOption } from "@/components/PriceInput";
 import {
   updateStammdatenAction,
   updatePersonenAction,
@@ -16,6 +16,15 @@ const initialState: MietparteiFormState = {};
 export interface EinheitOption {
   id: string;
   label: string;
+}
+
+/** Ruft onSaved auf, sobald ein neues savedNonce eintrifft (erfolgreiches
+ *  Speichern) - so schließt sich der Bearbeitungsmodus im +-Menü automatisch. */
+function useAutoClose(savedNonce: string | undefined, onSaved?: () => void) {
+  useEffect(() => {
+    if (savedNonce) onSaved?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedNonce]);
 }
 
 // Einheitliche Karten-Optik für alle Personen (identisch zu MietparteiForm).
@@ -56,6 +65,7 @@ export function StammdatenForm({
   anschrift,
   anschriftPlz,
   anschriftOrt,
+  onSaved,
 }: {
   mietparteiId: string;
   einheiten: EinheitOption[];
@@ -68,8 +78,10 @@ export function StammdatenForm({
   anschrift: string;
   anschriftPlz: string;
   anschriftOrt: string;
+  onSaved?: () => void;
 }) {
   const [state, formAction, pending] = useActionState(updateStammdatenAction, initialState);
+  useAutoClose(state.savedNonce, onSaved);
   return (
     <form action={formAction} key={state.savedNonce ?? "form"}>
       <Hinweis state={state} />
@@ -144,6 +156,7 @@ export function PersonenForm({
   vorname,
   name,
   weiterePersonen: weitereDefault,
+  onSaved,
 }: {
   mietparteiId: string;
   anrede: string;
@@ -151,8 +164,10 @@ export function PersonenForm({
   vorname: string;
   name: string;
   weiterePersonen: WeiterePerson[];
+  onSaved?: () => void;
 }) {
   const [state, formAction, pending] = useActionState(updatePersonenAction, initialState);
+  useAutoClose(state.savedNonce, onSaved);
   const [anrede, setAnrede] = useState(anredeDefault);
   const istFirma = anrede === "FIRMA";
   const [weitere, setWeitere] = useState<WeiterePerson[]>(weitereDefault);
@@ -270,6 +285,7 @@ export function StromkostenForm({
   arbeitspreisSteuersatzId,
   grundpreisNetto,
   grundpreisSteuersatzId,
+  onSaved,
 }: {
   mietparteiId: string;
   steuersaetze: SteuersatzOption[];
@@ -277,10 +293,11 @@ export function StromkostenForm({
   arbeitspreisSteuersatzId: string;
   grundpreisNetto: number | null;
   grundpreisSteuersatzId: string | null;
+  onSaved?: () => void;
 }) {
   const [state, formAction, pending] = useActionState(updateStromkostenAction, initialState);
+  useAutoClose(state.savedNonce, onSaved);
   const [hatGrundpreis, setHatGrundpreis] = useState(grundpreisNetto != null);
-  const heute = new Date().toISOString().slice(0, 10);
   return (
     <form action={formAction} key={state.savedNonce ?? "form"}>
       <Hinweis state={state} />
@@ -310,23 +327,9 @@ export function StromkostenForm({
           steuersaetze={steuersaetze}
         />
       )}
-
-      <div className="section" style={{ marginTop: "1rem", background: "var(--color-primary-tint)" }}>
-        <h3 style={{ marginTop: 0 }}>Neuer Abschlag (optional)</h3>
-        <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", marginTop: 0 }}>
-          Wird bei Betrag 0 nicht angelegt; löst sonst den bisherigen Abschlag ab.
-        </p>
-        <GrossPriceInput
-          label="Abschlag (€/Monat, inkl. MwSt.)"
-          bruttoName="abschlagBrutto"
-          steuersatzName="abschlagSteuersatzId"
-          steuersaetze={steuersaetze}
-        />
-        <div className="field">
-          <label htmlFor="sk-abschlagGueltigAb">Abschlag gültig ab</label>
-          <input id="sk-abschlagGueltigAb" name="abschlagGueltigAb" type="date" defaultValue={heute} />
-        </div>
-      </div>
+      <p style={{ fontSize: "0.8rem", color: "var(--color-muted)" }}>
+        Der monatliche Abschlag wird separat über „Neuer Abschlag“ gepflegt.
+      </p>
 
       <button className="btn" type="submit" disabled={pending} style={{ maxWidth: "16rem" }}>
         {pending ? "Wird gespeichert…" : "Stromkosten speichern"}
@@ -343,13 +346,16 @@ export function BankverbindungForm({
   kontoinhaber,
   iban,
   bankName,
+  onSaved,
 }: {
   mietparteiId: string;
   kontoinhaber: string;
   iban: string;
   bankName: string;
+  onSaved?: () => void;
 }) {
   const [state, formAction, pending] = useActionState(updateBankverbindungAction, initialState);
+  useAutoClose(state.savedNonce, onSaved);
   const [bank, setBank] = useState(bankName);
 
   async function beiIbanBlur(e: React.FocusEvent<HTMLInputElement>) {

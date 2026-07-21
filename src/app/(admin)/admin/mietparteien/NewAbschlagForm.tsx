@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { GrossPriceInput, type SteuersatzOption } from "@/components/PriceInput";
 import { createAbschlagAction, type AbschlagFormState } from "./actions";
 
@@ -9,11 +9,17 @@ const initialState: AbschlagFormState = {};
 export function NewAbschlagForm({
   mietparteiId,
   steuersaetze,
+  onSaved,
 }: {
   mietparteiId: string;
   steuersaetze: SteuersatzOption[];
+  onSaved?: () => void;
 }) {
   const [state, formAction, pending] = useActionState(createAbschlagAction, initialState);
+  useEffect(() => {
+    if (state.savedNonce) onSaved?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.savedNonce]);
 
   return (
     <form action={formAction}>

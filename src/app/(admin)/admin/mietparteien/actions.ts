@@ -597,7 +597,8 @@ export async function updatePersonenAction(
   return { success: "Personen gespeichert.", savedNonce: Date.now().toString() };
 }
 
-/** Stromkosten: Arbeits-/Grundpreis und optional zugleich ein neuer Abschlag. */
+/** Stromkosten: nur Arbeits-/Grundpreis. Der Abschlag wird bewusst separat über
+ *  „Neuer Abschlag" gepflegt (eigener Menüpunkt), nicht mehr hier. */
 export async function updateStromkostenAction(
   _prevState: MietparteiFormState,
   formData: FormData,
@@ -615,44 +616,14 @@ export async function updateStromkostenAction(
     return { error: "Bitte einen gültigen Arbeitspreis und Steuersatz angeben.", values: collectValues(formData) };
   }
 
-  // Optionaler neuer Abschlag (brutto) - loest den bisherigen ab (wie createAbschlagAction).
-  const abschlagBrutto = Number(formData.get("abschlagBrutto"));
-  const abschlagSteuersatzId = String(formData.get("abschlagSteuersatzId") ?? "");
-  const abschlagGueltigAbRaw = String(formData.get("abschlagGueltigAb") ?? "");
-  const legeAbschlagAn =
-    Number.isFinite(abschlagBrutto) && abschlagBrutto > 0 && Boolean(abschlagSteuersatzId) && Boolean(abschlagGueltigAbRaw);
-  const abschlagSatz = legeAbschlagAn
-    ? await prisma.steuersatz.findUnique({ where: { id: abschlagSteuersatzId } })
-    : null;
-
-  await prisma.$transaction(async (tx) => {
-    await tx.mietpartei.update({
-      where: { id },
-      data: {
-        arbeitspreisNetto,
-        arbeitspreisSteuersatzId,
-        grundpreisNetto: hatGrundpreis && Number.isFinite(grundpreisNetto) ? grundpreisNetto : null,
-        grundpreisSteuersatzId: hatGrundpreis && grundpreisSteuersatzId ? grundpreisSteuersatzId : null,
-      },
-    });
-    if (legeAbschlagAn && abschlagSatz) {
-      const gueltigAb = new Date(abschlagGueltigAbRaw);
-      const tagVorNeu = new Date(gueltigAb);
-      tagVorNeu.setDate(tagVorNeu.getDate() - 1);
-      await tx.abschlag.updateMany({
-        where: { mietparteiId: id, gueltigAb: { lt: gueltigAb }, OR: [{ gueltigBis: null }, { gueltigBis: { gte: gueltigAb } }] },
-        data: { gueltigBis: tagVorNeu },
-      });
-      await tx.abschlag.create({
-        data: {
-          mietparteiId: id,
-          bruttoBetrag: abschlagBrutto,
-          nettoBetrag: berechneNettoAusBrutto(abschlagBrutto, abschlagSatz.prozentsatz),
-          steuersatzId: abschlagSteuersatzId,
-          gueltigAb,
-        },
-      });
-    }
+  await prisma.mietpartei.update({
+    where: { id },
+    data: {
+      arbeitspreisNetto,
+      arbeitspreisSteuersatzId,
+      grundpreisNetto: hatGrundpreis && Number.isFinite(grundpreisNetto) ? grundpreisNetto : null,
+      grundpreisSteuersatzId: hatGrundpreis && grundpreisSteuersatzId ? grundpreisSteuersatzId : null,
+    },
   });
 
   revalidatePath(`/admin/mietparteien/${id}`);
@@ -702,6 +673,9 @@ export async function bankAusIbanAction(iban: string): Promise<{ bankName: strin
 
 export interface AbschlagFormState {
   error?: string;
+  // Wechselt bei jedem erfolgreichen Anlegen -> signalisiert dem Formular den
+  // Erfolg (schließt das Panel im +-Menü).
+  savedNonce?: string;
 }
 
 export async function createAbschlagAction(
@@ -754,7 +728,37 @@ export async function createAbschlagAction(
   });
 
   revalidatePath(`/admin/mietparteien/${mietparteiId}`);
-  return {};
+  return { savedNonce: Date.now().toString() };
+}
+
+/**
+ * Löscht einen Abschlag. Damit keine Lücke entsteht, erbt der unmittelbare
+ * Vorgänger (nächst-früherer Abschlag) das Enddatum des gelöschten: Wird der
+ * neueste (offene) Abschlag gelöscht, ist der Vorgänger danach wieder offen;
+ * wird ein mittlerer gelöscht, reicht der Vorgänger bis zu dessen bisherigem Ende.
+ */
+export async function deleteAbschlagAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const mietparteiId = String(formData.get("mietparteiId") ?? "");
+  if (!id) return;
+
+  const abschlag = await prisma.abschlag.findUnique({ where: { id } });
+  if (!abschlag) return;
+
+  const vorgaenger = await prisma.abschlag.findFirst({
+    where: { mietparteiId: abschlag.mietparteiId, gueltigAb: { lt: abschlag.gueltigAb } },
+    orderBy: { gueltigAb: "desc" },
+  });
+
+  await prisma.$transaction(async (tx) => {
+    await tx.abschlag.delete({ where: { id } });
+    if (vorgaenger) {
+      await tx.abschlag.update({ where: { id: vorgaenger.id }, data: { gueltigBis: abschlag.gueltigBis } });
+    }
+  });
+
+  revalidatePath(`/admin/mietparteien/${mietparteiId || abschlag.mietparteiId}`);
 }
 
 export interface ZugangState {

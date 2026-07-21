@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { SeitentitelAnlegen } from "@/components/SeitentitelAnlegen";
 import type { SteuersatzOption } from "@/components/PriceInput";
 import { NewAbschlagForm } from "../NewAbschlagForm";
@@ -13,7 +13,7 @@ import {
   BankverbindungForm,
   type EinheitOption,
 } from "./MietparteiEditForms";
-import { uploadDokumentAction, type OnboardingState } from "../actions";
+import { uploadDokumentAction, setOnboardingOptionenAction, type OnboardingState } from "../actions";
 import { createEinheitManualMesswertAction } from "../../actions";
 
 interface WeiterePerson {
@@ -60,27 +60,33 @@ export interface MietparteiAktionenProps {
   mustChangePassword?: boolean;
   // Manueller Zaehlerwert
   einheitBezeichnung: string;
+  // Onboarding-Optionen (nicht bei Allgemeinstrom)
+  istAllgemeinstrom: boolean;
+  anschreibenVariante: string;
+  braucheErgaenzung: boolean;
 }
-
-const ITEMS = [
-  { key: "stammdaten", label: "Neue Stammdaten" },
-  { key: "person", label: "Neue Person" },
-  { key: "stromkosten", label: "Neue Stromkosten (Abschlag & Arbeitspreis)" },
-  { key: "abschlag", label: "Neuer Abschlag" },
-  { key: "bank", label: "Neue Bankverbindung" },
-  { key: "rechnung", label: "Neue Rechnung" },
-  { key: "zugang", label: "Neuer Dashboard-Zugang" },
-  { key: "zaehler", label: "Neuer manueller Zählerwert" },
-  { key: "dokument", label: "Neuer Dokumenten-Upload" },
-];
 
 export function MietparteiAktionenPanel(props: MietparteiAktionenProps) {
   const [offen, setOffen] = useState<string | null>(null);
   const { mietparteiId } = props;
+  const schliessen = () => setOffen(null);
+
+  const items = [
+    { key: "stammdaten", label: "Neue Stammdaten" },
+    { key: "person", label: "Neue Person" },
+    { key: "stromkosten", label: "Neue Stromkosten (Arbeits-/Grundpreis)" },
+    { key: "abschlag", label: "Neuer Abschlag" },
+    { key: "bank", label: "Neue Bankverbindung" },
+    ...(props.istAllgemeinstrom ? [] : [{ key: "onboarding", label: "Onboarding-Optionen" }]),
+    { key: "rechnung", label: "Neue Rechnung" },
+    { key: "zugang", label: "Neuer Dashboard-Zugang" },
+    { key: "zaehler", label: "Neuer manueller Zählerwert" },
+    { key: "dokument", label: "Neuer Dokumenten-Upload" },
+  ];
 
   return (
     <div>
-      <SeitentitelAnlegen titel={props.titel} items={ITEMS} offen={offen} onSelect={setOffen} />
+      <SeitentitelAnlegen titel={props.titel} items={items} offen={offen} onSelect={setOffen} />
 
       {offen && (
         <div className="section">
@@ -99,6 +105,7 @@ export function MietparteiAktionenPanel(props: MietparteiAktionenProps) {
                 anschrift={props.anschrift}
                 anschriftPlz={props.anschriftPlz}
                 anschriftOrt={props.anschriftOrt}
+                onSaved={schliessen}
               />
             </>
           )}
@@ -112,6 +119,7 @@ export function MietparteiAktionenPanel(props: MietparteiAktionenProps) {
                 vorname={props.vorname}
                 name={props.name}
                 weiterePersonen={props.weiterePersonen}
+                onSaved={schliessen}
               />
             </>
           )}
@@ -125,13 +133,25 @@ export function MietparteiAktionenPanel(props: MietparteiAktionenProps) {
                 arbeitspreisSteuersatzId={props.arbeitspreisSteuersatzId}
                 grundpreisNetto={props.grundpreisNetto}
                 grundpreisSteuersatzId={props.grundpreisSteuersatzId}
+                onSaved={schliessen}
               />
             </>
           )}
           {offen === "abschlag" && (
             <>
               <h2 style={{ marginTop: 0 }}>Neuer Abschlag</h2>
-              <NewAbschlagForm mietparteiId={mietparteiId} steuersaetze={props.steuersaetze} />
+              <NewAbschlagForm mietparteiId={mietparteiId} steuersaetze={props.steuersaetze} onSaved={schliessen} />
+            </>
+          )}
+          {offen === "onboarding" && (
+            <>
+              <h2 style={{ marginTop: 0 }}>Onboarding-Optionen</h2>
+              <OnboardingOptionenForm
+                mietparteiId={mietparteiId}
+                anschreibenVariante={props.anschreibenVariante}
+                braucheErgaenzung={props.braucheErgaenzung}
+                onSaved={schliessen}
+              />
             </>
           )}
           {offen === "bank" && (
@@ -175,7 +195,7 @@ export function MietparteiAktionenPanel(props: MietparteiAktionenProps) {
           {offen === "dokument" && (
             <>
               <h2 style={{ marginTop: 0 }}>Dokument hochladen</h2>
-              <DokumentUploadForm mietparteiId={mietparteiId} />
+              <DokumentUploadForm mietparteiId={mietparteiId} onSaved={schliessen} />
             </>
           )}
         </div>
@@ -184,10 +204,62 @@ export function MietparteiAktionenPanel(props: MietparteiAktionenProps) {
   );
 }
 
+/* Onboarding-Optionen (Anschreiben-Variante + Ergänzungs-Bedarf) – aus dem
+   OnboardingPanel ins +-Menü verschoben (Panel bleibt read-only). */
+const onboardingInitial: OnboardingState = {};
+function OnboardingOptionenForm({
+  mietparteiId,
+  anschreibenVariante,
+  braucheErgaenzung,
+  onSaved,
+}: {
+  mietparteiId: string;
+  anschreibenVariante: string;
+  braucheErgaenzung: boolean;
+  onSaved?: () => void;
+}) {
+  const [state, action, pending] = useActionState(setOnboardingOptionenAction, onboardingInitial);
+  useEffect(() => {
+    if (state.success) onSaved?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.success]);
+  return (
+    <form action={action} style={{ display: "flex", gap: "1rem", alignItems: "flex-end", flexWrap: "wrap" }}>
+      {state.error && <div className="form-error">{state.error}</div>}
+      <input type="hidden" name="mietparteiId" value={mietparteiId} />
+      <div className="field" style={{ margin: 0 }}>
+        <label htmlFor="opt-anschreiben">Anschreiben</label>
+        <select
+          id="opt-anschreiben"
+          name="anschreibenVariante"
+          className="select-inline"
+          defaultValue={anschreibenVariante === "persoenlich" ? "persoenlich" : "formal"}
+        >
+          <option value="formal">Formal</option>
+          <option value="persoenlich">Persönlich</option>
+        </select>
+      </div>
+      <div className="field" style={{ margin: 0 }}>
+        <label>
+          <input type="checkbox" name="braucheErgaenzung" defaultChecked={braucheErgaenzung} /> Ergänzung zum
+          Mietvertrag erforderlich
+        </label>
+      </div>
+      <button className="btn" type="submit" disabled={pending}>
+        {pending ? "…" : "Optionen speichern"}
+      </button>
+    </form>
+  );
+}
+
 /* Kleines Upload-Formular (gescannter Rückläufer) – reuse uploadDokumentAction. */
 const uploadInitial: OnboardingState = {};
-function DokumentUploadForm({ mietparteiId }: { mietparteiId: string }) {
+function DokumentUploadForm({ mietparteiId, onSaved }: { mietparteiId: string; onSaved?: () => void }) {
   const [state, action, pending] = useActionState(uploadDokumentAction, uploadInitial);
+  useEffect(() => {
+    if (state.success) onSaved?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.success]);
   return (
     <form action={action} style={{ display: "flex", gap: "0.6rem", alignItems: "flex-end", flexWrap: "wrap" }}>
       {state.error && <div className="form-error">{state.error}</div>}
