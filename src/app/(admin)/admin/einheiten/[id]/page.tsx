@@ -5,6 +5,7 @@ import { NewZuordnungForm } from "./NewZuordnungForm";
 import { EditEinheitForm } from "./EditEinheitForm";
 import { deleteZuordnungAction, setZuordnungWaermepumpeAction } from "../actions";
 import { mietparteiAnzeigeName } from "@/lib/mietpartei";
+import { SetBreadcrumbs } from "@/components/AutoBreadcrumbs";
 
 export default async function EinheitDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -30,6 +31,14 @@ export default async function EinheitDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div>
+      <SetBreadcrumbs
+        items={[
+          { label: "Übersicht", href: "/admin" },
+          { label: "Objekte", href: "/admin/objekte" },
+          { label: einheit.objekt.name, href: `/admin/objekte/${einheit.objektId}` },
+          { label: einheit.bezeichnung, href: `/admin/einheiten/${einheit.id}` },
+        ]}
+      />
       <h1>
         {einheit.objekt.name} – {einheit.bezeichnung}
       </h1>

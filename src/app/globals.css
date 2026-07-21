@@ -209,10 +209,18 @@ a {
   font-size: 0.85rem;
   color: var(--color-muted);
 }
-.auth-footer nav {
-  display: inline-flex;
-  gap: 1.25rem;
-  margin-top: 0.35rem;
+/* Gemeinsame Fußzeilen-Zeile: alle Teile (Copyright, Impressum, Datenschutz) in
+   einer Reihe, jeweils durch einen Mittelpunkt (.footer-trenner) getrennt. */
+.footer-zeile {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem 0.6rem;
+}
+.footer-trenner {
+  color: var(--color-border);
+  user-select: none;
 }
 .auth-footer a {
   color: var(--color-muted);
@@ -357,16 +365,6 @@ a {
 .app-footer-inner {
   max-width: 72rem;
   margin: 0 auto;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.25rem;
-  align-items: center;
-  justify-content: space-between;
-}
-.app-footer nav {
-  display: flex;
-  gap: 1.25rem;
-  flex-wrap: wrap;
 }
 .app-footer a {
   color: var(--color-muted);

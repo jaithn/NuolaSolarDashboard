@@ -27,6 +27,10 @@ export interface ContractParty {
   rolle: string; // z.B. "Strombezieher", "Lieferant", "Vermieter"
   name: string;
   zeilen: string[];
+  // Optional abweichende Bezeichnung in der Unterschriftenzeile (z.B. wenn die
+  // Hausverwaltung fuer den:die Vermieter:in unterschreibt). Fehlt sie, wird der
+  // Partei-Name verwendet.
+  unterschriftName?: string;
 }
 
 export interface ContractData {
@@ -179,14 +183,14 @@ function Unterschriften({
           <OrtDatum ort={linksOrt} />
           <View style={s.sigLine}>
             <Text style={s.sigCaption}>Unterschrift {links.rolle}</Text>
-            <Text style={{ fontSize: 8.5, color: "#64748b" }}>{links.name}</Text>
+            <Text style={{ fontSize: 8.5, color: "#64748b" }}>{links.unterschriftName ?? links.name}</Text>
           </View>
         </View>
         <View style={s.sigCol}>
           <OrtDatum ort={rechtsOrt} />
           <View style={s.sigLine}>
             <Text style={s.sigCaption}>Unterschrift {rechts.rolle}</Text>
-            <Text style={{ fontSize: 8.5, color: "#64748b" }}>{rechts.name}</Text>
+            <Text style={{ fontSize: 8.5, color: "#64748b" }}>{rechts.unterschriftName ?? rechts.name}</Text>
           </View>
         </View>
       </View>

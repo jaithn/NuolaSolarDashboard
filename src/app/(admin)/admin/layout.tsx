@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/getSession";
 import { logoutAction } from "@/app/login/actions";
-import { AutoBreadcrumbs } from "@/components/AutoBreadcrumbs";
+import { BreadcrumbsProvider } from "@/components/AutoBreadcrumbs";
 import { BrandLogo } from "@/components/BrandLogo";
 import { SiteFooter } from "@/components/SiteFooter";
 
@@ -35,8 +35,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </nav>
       </header>
       <main className="app-main" id="hauptinhalt">
-        <AutoBreadcrumbs />
-        {children}
+        <BreadcrumbsProvider>{children}</BreadcrumbsProvider>
       </main>
       <SiteFooter />
     </div>

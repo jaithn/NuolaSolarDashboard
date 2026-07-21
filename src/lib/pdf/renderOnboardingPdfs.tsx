@@ -242,24 +242,25 @@ export async function renderOnboardingPdf(
       name: displayName,
       zeilen: [empfaenger.strasse || "", empfaenger.plzOrt || ""].filter(Boolean),
     };
-    // Gegenpartei der Ergaenzung: standardmaessig die Vermieter:in; unterschreibt
-    // laut Objekt-Einstellung die Hausverwaltung, tritt diese als Gegenpartei auf.
+    // Gegenpartei der Ergaenzung ist IMMER die Vermieter:in - sie steht oben im
+    // Parteienkasten. Unterschreibt laut Objekt-Einstellung die Hausverwaltung,
+    // wird das als "vertreten durch ..." ergaenzt und die Unterschriftenzeile auf
+    // die Hausverwaltung ausgewiesen (der genannte Vertragspartner bleibt aber
+    // der:die Vermieter:in).
     const unterzeichnerHausverwaltung =
       objekt.ergaenzungUnterzeichner === "HAUSVERWALTUNG" && Boolean(objekt.hausverwaltungName?.trim());
-    const ergaenzungGegenpartei: ContractParty = unterzeichnerHausverwaltung
-      ? {
-          rolle: "Hausverwaltung",
-          name: objekt.hausverwaltungName || "—",
-          zeilen: [
-            objekt.hausverwaltungAnschrift || "",
-            `${objekt.hausverwaltungPlz} ${objekt.hausverwaltungOrt}`.trim(),
-          ].filter(Boolean),
-        }
-      : {
-          rolle: "Vermieter",
-          name: vermieterAnzeige || "—",
-          zeilen: [vermieter.strasse || "", vermieter.plzOrt].filter(Boolean),
-        };
+    const ergaenzungGegenpartei: ContractParty = {
+      rolle: "Vermieter",
+      name: vermieterAnzeige || "—",
+      zeilen: [
+        vermieter.strasse || "",
+        vermieter.plzOrt,
+        unterzeichnerHausverwaltung ? `vertreten durch die Hausverwaltung ${objekt.hausverwaltungName}` : "",
+      ].filter(Boolean),
+      unterschriftName: unterzeichnerHausverwaltung
+        ? `i. A. ${objekt.hausverwaltungName}`
+        : undefined,
+    };
     const gegenpartei: ContractParty =
       variant === "ergaenzung"
         ? ergaenzungGegenpartei
